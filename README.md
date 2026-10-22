@@ -112,7 +112,8 @@ Share takes AirDrop's place, Undo uses the Recycle Bin, and everything follows y
 3. Allow **Accessibility** (to notice the ⌥ tap and drags) and **Finder** control (to read your selection). The welcome window walks you through it.
    It then offers **File access**: turn on **Full Disk Access** (recommended — no prompts for any folder or drive), or allow
    just Desktop, Documents, Downloads and iCloud Drive. Doing it up front means macOS never stops a job halfway to ask.
-4. Optional: [ffmpeg](https://ffmpeg.org) unlocks more video and audio formats — `brew install ffmpeg` (the welcome window has a button for it).
+4. Optional: [ffmpeg](https://ffmpeg.org) unlocks more video and audio formats. Pickverter downloads it for you in one click —
+   in the welcome window, in Settings, or the first time a format needs it (`brew install ffmpeg` works too).
    Pages, Keynote, Numbers or LibreOffice, when installed, enable high-quality Office/iWork exports.
 
 Requires macOS 14 or later, Apple silicon or Intel.
@@ -123,7 +124,7 @@ Requires macOS 14 or later, Apple silicon or Intel.
    and run it. It installs for your account only — no administrator rights.
 2. The installer isn't code-signed yet, so SmartScreen may say **"Windows protected your PC"**: click **More info › Run anyway**.
 3. The welcome window checks Windows Security's **controlled folder access** (Pickverter offers to allow itself when it is on),
-   can install **ffmpeg** with winget and starts Pickverter with Windows. Nothing else needs a permission.
+   downloads **ffmpeg** in one click and starts Pickverter with Windows. Nothing else needs a permission.
 
 Requires Windows 10 version 2004 or later, or Windows 11 (x64 or Arm64). Pickverter lives in the notification area;
 keys, engines and build notes are in [windows/README.md](windows/README.md).

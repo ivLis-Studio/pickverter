@@ -3,6 +3,14 @@
 All notable changes to Pickverter. Versions follow [Semantic Versioning](https://semver.org).
 The section for a version becomes the release notes shown in the in-app updater.
 
+## [Unreleased]
+
+- **ffmpeg in one click** — Pickverter now downloads ffmpeg itself: from the welcome window, Settings › Integrations, or simply by clicking a format that needs it — the job downloads ffmpeg on its own card and carries on. It is a signed static build, used only after its published SHA-256 and its builder's signature check out. Homebrew is no longer needed, and Settings can remove the downloaded copy again.
+- **The wheel at screen edges** — near an edge or a corner the whole wheel now moves inward, so every slot, the outer options and the ring tabs stay on screen and clickable, clear of the menu bar and the Dock.
+- **What you see is what a click does** — a highlighted slot always runs when clicked, and a click where nothing is highlighted closes the wheel. Before, the area just outside the disc could highlight a slot while a click there closed the wheel.
+- **Several displays** — the wheel, result cards and floating previews now pick the right display when the pointer sits on the far edge of a screen.
+- **Editors fit the screen** — editor windows shrink to the screen they open on, so their buttons never end up below the Dock on smaller Macs.
+
 ## [0.2.0] - 2026-10-23
 
 - **Pickverter for Windows** — the same wheel now runs on Windows 10 and 11: tap Alt in File Explorer. The installer is on this release page, next to the Mac download.

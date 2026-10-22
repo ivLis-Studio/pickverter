@@ -27,11 +27,26 @@ struct WheelGeometry {
     var tabBarOffset: CGFloat { discRadius + tabGap + tabBarHeight / 2 }
     var windowSize: CGSize { CGSize(width: boxSide, height: boxSide) }
     var deadZone: CGFloat { innerRadius * 0.62 }
+    /// How far from the center the pointer still targets a slot. Highlight and click use the same distance, so a
+    /// highlighted slot always runs when clicked and a click with nothing highlighted closes the wheel.
+    var reach: CGFloat { subOuter + 14 }
+    /// Everything the wheel can draw around its center (the outer ring and its edge), plus a little air.
+    var envelope: CGFloat { subOuter + 4 + 8 }
 
     func mainSpan(_ count: Int) -> Double { 2 * .pi / Double(max(count, 1)) }
 
     /// Angular width (radians) of one option on the outer ring.
     func subSpan(_ count: Int) -> Double { max(22, min(32, 172 / Double(max(count, 1)))) * .pi / 180 }
+
+    /// Where the wheel centers for a pointer at `point`: right on it, or nudged inward near the edges of `area` (a
+    /// screen's visible frame, so the menu bar and the Dock never cover it) until the outer ring and the tabs fit.
+    func center(for point: CGPoint, in area: CGRect) -> CGPoint {
+        func clamp(_ value: CGFloat, _ low: CGFloat, _ high: CGFloat) -> CGFloat {
+            low <= high ? min(max(value, low), high) : (low + high) / 2
+        }
+        return CGPoint(x: clamp(point.x, area.minX + envelope, area.maxX - envelope),
+                       y: clamp(point.y, area.minY + envelope, area.maxY - envelope))
+    }
 
     /// Tab rect in AppKit screen coordinates for a wheel centered at c.
     func tabRect(_ mode: WheelMode, wheelCenter c: CGPoint) -> CGRect {
@@ -49,6 +64,8 @@ struct SegmentData: Equatable, Identifiable {
     var isFormat = false
     var isMore = false
     var unavailable = false
+    /// Unavailable only until ffmpeg is downloaded, which a click on it does.
+    var needsDownload = false
     var pageLabel: String? = nil
     var hasVariants = false
     /// On the outer ring: the option a plain click on the slot runs.
@@ -275,16 +292,10 @@ final class WheelController: ObservableObject {
 
     private func frameFor(point: CGPoint) -> CGRect {
         let size = geometry.windowSize
-        var frame = CGRect(x: point.x - geometry.center.x, y: point.y - (size.height - geometry.center.y),
-                           width: size.width, height: size.height)
-        if let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }) ?? NSScreen.main {
-            // Allow the outer ring area to hang off-screen; keep the disc itself visible.
-            let slack = geometry.subOuter - geometry.discRadius + geometry.margin
-            let bounds = screen.frame.insetBy(dx: -slack, dy: -slack)
-            frame.origin.x = min(max(frame.minX, bounds.minX), bounds.maxX - frame.width)
-            frame.origin.y = min(max(frame.minY, bounds.minY), bounds.maxY - frame.height)
-        }
-        return frame
+        // Near an edge the whole wheel moves inward: every slot, outer ring and tab stays on screen and clickable.
+        let middle = ScreenGeometry.screen(containing: point).map { geometry.center(for: point, in: $0.visibleFrame) } ?? point
+        return CGRect(x: middle.x - geometry.center.x, y: middle.y - (size.height - geometry.center.y),
+                      width: size.width, height: size.height)
     }
 
     private func loadThumbnail() {
@@ -332,7 +343,8 @@ final class WheelController: ObservableObject {
             switch item {
             case .option(let option):
                 return SegmentData(id: option.id, title: option.title, symbol: option.symbol, isFormat: option.isFormat,
-                                   unavailable: option.unavailable != nil, hasVariants: !option.variants.isEmpty)
+                                   unavailable: option.unavailable != nil, needsDownload: option.unavailable == Tools.ffmpegHint,
+                                   hasVariants: !option.variants.isEmpty)
             case .more(let page, let total):
                 return SegmentData(id: item.id, title: L("wheel.more"), symbol: "ellipsis", isMore: true,
                                    pageLabel: "\(page + 1)/\(total)")
@@ -361,7 +373,8 @@ final class WheelController: ObservableObject {
 
     var canDropHere: Bool {
         guard let active = activeOption else { return false }
-        return active.option.unavailable == nil && active.parent?.unavailable == nil
+        let reason = active.option.unavailable ?? active.parent?.unavailable
+        return reason == nil || reason == Tools.ffmpegHint
     }
 
     func setMode(_ newMode: WheelMode) {
@@ -432,7 +445,9 @@ final class WheelController: ObservableObject {
                                span: geometry.subSpan(variants.count),
                                items: variants.enumerated().map { position, variant in
                                    SegmentData(id: variant.id, title: variant.title, symbol: variant.symbol,
-                                               unavailable: variant.unavailable != nil, isDefault: position == preferred && variants.count > 1)
+                                               unavailable: variant.unavailable != nil,
+                                               needsDownload: variant.unavailable == Tools.ffmpegHint,
+                                               isDefault: position == preferred && variants.count > 1)
                                })
         // The tab bar sits under 6 o'clock; fade it when the ring opens over it.
         let hidesTabs = abs(ring.centerAngle - .pi) < ring.halfWidth + 0.68
@@ -489,7 +504,7 @@ final class WheelController: ObservableObject {
         let dx = point.x - center.x, dy = point.y - center.y
         let distance = hypot(dx, dy)
         let inside = panel?.frame.contains(point) ?? true
-        guard inside, distance >= geometry.deadZone, !items.isEmpty else {
+        guard inside, distance >= geometry.deadZone, distance <= geometry.reach, !items.isEmpty else {
             setHighlight(nil)
             setSub(nil)
             if distance < geometry.deadZone { setExpanded(nil) }
@@ -568,14 +583,18 @@ final class WheelController: ObservableObject {
             if sub == nil, parent.variants.count > 1, !isDemo {
                 option = parent.variants[WheelLayout.shared.preferredVariant(of: parent)]
             }
-            if let reason = option.unavailable ?? parent.unavailable {
+            let reason = option.unavailable ?? parent.unavailable
+            // Missing ffmpeg isn't a dead end: the job downloads it first, right on its card.
+            let needsFFmpeg = reason == Tools.ffmpegHint
+            if let reason, !needsFFmpeg {
                 showFlash(reason)
                 NSSound.beep()
                 return
             }
             if sub != nil, option.id != parent.id, !isDemo { WheelLayout.shared.noteUsed(slot: parent.id, variant: option.id) }
             let targets = (override?.isEmpty == false) ? override! : files
-            let display = Self.display(option, parent: option.id == parent.id ? nil : parent)
+            var display = Self.display(option, parent: option.id == parent.id ? nil : parent)
+            if needsFFmpeg { display = FFmpegInstaller.preparing(display) }
             guard let destination = resolveDestination(for: display, flip: flip, forced: forced) else {
                 enterChoice(PendingChoice(option: display, files: targets, mode: mode))
                 return
@@ -649,8 +668,7 @@ final class WheelController: ObservableObject {
             return true
         }
         let distance = hypot(point.x - center.x, point.y - center.y)
-        let reach = subRing != nil ? geometry.subOuter + 14 : geometry.discRadius + 26
-        if distance > reach {
+        if distance > geometry.reach {
             dismiss()
             return false
         }
@@ -672,7 +690,7 @@ final class WheelController: ObservableObject {
         guard isVisible, choice == nil else { return false }
         let point = ScreenGeometry.appKit(fromQuartz: quartz)
         let distance = hypot(point.x - center.x, point.y - center.y)
-        guard distance < (subRing != nil ? geometry.subOuter + 14 : geometry.discRadius + 26) else { return false }
+        guard distance <= geometry.reach else { return false }
         pointerMoved(appKit: point)
         guard let index = highlighted, case .option(let parent) = items[index] else { return false }
         let variant = subHighlighted.flatMap { parent.variants.indices.contains($0) ? parent.variants[$0] : nil }

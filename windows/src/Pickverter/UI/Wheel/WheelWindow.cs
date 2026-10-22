@@ -61,15 +61,19 @@ internal sealed class WheelWindow : Window
         };
     }
 
-    /// Centres the window on a screen point (physical pixels), kept inside that monitor.
-    public Native.POINT Place(Native.POINT point)
+    /// Centres the wheel on a screen point (physical pixels). Near an edge the whole wheel moves inward, so every slot,
+    /// the outer ring and the tabs stay inside the monitor's work area, clear of the taskbar. The invisible drop catcher
+    /// used while dragging (underPointer) stays exactly under the pointer instead.
+    public Native.POINT Place(Native.POINT point, bool underPointer = false)
     {
-        var (bounds, _, scale) = Native.MonitorAt(point.X, point.Y);
+        var (_, work, scale) = Native.MonitorAt(point.X, point.Y);
         Scale = scale;
         var side = (int)Math.Round(model.Geometry.BoxSide * scale);
-        var margin = (int)Math.Round(model.Geometry.Margin * scale);
-        var x = Math.Clamp(point.X - side / 2, bounds.Left - margin, bounds.Right - side + margin);
-        var y = Math.Clamp(point.Y - side / 2, bounds.Top - margin, bounds.Bottom - side + margin);
+        var (cx, cy) = underPointer
+            ? (point.X, point.Y)
+            : model.Geometry.CenterIn(point.X, point.Y, work.Left, work.Top, work.Right, work.Bottom, scale);
+        var x = (int)Math.Round(cx) - side / 2;
+        var y = (int)Math.Round(cy) - side / 2;
         if (hwnd == IntPtr.Zero) hwnd = new WindowInteropHelper(this).EnsureHandle();
         Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, x, y, side, side, Native.SWP_NOACTIVATE);
         CenterPixels = new Native.POINT(x + side / 2, y + side / 2);

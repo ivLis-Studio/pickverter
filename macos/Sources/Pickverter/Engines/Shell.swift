@@ -1,6 +1,7 @@
 import Foundation
 
-/// Locates optional command-line encoders. Bundled copies in Resources/bin win over Homebrew.
+/// Locates optional command-line encoders: a bundled copy in Resources/bin, then the ffmpeg Pickverter
+/// downloaded itself (Application Support), then Homebrew and the system.
 enum Tools {
     private static let lock = NSLock()
     private static var cache: [String: String?] = [:]
@@ -9,15 +10,27 @@ enum Tools {
     static let searchDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin"]
     static var ffmpegHint: String { L("err.ffmpeg") }
 
+    /// The job failed only because ffmpeg is missing (a batch prefixes the message with a file name).
+    static func isMissingFFmpeg(_ error: Error) -> Bool {
+        ffmpeg == nil && error.localizedDescription.contains(ffmpegHint)
+    }
+
     static func path(_ name: String) -> String? {
         lock.lock()
         defer { lock.unlock() }
         if let hit = cache[name] { return hit }
         var found: String?
         let fm = FileManager.default
-        if let bundled = Bundle.main.resourceURL?.appendingPathComponent("bin/" + name).path,
-           fm.isExecutableFile(atPath: bundled) {
+        let managed = FFmpegInstaller.directory.appendingPathComponent(name).path
+        // Tests: PICKVERTER_NO_SYSTEM_TOOLS=1 sees only what Pickverter downloaded itself.
+        let onlyManaged = ProcessInfo.processInfo.environment["PICKVERTER_NO_SYSTEM_TOOLS"] != nil
+        if onlyManaged {
+            found = fm.isExecutableFile(atPath: managed) ? managed : nil
+        } else if let bundled = Bundle.main.resourceURL?.appendingPathComponent("bin/" + name).path,
+                  fm.isExecutableFile(atPath: bundled) {
             found = bundled
+        } else if fm.isExecutableFile(atPath: managed) {
+            found = managed
         } else {
             found = searchDirectories.map { $0 + "/" + name }.first { fm.isExecutableFile(atPath: $0) }
         }

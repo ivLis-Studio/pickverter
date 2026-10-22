@@ -358,13 +358,13 @@
         <li><div><b data-t="inst.1.t">Download and drag to Applications</b><span data-t="inst.1.d">Open the DMG and drag Pickverter into the Applications folder.</span></div></li>
         <li><div><b data-t="inst.2.t">Open it once with “Open Anyway”</b><span data-t="inst.2.d">The app isn’t notarized yet, so macOS asks once: System Settings › Privacy &amp; Security › Open Anyway. Or right-click the app › Open.</span></div></li>
         <li><div><b data-t="inst.3.t">Allow what the welcome window asks for</b><span data-t="inst.3.d">Accessibility to notice the key tap, Finder control to read your selection, and file access so no prompt interrupts a job.</span></div></li>
-        <li><div><b data-t="inst.4.t">Optional: more formats with ffmpeg</b><span data-t="inst.4.d">Unlocks more video and audio formats. The welcome window has a button for it, or use Homebrew.</span></div></li>
+        <li><div><b data-t="inst.4.t">Optional: more formats with ffmpeg</b><span data-t="inst.4.d">Unlocks more video and audio formats. Pickverter downloads it for you in one click — from the welcome window, Settings, or the first time a format needs it.</span></div></li>
       </ol>
       <ol class="reveal only-win">
         <li><div><b data-t="instw.1.t">Download and run the installer</b><span data-t="instw.1.d">Run Pickverter-x.y.z-win-x64-setup.exe (win-arm64 on Snapdragon PCs). It installs for your account only — no administrator rights.</span></div></li>
         <li><div><b data-t="instw.2.t">If SmartScreen appears: More info › Run anyway</b><span data-t="instw.2.d">The installer isn’t code-signed yet, so Windows may say “Windows protected your PC” once.</span></div></li>
         <li><div><b data-t="instw.3.t">Finish the welcome window</b><span data-t="instw.3.d">It checks Windows Security’s controlled folder access, offers to allow Pickverter, and can start it with Windows. Nothing else needs a permission.</span></div></li>
-        <li><div><b data-t="inst.4.t">Optional: more formats with ffmpeg</b><span data-t="instw.4.d">Unlocks more video and audio formats. The welcome window installs it with winget, or run the command yourself.</span></div></li>
+        <li><div><b data-t="inst.4.t">Optional: more formats with ffmpeg</b><span data-t="instw.4.d">Unlocks more video and audio formats. Pickverter downloads it for you in one click — from the welcome window, Settings, or the first time a format needs it.</span></div></li>
       </ol>
       <aside class="dl-card reveal" aria-label="Download">
         <div class="top"><img src="assets/media/icon-512.png" alt="" width="76" height="76"><div><h3>Pickverter</h3><div class="ver dl-version-long" data-t="dl.latest">Latest release on GitHub</div></div></div>
@@ -376,7 +376,6 @@
           <dt data-t="dl.price">Price</dt><dd data-t="dl.price.v">Free · CC BY-NC-ND 4.0</dd>
           <dt data-t="dl.verify">Verify</dt><dd><a class="dl-sums" href="https://github.com/ivLis-Studio/pickverter/releases/latest" data-t="dl.verify.v">SHA-256 checksums</a></dd>
         </dl>
-        <div class="brew"><code id="brew-cmd" data-t="dl.cmd">brew install ffmpeg</code><button type="button" id="copy-brew"><i class="ico" data-i="clipboard"></i><span data-t="copy">Copy</span></button></div>
       </aside>
     </div>
   </div>
@@ -388,12 +387,12 @@
     <div class="section-head center reveal"><span class="kicker">FAQ</span><h2 id="faq-title" data-t="faq.title">Good questions.</h2></div>
     <div class="faq reveal">
       <details><summary data-t="faq.1.q">Is it really free?</summary><p data-t="faq.1.a">Yes — no account, no subscription, no ads. The source is published under CC BY-NC-ND 4.0: share it unchanged, with credit, for non-commercial purposes.</p></details>
-      <details><summary data-t="faq.2.q">Are my files uploaded anywhere?</summary><p data-t="faq.2.a">No. Every conversion and edit runs on your Mac with Apple’s frameworks and, if you install it, ffmpeg. The only network request checks GitHub for updates, and you can turn it off.</p></details>
+      <details><summary data-t="faq.2.q">Are my files uploaded anywhere?</summary><p data-t="faq.2.a">No. Every conversion and edit runs on your Mac with Apple’s frameworks and, if you add it, ffmpeg. Pickverter only goes online to check GitHub for updates (you can turn that off) and to download ffmpeg when you ask for it.</p></details>
       <details><summary data-t="faq.3.q">Why does it need Accessibility and Finder access?</summary><p data-t="faq.3.a">Accessibility lets Pickverter notice the ⌥ tap and drags anywhere on screen. Finder control lets it read which files you selected. File access lets it read and write files in Desktop, Documents and Downloads without a prompt in the middle of a job.</p></details>
       <details><summary data-t="faq.4.q">Why does macOS ask for permissions again after an update?</summary><p data-t="faq.4.a">Releases are currently signed ad hoc (there’s no Apple Developer ID yet), so macOS treats each new version as a new app. Pickverter clears the stale entries and reopens the welcome window so you can switch them back on.</p></details>
-      <details><summary data-t="faq.5.q">Do I need ffmpeg?</summary><p data-t="faq.5.a">No — images, PDFs, documents and many audio and video jobs work out of the box with Apple’s frameworks. ffmpeg adds formats like WebM, MKV, FLAC, OGG and Opus, plus extra video tools. Run <code>brew install ffmpeg</code> or use the button in the welcome window.</p></details>
+      <details><summary data-t="faq.5.q">Do I need ffmpeg?</summary><p data-t="faq.5.a">No — images, PDFs, documents and many audio and video jobs work out of the box with Apple’s frameworks. ffmpeg adds formats like WebM, MKV, FLAC, OGG and Opus, plus extra video tools. Pickverter downloads a signed build for you in one click and checks it before use; <code>brew install ffmpeg</code> works too.</p></details>
       <details><summary data-t="faq.6.q">Which Macs are supported?</summary><p data-t="faq.6.a">Any Mac with macOS 14 Sonoma or later — Apple silicon and Intel, from one universal download.</p></details>
-      <details><summary data-t="faq.7.q">How do I uninstall it?</summary><p data-t="faq.7.a">Quit Pickverter from the menu bar and move it from Applications to the Trash. You can also remove it from the Accessibility and Full Disk Access lists in System Settings.</p></details>
+      <details><summary data-t="faq.7.q">How do I uninstall it?</summary><p data-t="faq.7.a">Quit Pickverter from the menu bar and move it from Applications to the Trash. If Pickverter downloaded ffmpeg, remove it first in Settings › Integrations. You can also remove Pickverter from the Accessibility and Full Disk Access lists in System Settings.</p></details>
     </div>
   </div>
 </section>

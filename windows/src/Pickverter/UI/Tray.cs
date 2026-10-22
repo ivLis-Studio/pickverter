@@ -217,7 +217,14 @@ internal sealed class TrayFlyout : Window
     {
         Background = Theme.Surface;
         root.Background = Theme.Surface;
-        root.Child = Build();
+        // Scrolls when a small or zoomed display can't fit all of it (Place caps the height to the screen).
+        root.Child = new ScrollViewer
+        {
+            Content = Build(),
+            VerticalScrollBarVisibility = ScrollBarVisibility.Auto,
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled,
+            Focusable = false,
+        };
     }
 
     public void Toggle(Native.RECT? icon)
@@ -239,35 +246,68 @@ internal sealed class TrayFlyout : Window
         Native.GetCursorPos(out var cursor);
         var anchor = icon is { } rect ? new Native.POINT((rect.Left + rect.Right) / 2, (rect.Top + rect.Bottom) / 2) : cursor;
         var (bounds, work, scale) = Native.MonitorAt(anchor.X, anchor.Y);
-        root.Measure(new Size(Width, double.PositiveInfinity));
-        var width = (int)Math.Round(Width * scale);
-        var height = (int)Math.Round(root.DesiredSize.Height * scale);
         var gap = (int)Math.Round(12 * scale);
+        // Never taller than the screen: on a small or zoomed display the flyout scrolls instead of running off it.
+        MaxHeight = Math.Max(240, (work.Height - gap * 2) / scale);
+        root.Measure(new Size(Width, MaxHeight));
+        var width = (int)Math.Round(Width * scale);
+        var height = (int)Math.Round(Math.Min(root.DesiredSize.Height, MaxHeight) * scale);
         int x, y;
-        if (work.Bottom < bounds.Bottom)
+        if (icon is { } spot)
         {
-            x = anchor.X - width / 2;
-            y = work.Bottom - height - gap;
-        }
-        else if (work.Top > bounds.Top)
-        {
-            x = anchor.X - width / 2;
-            y = work.Top + gap;
-        }
-        else if (work.Left > bounds.Left)
-        {
-            x = work.Left + gap;
-            y = anchor.Y - height / 2;
+            // Open from the taskbar's edge, beside the icon; an auto-hidden taskbar is found from where its icon is.
+            switch (TaskbarEdge(bounds, work, anchor))
+            {
+                case Edge.Top:
+                    x = anchor.X - width / 2;
+                    y = Math.Max(work.Top, spot.Bottom) + gap;
+                    break;
+                case Edge.Left:
+                    x = Math.Max(work.Left, spot.Right) + gap;
+                    y = anchor.Y - height / 2;
+                    break;
+                case Edge.Right:
+                    x = Math.Min(work.Right, spot.Left) - width - gap;
+                    y = anchor.Y - height / 2;
+                    break;
+                default:
+                    x = anchor.X - width / 2;
+                    y = Math.Min(work.Bottom, spot.Top) - height - gap;
+                    break;
+            }
         }
         else
         {
-            x = work.Right - width - gap;
-            y = work.Bottom - height - gap;
+            // No icon position (opened from a second launch): the corner nearest the taskbar.
+            var edge = TaskbarEdge(bounds, work, null);
+            x = edge == Edge.Left ? work.Left + gap : work.Right - width - gap;
+            y = edge == Edge.Top ? work.Top + gap : work.Bottom - height - gap;
         }
-        x = Math.Clamp(x, work.Left + gap, work.Right - width - gap);
-        y = Math.Clamp(y, work.Top + gap, work.Bottom - height - gap);
+        x = Fit(x, work.Left + gap, work.Right - width - gap);
+        y = Fit(y, work.Top + gap, work.Bottom - height - gap);
         Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, x, y, width, height, 0);
     }
+
+    private enum Edge { Bottom, Top, Left, Right }
+
+    /// Which side the taskbar is on: where the work area gives way, or (auto-hide) the screen edge nearest its icon.
+    private static Edge TaskbarEdge(Native.RECT bounds, Native.RECT work, Native.POINT? icon)
+    {
+        if (work.Bottom < bounds.Bottom) return Edge.Bottom;
+        if (work.Top > bounds.Top) return Edge.Top;
+        if (work.Left > bounds.Left) return Edge.Left;
+        if (work.Right < bounds.Right) return Edge.Right;
+        if (icon is not { } point) return Edge.Bottom;
+        var distances = new (Edge Edge, int Distance)[]
+        {
+            (Edge.Bottom, bounds.Bottom - point.Y), (Edge.Top, point.Y - bounds.Top),
+            (Edge.Left, point.X - bounds.Left), (Edge.Right, bounds.Right - point.X),
+        };
+        return distances.MinBy(entry => entry.Distance).Edge;
+    }
+
+    /// Math.Clamp without the exception when the window is bigger than the room (it starts at the low edge).
+    private static int Fit(int value, int low, int high) => high < low ? low : Math.Clamp(value, low, high);
 
     private UIElement Build()
     {

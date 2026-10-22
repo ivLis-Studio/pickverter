@@ -40,6 +40,7 @@ internal sealed class SettingsWindow : AppWindow
         Preferences.Shared.PropertyChanged += OnPreference;
         WheelLayout.Shared.PropertyChanged += OnLayout;
         Updater.Shared.PropertyChanged += OnUpdater;
+        FFmpegSetup.Changed += OnFFmpeg;
         Activated += (_, _) =>
         {
             if (page == SettingsPage.Integrations)
@@ -53,6 +54,7 @@ internal sealed class SettingsWindow : AppWindow
             Preferences.Shared.PropertyChanged -= OnPreference;
             WheelLayout.Shared.PropertyChanged -= OnLayout;
             Updater.Shared.PropertyChanged -= OnUpdater;
+            FFmpegSetup.Changed -= OnFFmpeg;
         };
         Rebuild();
     }
@@ -74,6 +76,20 @@ internal sealed class SettingsWindow : AppWindow
     private void OnUpdater(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (page == SettingsPage.Updates && !building) Rebuild();
+    }
+
+    private FFmpegSetup.SetupPhase shownPhase = FFmpegSetup.Phase;
+    private DateTime lastFFmpegRebuild = DateTime.MinValue;
+
+    /// The ffmpeg row follows its download: every phase change, progress at most a few times a second.
+    private void OnFFmpeg()
+    {
+        if (page != SettingsPage.Integrations || building) return;
+        var phaseChanged = FFmpegSetup.Phase != shownPhase;
+        if (!phaseChanged && (DateTime.UtcNow - lastFFmpegRebuild).TotalMilliseconds < 300) return;
+        shownPhase = FFmpegSetup.Phase;
+        lastFFmpegRebuild = DateTime.UtcNow;
+        Rebuild();
     }
 
     public void Select(SettingsPage target)
@@ -322,16 +338,7 @@ internal sealed class SettingsWindow : AppWindow
         Add(Ui.SettingRow(L("set.editor"), string.Join(", ", global::Pickverter.Editors.Installed.Select(editor => editor.Label)), null, "chevron.left.forwardslash.chevron.right"));
 
         Header(L("set.engines"));
-        var ffmpeg = Tools.FFmpeg;
-        var actions = Ui.Row(8);
-        if (ffmpeg == null) actions.Children.Add(Ui.Button(L("engine.install_ffmpeg"), EngineInstaller.InstallFFmpeg, prominent: true));
-        actions.Children.Add(Ui.Button(L("engine.rescan"), () =>
-        {
-            Tools.Refresh();
-            if (Platform.Codecs is WinCodecs codecs) codecs.Refresh();
-            Rebuild();
-        }));
-        Add(Ui.SettingRow("ffmpeg · " + L("engine.media"), ffmpeg ?? L("engine.missing", "ffmpeg"), actions, "film"));
+        Add(FFmpegRow());
         var ocr = WinVision.OcrLanguages;
         Add(Ui.SettingRow(L("engine.ocr"), ocr.Count > 0 ? string.Join(", ", ocr) : L("engine.ocr.none"),
             ocr.Count > 0 ? Status(true, L("office.installed")) : Ui.Button(L("engine.ocr.add"), () => Platform.Shell.OpenUrl("ms-settings:regionlanguage")),
@@ -371,6 +378,49 @@ internal sealed class SettingsWindow : AppWindow
         };
         var detail = state == FolderProtectionState.Blocking ? L("perm.cfa.blocking") : L("perm.cfa.d");
         return Ui.SettingRow(L("perm.cfa.title"), detail, control, "lock.shield");
+    }
+
+    /// ffmpeg: download it right here (progress in the row), remove the downloaded copy, or fall back to winget.
+    private Border FFmpegRow()
+    {
+        var ffmpeg = Tools.FFmpeg;
+        var actions = Ui.Row(8);
+        string detail;
+        if (FFmpegSetup.IsWorking)
+        {
+            detail = FFmpegSetup.StatusLine ?? "";
+            actions.Children.Add(Ui.Button(L("common.cancel"), FFmpegSetup.Cancel));
+        }
+        else if (ffmpeg == null)
+        {
+            var failed = FFmpegSetup.Phase == FFmpegSetup.SetupPhase.Failed;
+            detail = failed ? FFmpegSetup.Failure ?? "" : L("engine.ffmpeg.offer");
+            if (failed && EngineInstaller.HasWinget) actions.Children.Add(Ui.Button(L("ffmpeg.winget"), EngineInstaller.InstallFFmpeg));
+            actions.Children.Add(Ui.Button(failed ? L("update.retry") : L("engine.install_ffmpeg"), FFmpegSetup.Start, prominent: true));
+        }
+        else if (FFmpegSetup.IsManaged)
+        {
+            detail = L("engine.ffmpeg.managed", FFmpegSetup.InstalledVersion ?? "ffmpeg");
+            actions.Children.Add(Ui.Button(L("engine.remove"), () =>
+            {
+                FFmpegSetup.Remove();
+                Rebuild();
+            }));
+        }
+        else
+        {
+            detail = ffmpeg;
+        }
+        if (!FFmpegSetup.IsWorking)
+        {
+            actions.Children.Add(Ui.Button(L("engine.rescan"), () =>
+            {
+                Tools.Refresh();
+                if (Platform.Codecs is WinCodecs codecs) codecs.Refresh();
+                Rebuild();
+            }));
+        }
+        return Ui.SettingRow("ffmpeg · " + L("engine.media"), detail, actions, "film");
     }
 
     private static CancellationTokenSource? modelDownload;
@@ -497,13 +547,16 @@ internal sealed class SettingsWindow : AppWindow
     }
 }
 
-/// Installs ffmpeg with winget in a visible terminal (or opens the download page when winget is missing).
+/// Fallback when the download fails: installs ffmpeg with winget in a visible terminal (or opens the download page).
 internal static class EngineInstaller
 {
+    private static string Winget => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps", "winget.exe");
+
+    public static bool HasWinget => File.Exists(Winget);
+
     public static void InstallFFmpeg()
     {
-        var winget = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "WindowsApps", "winget.exe");
-        if (!File.Exists(winget))
+        if (!HasWinget)
         {
             Platform.Shell.OpenUrl("https://www.gyan.dev/ffmpeg/builds/");
             return;

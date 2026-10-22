@@ -95,6 +95,40 @@ extension CLI {
         let quartz = CGPoint(x: tab.midX, y: ScreenGeometry.primaryHeight - tab.midY)
         _ = wheel.handleClick(quartz: quartz, flags: [])
         check("click on a tab switches rings", wheel.mode.title, L("mode.actions"), &failures)
+
+        // Reach: whatever is highlighted runs on click; past the reach nothing is highlighted and a click closes.
+        func click(_ appKit: CGPoint) -> Bool {
+            wheel.handleClick(quartz: CGPoint(x: appKit.x, y: ScreenGeometry.primaryHeight - appKit.y), flags: [])
+        }
+        launched = nil
+        open(.convert)
+        let far = point(.pi / 2, (g.discRadius + 26 + g.reach) / 2)
+        wheel.pointerMoved(appKit: far)
+        let target = wheel.activeOption?.option.id
+        check("past the disc a slot is still targeted", target == nil ? "none" : "slot", "slot", &failures)
+        _ = click(far)
+        check("…and the click runs it", launched?.id, target ?? "?", &failures)
+        open(.convert)
+        let outside = point(.pi / 2, g.reach + 6)
+        wheel.pointerMoved(appKit: outside)
+        check("past the reach nothing is highlighted", wheel.highlighted == nil ? "none" : "slot", "none", &failures)
+        check("…and a click closes the wheel", "\(click(outside)) \(wheel.isVisible)", "false false", &failures)
+
+        // Edges: the wheel moves inward until every slot, the outer ring and the tabs fit (1440×900, menu bar, Dock).
+        let area = CGRect(x: 0, y: 70, width: 1440, height: 805)
+        let corner = g.center(for: CGPoint(x: 2, y: 899), in: area)
+        check("corner: centre moves inward", "\(Int(corner.x)) \(Int(corner.y))",
+              "\(Int(area.minX + g.envelope)) \(Int(area.maxY - g.envelope))", &failures)
+        let probes = [CGPoint(x: 0, y: 0), CGPoint(x: 1440, y: 900), CGPoint(x: 720, y: 72), CGPoint(x: 1439, y: 300)]
+        let drawn = g.subOuter + 4
+        let fits = probes.allSatisfy { probe in
+            let c = g.center(for: probe, in: area)
+            return c.x - drawn >= area.minX && c.x + drawn <= area.maxX && c.y + drawn <= area.maxY
+                && c.y - max(drawn, g.tabBarOffset + g.tabBarHeight / 2) >= area.minY
+        }
+        check("edges: nothing hangs off the screen", fits ? "inside" : "clipped", "inside", &failures)
+        let free = g.center(for: CGPoint(x: 700, y: 480), in: area)
+        check("away from edges it opens under the pointer", "\(Int(free.x)) \(Int(free.y))", "700 480", &failures)
         return failures
     }
 
@@ -241,7 +275,16 @@ extension CLI {
                     return (AnyView(TrimEditorView(url: file, model: model, finish: { _ in })), CGSize(width: 640, height: 250))
                 case "onboarding":
                     return (AnyView(OnboardingView()), CGSize(width: 871, height: 664))
+                case "onboarding-progress":
+                    FFmpegInstaller.shared.preview(.downloading(0.42))
+                    return (AnyView(OnboardingView()), CGSize(width: 871, height: 664))
                 case "integrations":
+                    return (AnyView(IntegrationSettings()), CGSize(width: 600, height: 760))
+                case "integrations-progress":
+                    FFmpegInstaller.shared.preview(.downloading(0.42))
+                    return (AnyView(IntegrationSettings()), CGSize(width: 600, height: 760))
+                case "integrations-failed":
+                    FFmpegInstaller.shared.preview(.failed(L("ffmpeg.err.download", "The Internet connection appears to be offline.")))
                     return (AnyView(IntegrationSettings()), CGSize(width: 600, height: 760))
                 default:
                     return (AnyView(UpdateView(close: {})), CGSize(width: 500, height: 200))

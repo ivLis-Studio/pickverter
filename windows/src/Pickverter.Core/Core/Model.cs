@@ -262,6 +262,10 @@ public sealed class PickContext
         return new PickContext(Files, Location, Destination, Anchor, JobId, Started, Token, sink, offset + width * index, width);
     }
 
+    /// A child context whose 0…1 maps into start…end of this one (a download before the work itself).
+    public PickContext Portion(double start, double end) =>
+        new(Files, Location, Destination, Anchor, JobId, Started, Token, sink, offset + start * scale, (end - start) * scale);
+
     /// Clipboard-only results are written to a private cache folder instead of next to the original.
     public string DirectoryFor(string source) =>
         Destination == ResultDestination.Clipboard ? ClipboardStore.Folder(JobId) : Location.DirectoryFor(source);

@@ -182,6 +182,12 @@ final class PickContext: @unchecked Sendable {
                            offset: offset + width * Double(index), scale: width, started: started, sink: sink)
     }
 
+    /// A child context whose 0…1 maps into start…end of this one (a download before the work itself).
+    func portion(_ start: Double, _ end: Double) -> PickContext {
+        PickContext(files: files, location: location, destination: destination, anchor: anchor, jobID: jobID,
+                    offset: offset + start * scale, scale: (end - start) * scale, started: started, sink: sink)
+    }
+
     /// Clipboard-only results are written to a private cache folder instead of next to the original.
     func directory(for source: URL) -> URL {
         if destination == .clipboard { return ClipboardStore.folder(for: jobID) }
@@ -277,6 +283,17 @@ enum ScreenGeometry {
     /// Quartz event coordinates (top-left origin) -> AppKit screen coordinates (bottom-left origin).
     static func appKit(fromQuartz point: CGPoint) -> CGPoint {
         CGPoint(x: point.x, y: primaryHeight - point.y)
+    }
+
+    /// The screen a point (AppKit coordinates) is on. A point on the far edge of a display, or between displays of
+    /// different sizes, belongs to the nearest one instead of falling back to the main screen.
+    static func screen(containing point: CGPoint) -> NSScreen? {
+        let screens = NSScreen.screens
+        if let hit = screens.first(where: { $0.frame.contains(point) }) { return hit }
+        func distance(_ frame: CGRect) -> CGFloat {
+            hypot(max(frame.minX - point.x, 0, point.x - frame.maxX), max(frame.minY - point.y, 0, point.y - frame.maxY))
+        }
+        return screens.min { distance($0.frame) < distance($1.frame) } ?? NSScreen.main
     }
 }
 

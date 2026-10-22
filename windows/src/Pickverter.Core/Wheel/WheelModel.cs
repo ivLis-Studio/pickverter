@@ -239,6 +239,7 @@ public sealed class WheelModel
             {
                 IsFormat = option.Value.IsFormat,
                 Unavailable = option.Value.Unavailable != null,
+                NeedsDownload = option.Value.Unavailable == Tools.FFmpegHint,
                 HasVariants = option.Value.Variants.Count > 0,
             },
             Item.More more => new SegmentData(item.Id, L("wheel.more"), "ellipsis") { IsMore = true, PageLabel = $"{more.Page + 1}/{more.Total}" },
@@ -266,7 +267,15 @@ public sealed class WheelModel
         }
     }
 
-    public bool CanDropHere => Active is { } active && active.Option.Unavailable == null && active.Parent?.Unavailable == null;
+    public bool CanDropHere
+    {
+        get
+        {
+            if (Active is not { } active) return false;
+            var reason = active.Option.Unavailable ?? active.Parent?.Unavailable;
+            return reason == null || reason == Tools.FFmpegHint;
+        }
+    }
 
     public void SetMode(WheelMode mode)
     {
@@ -342,6 +351,7 @@ public sealed class WheelModel
             variants.Select((variant, position) => new SegmentData(variant.Id, variant.Title, variant.Symbol)
             {
                 Unavailable = variant.Unavailable != null,
+                NeedsDownload = variant.Unavailable == Tools.FFmpegHint,
                 IsDefault = position == preferred && variants.Count > 1,
             }).ToList());
         // The tab bar sits under 6 o'clock; hide it when the ring opens over it.
@@ -384,7 +394,7 @@ public sealed class WheelModel
     }
 
     /// How far from the center a click still belongs to the wheel.
-    public double Reach => SubRing != null ? Geometry.SubOuter + 14 : Geometry.DiscRadius + 26;
+    public double Reach => Geometry.Reach;
 
     public void PointerMoved(double dx, double dy)
     {
@@ -409,7 +419,7 @@ public sealed class WheelModel
         var distance = Math.Sqrt(dx * dx + dy * dy);
         var half = Geometry.BoxSide / 2;
         var inside = Math.Abs(dx) <= half && Math.Abs(dy) <= half;
-        if (!inside || distance < Geometry.DeadZone || Items.Count == 0)
+        if (!inside || distance < Geometry.DeadZone || distance > Reach || Items.Count == 0)
         {
             SetHighlight(null);
             SetSub(null);
@@ -497,7 +507,10 @@ public sealed class WheelModel
                 var sub = chosen == Highlighted ? SubHighlighted : null;
                 var option = sub is { } s && s >= 0 && s < parent.Variants.Count ? parent.Variants[s] : parent;
                 if (sub == null && parent.Variants.Count > 1 && !IsDemo) option = parent.Variants[WheelLayout.Shared.PreferredVariant(parent)];
-                if ((option.Unavailable ?? parent.Unavailable) is { } reason)
+                var reason = option.Unavailable ?? parent.Unavailable;
+                // Missing ffmpeg isn't a dead end: the job downloads it first, right on its card.
+                var needsFFmpeg = reason == Tools.FFmpegHint;
+                if (reason != null && !needsFFmpeg)
                 {
                     ShowFlash(reason);
                     Platform.Feedback.Beep();
@@ -506,6 +519,7 @@ public sealed class WheelModel
                 if (sub != null && option.Id != parent.Id && !IsDemo) WheelLayout.Shared.NoteUsed(parent.Id, option.Id);
                 var targets = files is { Count: > 0 } ? files : Files;
                 var display = Display(option, option.Id == parent.Id ? null : parent);
+                if (needsFFmpeg) display = FFmpegSetup.Prepare(display);
                 if (ResolveDestination(display, flip, forced) is not { } destination)
                 {
                     EnterChoice(new PendingChoice(display, targets, Mode));

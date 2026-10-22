@@ -40,14 +40,34 @@ enum CLI {
         case "update-selftest": return rest.first.map { updateSelfTest($0) } ?? usage()
         case "symbols": return checkSymbols()
         case "inspect": return rest.first.map { inspect($0) } ?? usage()
+        case "ffmpeg-install": return ffmpegInstall()
         default: return usage()
         }
     }
 
     static func usage() -> Int32 {
         print("usage: Pickverter cli list|run|snapshot|card|menu|selftest|icon|i18n-plist|fixtures|editor-snapshot|symbols|"
-              + "update-keygen|update-manifest|update-verify|update-check|update-selftest …")
+              + "update-keygen|update-manifest|update-verify|update-check|update-selftest|ffmpeg-install …")
         return 64
+    }
+
+    /// Downloads ffmpeg exactly like Settings does (PICKVERTER_FFMPEG_DIR picks the folder).
+    static func ffmpegInstall() -> Int32 {
+        let started = Date()
+        do {
+            try wait {
+                try await FFmpegInstaller.shared.install { fraction in
+                    let percent = Int((fraction * 100).rounded(.down))
+                    if percent % 25 == 0 { print("  … \(percent)%") }
+                }
+            }
+            print(String(format: "OK %@ · %@ · %.1fs", Tools.ffmpeg ?? "?", FFmpegInstaller.installedVersion ?? "?",
+                         Date().timeIntervalSince(started)))
+            return 0
+        } catch {
+            print("ERR \(error.localizedDescription)")
+            return 1
+        }
     }
 
     static func list(_ files: [URL]) -> Int32 {
@@ -81,14 +101,20 @@ enum CLI {
     static func runOption(_ args: [String]) -> Int32 {
         guard args.count >= 2 else { return usage() }
         let files = args.dropFirst().map { URL(fileURLWithPath: $0) }
-        guard let option = Catalog.allOptions(for: files).first(where: { $0.id == args[0] }) else {
+        guard var option = Catalog.allOptions(for: files).first(where: { $0.id == args[0] }) else {
             print("no option \(args[0]) for these files")
             return 2
         }
+        // Like a click on the wheel: a missing ffmpeg is downloaded first.
+        if option.unavailable == Tools.ffmpegHint { option = FFmpegInstaller.preparing(option) }
         if let reason = option.unavailable { print("unavailable: \(reason)"); return 3 }
         let destination = ResultDestination(rawValue: ProcessInfo.processInfo.environment["PICKVERTER_DEST"] ?? "") ?? .file
+        var lastNote: String?
         let context = PickContext(files: files, location: .sameFolder, destination: destination) { _, note in
-            if let note { print("  … \(note)") }
+            if let note, note != lastNote, !note.isEmpty {
+                lastNote = note
+                print("  … \(note)")
+            }
         }
         let started = Date()
         do {

@@ -175,17 +175,12 @@ struct IntegrationSettings: View {
                 }
             }
             Section {
-                EngineRow(name: "ffmpeg", purpose: L("engine.media"), formula: "ffmpeg", path: Tools.ffmpeg)
+                FFmpegRow()
                 EngineRow(name: "ImageMagick", purpose: L("engine.png"), formula: "imagemagick", path: Tools.magick)
                 EngineRow(name: "cwebp", purpose: L("engine.webp"), formula: "webp", path: Tools.cwebp)
-                HStack {
-                    Button(L("engine.rescan")) {
-                        Tools.refresh()
-                        refresh += 1
-                    }
-                    if Tools.ffmpeg == nil {
-                        Button(L("engine.install_ffmpeg")) { EngineInstaller.installFFmpeg() }
-                    }
+                Button(L("engine.rescan")) {
+                    Tools.refresh()
+                    refresh += 1
                 }
             } header: {
                 Text(L("set.engines"))
@@ -229,6 +224,64 @@ struct AppRow: View {
     }
 }
 
+/// ffmpeg: download it right here (with progress), remove the downloaded copy, or fall back to Homebrew.
+struct FFmpegRow: View {
+    @ObservedObject private var installer = FFmpegInstaller.shared
+
+    var body: some View {
+        let path = Tools.ffmpeg
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: path != nil ? "checkmark.circle.fill" : "minus.circle")
+                    .foregroundStyle(path != nil ? Color.green : Color.secondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 6) {
+                        Text("ffmpeg")
+                        Text(L("engine.media")).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Text(detail(path))
+                        .font(.caption)
+                        .foregroundStyle(installer.failure != nil ? Color.orange : Color.secondary)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                controls(path)
+            }
+            if case .downloading(let fraction) = installer.phase {
+                ProgressView(value: fraction).controlSize(.small)
+            } else if installer.phase == .installing {
+                ProgressView().progressViewStyle(.linear).controlSize(.small)
+            }
+        }
+    }
+
+    private func detail(_ path: String?) -> String {
+        if let status = installer.statusLine { return status }
+        guard let path else { return L("engine.ffmpeg.offer") }
+        if FFmpegInstaller.isManaged { return L("engine.ffmpeg.managed", FFmpegInstaller.installedVersion ?? "ffmpeg") }
+        return path
+    }
+
+    @ViewBuilder
+    private func controls(_ path: String?) -> some View {
+        if installer.isWorking {
+            Button(L("common.cancel")) { installer.cancel() }
+        } else if path == nil {
+            HStack(spacing: 6) {
+                if installer.failure != nil, EngineInstaller.brew != nil {
+                    Button(L("ffmpeg.homebrew")) { EngineInstaller.installWithHomebrew() }
+                }
+                Button(installer.failure != nil ? L("update.retry") : L("engine.install_ffmpeg")) { installer.start() }
+                    .buttonStyle(.borderedProminent)
+            }
+        } else if FFmpegInstaller.isManaged {
+            Button(L("engine.remove")) { installer.remove() }
+        }
+    }
+}
+
 /// Opens Terminal with "brew install ffmpeg" ready to run (or the Homebrew site when brew is missing).
 @MainActor
 enum EngineInstaller {
@@ -236,7 +289,7 @@ enum EngineInstaller {
         ["/opt/homebrew/bin/brew", "/usr/local/bin/brew"].first { FileManager.default.isExecutableFile(atPath: $0) }
     }
 
-    static func installFFmpeg() {
+    static func installWithHomebrew() {
         guard let brew else {
             if let url = URL(string: "https://brew.sh") { NSWorkspace.shared.open(url) }
             return
@@ -388,16 +441,18 @@ struct EngineRow: View {
     let path: String?
 
     var body: some View {
-        HStack {
+        HStack(spacing: 8) {
             Image(systemName: path != nil ? "checkmark.circle.fill" : "minus.circle")
                 .foregroundStyle(path != nil ? Color.green : Color.secondary)
             VStack(alignment: .leading, spacing: 1) {
-                Text(name)
+                HStack(spacing: 6) {
+                    Text(name)
+                    Text(purpose).font(.caption).foregroundStyle(.secondary)
+                }
                 Text(path ?? L("engine.missing", formula))
                     .font(.caption).foregroundStyle(.secondary).lineLimit(1).truncationMode(.middle)
             }
-            Spacer()
-            Text(purpose).font(.caption).foregroundStyle(.secondary)
+            Spacer(minLength: 0)
         }
     }
 }

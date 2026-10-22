@@ -324,6 +324,13 @@ public sealed class JobCenter
                 job.FixAction = new NoticeAction(L("access.fix"), "lock.open", Platform.Shell.OpenControlledFolderSettings);
             job.Fail(L("err.no_access", FileNames.Name(folder)));
         }
+        catch (Exception error) when (FFmpegSetup.IsMissing(error))
+        {
+            // One click downloads ffmpeg on a fresh card and runs the same thing again.
+            job.FixAction = new NoticeAction(L("engine.install_ffmpeg"), "arrow.down.circle",
+                () => RunPrepared(job, FFmpegSetup.Prepare(option)));
+            job.Fail(Errors.Describe(error));
+        }
         catch (Exception error)
         {
             Debug.Log($"job {option.Id} failed: {error}");
@@ -339,7 +346,6 @@ public sealed class JobCenter
     /// Downloads the background model (progress on a fresh card), then runs the option again.
     private void RunWithModel(Job failed, PickOption option)
     {
-        Presenter.Remove(failed);
         var combined = option with
         {
             Perform = async ctx =>
@@ -348,7 +354,13 @@ public sealed class JobCenter
                 return await option.Perform(ctx);
             },
         };
-        Run(combined, failed.Mode, failed.Files, failed.Anchor, failed.Destination);
+        RunPrepared(failed, combined);
+    }
+
+    private void RunPrepared(Job failed, PickOption option)
+    {
+        Presenter.Remove(failed);
+        Run(option, failed.Mode, failed.Files, failed.Anchor, failed.Destination);
     }
 
     private void Finish(Job job)

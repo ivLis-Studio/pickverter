@@ -300,8 +300,10 @@ internal sealed class TrimEditor : EditorWindow<TrimSelection>
     {
         if (TimeText.Parse(box.Text) is { } value)
         {
-            if (isStart) timeline.Start = Math.Clamp(value, 0, timeline.End - 0.05);
-            else timeline.End = Math.Clamp(value, timeline.Start + 0.05, timeline.Duration);
+            // Same minimum as dragging; never an inverted range on very short clips.
+            var minimum = Math.Min(0.05, timeline.Duration / 20);
+            if (isStart) timeline.Start = Math.Clamp(value, 0, Math.Max(0, timeline.End - minimum));
+            else timeline.End = Math.Clamp(value, Math.Min(timeline.Start + minimum, timeline.Duration), timeline.Duration);
             SeekTo(isStart ? timeline.Start : timeline.End);
         }
         UpdateFields();

@@ -84,9 +84,9 @@ internal sealed class WheelController
     {
         var overlay = Window;
         overlay.Canvas.Probing = false;
+        Model.Geometry.TabWidth = WheelCanvas.TabWidthFor(1);
         var center = overlay.Place(point);
         overlay.Canvas.Thumbnail = null;
-        Model.Geometry.TabWidth = WheelCanvas.TabWidthFor(1);
         Model.Present(files, origin, mode, new ScreenPoint(center.X, center.Y));
         if (files.Count > 0)
         {
@@ -117,7 +117,7 @@ internal sealed class WheelController
         var overlay = Window;
         overlay.Canvas.Probing = true;
         overlay.Canvas.Opacity = 1;
-        overlay.Place(point);
+        overlay.Place(point, underPointer: true);
         overlay.Canvas.InvalidateVisual();
         overlay.Appear();
         InputMonitor.Shared.Nudge();

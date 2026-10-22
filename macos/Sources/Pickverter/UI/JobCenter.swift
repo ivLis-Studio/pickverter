@@ -30,7 +30,7 @@ final class Job: ObservableObject, Identifiable {
     let lingers: Double?
     /// Interactive jobs stay invisible until the editor is confirmed.
     @Published var started = true
-    /// Offered on a failed card when System Settings can fix the failure (blocked folder access).
+    /// Offered on a failed card when one click can fix the failure (blocked folder access, missing ffmpeg).
     @Published var fixAction: NoticeAction?
 
     @Published var state: State = .running
@@ -242,6 +242,12 @@ final class JobCenter: ObservableObject {
                         ?? L("err.no_access", FileAccess.placeName(for: files.first ?? URL(fileURLWithPath: "/")))
                     job.fixAction = Job.NoticeAction(title: L("access.fix"), symbol: "lock.open") { FileAccess.openBestSettings() }
                     job.state = .failed(message)
+                } else if Tools.isMissingFFmpeg(error) {
+                    // Download ffmpeg on a fresh card, then run the same thing again.
+                    job.fixAction = Job.NoticeAction(title: L("engine.install_ffmpeg"), symbol: "arrow.down.circle") { [weak self] in
+                        self?.run(FFmpegInstaller.preparing(option), mode: mode, files: files, anchor: anchor, destination: destination)
+                    }
+                    job.state = .failed(error.localizedDescription)
                 } else {
                     job.state = .failed(error.localizedDescription)
                 }
@@ -365,7 +371,7 @@ final class HUDController {
         }
         if entries.isEmpty {
             let point = job.anchor == .zero ? NSEvent.mouseLocation : job.anchor
-            screen = NSScreen.screens.first(where: { $0.frame.contains(point) }) ?? NSScreen.main
+            screen = ScreenGeometry.screen(containing: point)
         }
         let panel = CardPanel(job: job, hud: self)
         entries.insert((job, panel), at: 0)

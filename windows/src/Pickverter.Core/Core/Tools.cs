@@ -153,6 +153,8 @@ public static class Tools
         var forced = Environment.GetEnvironmentVariable("PICKVERTER_TOOLS_DIR");
         if (!string.IsNullOrEmpty(forced)) yield return Path.Combine(forced, exe);
         yield return Path.Combine(AppContext.BaseDirectory, "tools", exe);
+        // The ffmpeg Pickverter downloaded itself (Settings, the welcome window or a job that needed it).
+        yield return Path.Combine(FFmpegSetup.Folder, exe);
         yield return Path.Combine(Platform.Paths.Cache, "tools", exe);
         foreach (var dir in SearchPath()) yield return Path.Combine(dir, exe);
         if (OperatingSystem.IsWindows())

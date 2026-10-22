@@ -188,6 +188,15 @@ internal static class Snapshots
                 settings.Select(page);
                 await Take(settings, Path.Combine(output, "settings-" + page.ToString().ToLowerInvariant() + ".png"), 920, null, keep: true);
             }
+            // The ffmpeg row while Pickverter downloads it, and after a failed download.
+            settings.Select(SettingsPage.Integrations);
+            FFmpegSetup.Simulate(FFmpegSetup.SetupPhase.Downloading, 0.42);
+            settings.Select(SettingsPage.Integrations);
+            await Take(settings, Path.Combine(output, "settings-ffmpeg-downloading.png"), 920, null, keep: true);
+            FFmpegSetup.Simulate(FFmpegSetup.SetupPhase.Failed, 0, L("ffmpeg.err.download", "No such host is known."));
+            settings.Select(SettingsPage.Integrations);
+            await Take(settings, Path.Combine(output, "settings-ffmpeg-failed.png"), 920, null, keep: true);
+            FFmpegSetup.Simulate(FFmpegSetup.SetupPhase.Idle);
             settings.Close();
         }
 

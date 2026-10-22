@@ -25,6 +25,7 @@ internal static class CommandLine
           cli screenshot <folder>                   real windows on the desktop (shadows, transparency)
           cli e2e <folder>                          File Explorer, Alt, the wheel and keys on a real desktop
           cli inspect                               File Explorer selection and window under the pointer
+          cli ffmpeg-install                        download ffmpeg like Settings does (PICKVERTER_FFMPEG_DIR picks the folder)
           cli update-keygen <private-key-file>
           cli update-pubkey [private-key-file]
           cli update-manifest --version V --zip-x64 Z --url-x64 U [--zip-arm64 Z --url-arm64 U]
@@ -56,6 +57,8 @@ internal static class CommandLine
                     return Headless(() => List(rest));
                 case "run":
                     return Headless(() => RunOption(rest).GetAwaiter().GetResult());
+                case "ffmpeg-install":
+                    return Headless(() => FFmpegInstall().GetAwaiter().GetResult());
                 case "fixtures":
                     if (rest.Length == 0) break;
                     Headless(() =>
@@ -212,6 +215,8 @@ internal static class CommandLine
             Console.Error.WriteLine($"no option {id} for these files");
             return 2;
         }
+        // Like a click on the wheel: a missing ffmpeg is downloaded first.
+        if (option.Unavailable == Tools.FFmpegHint) option = FFmpegSetup.Prepare(option);
         if (option.Unavailable != null)
         {
             Console.Error.WriteLine($"{id} unavailable: {option.Unavailable}");
@@ -224,6 +229,29 @@ internal static class CommandLine
         if (result.Message != null) Console.WriteLine(result.Message);
         Console.Error.WriteLine($"{id}: {watch.ElapsedMilliseconds} ms");
         return 0;
+    }
+
+    private static async Task<int> FFmpegInstall()
+    {
+        var watch = Stopwatch.StartNew();
+        var shown = -1;
+        try
+        {
+            await FFmpegSetup.InstallAsync(fraction =>
+            {
+                var percent = (int)(fraction * 100);
+                if (percent / 25 == shown / 25) return;
+                shown = percent;
+                Console.WriteLine($"  … {percent}%");
+            });
+            Console.WriteLine($"OK {Tools.FFmpeg} · {FFmpegSetup.InstalledVersion} · {watch.Elapsed.TotalSeconds:0.0}s");
+            return 0;
+        }
+        catch (Exception error)
+        {
+            Console.Error.WriteLine("ERR " + error.Message);
+            return 1;
+        }
     }
 
     private static int Glyphs()

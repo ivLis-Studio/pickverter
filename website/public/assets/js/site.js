@@ -182,12 +182,5 @@
     navigator.userAgentData.getHighEntropyValues(["architecture"]).then((v) => { arm = v.architecture === "arm"; renderRelease(); }).catch(() => {});
   }
 
-  // ---- copy the ffmpeg command (brew on the Mac page, winget on the Windows page)
-  $("#copy-brew").addEventListener("click", async (e) => {
-    try { await navigator.clipboard.writeText($("#brew-cmd").textContent); } catch { return; }
-    const span = e.currentTarget.querySelector("span[data-t]"), old = span.textContent;
-    span.textContent = X("copied"); setTimeout(() => (span.textContent = old), 1400);
-  });
-
   applyOS(os);
 })();

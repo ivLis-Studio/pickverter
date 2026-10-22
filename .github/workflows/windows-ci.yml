@@ -52,6 +52,22 @@ jobs:
           & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli selftest "$env:RUNNER_TEMP\selftest" | Out-Host
           exit $LASTEXITCODE
 
+      - name: ffmpeg download (the copy Pickverter installs for itself)
+        continue-on-error: true
+        env:
+          PICKVERTER_FFMPEG_DIR: ${{ runner.temp }}\pickverter-ffmpeg
+          PICKVERTER_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          $exe = "src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe"
+          & $exe cli ffmpeg-install | Out-Host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Convert with that copy only: proves the downloaded programs and their DLLs run on Windows.
+          $env:PICKVERTER_TOOLS_DIR = $env:PICKVERTER_FFMPEG_DIR
+          $fixtures = Join-Path $env:RUNNER_TEMP "ffmpeg-fixtures"
+          & $exe cli fixtures $fixtures | Out-Host
+          & $exe cli run convert.ogg (Join-Path $fixtures "tone.wav") | Out-Host
+          exit $LASTEXITCODE
+
       - name: Snapshots
         run: |
           & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli snapshot "$env:RUNNER_TEMP\snapshots" --lang en,ko,ja,zh-Hans,de,ru --theme light,dark 2>&1 | Out-Host

@@ -34,12 +34,30 @@ internal sealed class OnboardingWindow : AppWindow
         startWithWindows = Preferences.Shared.Onboarded ? Preferences.Shared.LaunchAtLogin : true;
         timer.Tick += (_, _) => Step();
         Loaded += (_, _) => timer.Start();
-        Closed += (_, _) => timer.Stop();
+        Closed += (_, _) =>
+        {
+            timer.Stop();
+            FFmpegSetup.Changed -= OnFFmpeg;
+        };
+        FFmpegSetup.Changed += OnFFmpeg;
         Activated += (_, _) =>
         {
             Tools.Refresh();
             Rebuild();
         };
+        Rebuild();
+    }
+
+    private DateTime lastFFmpegRebuild = DateTime.MinValue;
+    private FFmpegSetup.SetupPhase shownPhase = FFmpegSetup.Phase;
+
+    /// The ffmpeg step shows its download as it happens (every phase change, progress a few times a second).
+    private void OnFFmpeg()
+    {
+        var phaseChanged = FFmpegSetup.Phase != shownPhase;
+        if (!phaseChanged && (DateTime.UtcNow - lastFFmpegRebuild).TotalMilliseconds < 300) return;
+        shownPhase = FFmpegSetup.Phase;
+        lastFFmpegRebuild = DateTime.UtcNow;
         Rebuild();
     }
 
@@ -104,7 +122,11 @@ internal sealed class OnboardingWindow : AppWindow
         steps.Children.Add(Step(2, L("perm.cfa.title"), blocked ? L("perm.cfa.blocking") : L("ob.cfa.d"), !blocked,
             blocked ? L("perm.cfa.allow") : null, blocked ? () => _ = Allow() : null));
         var ffmpeg = Tools.FFmpeg != null;
-        steps.Children.Add(Step(3, L("ob.ffmpeg"), L("ob.ffmpeg.d"), ffmpeg, ffmpeg ? null : L("ob.install"), ffmpeg ? null : EngineInstaller.InstallFFmpeg, optional: true));
+        var failed = FFmpegSetup.Phase == FFmpegSetup.SetupPhase.Failed;
+        string? ffmpegAction = ffmpeg ? null : FFmpegSetup.IsWorking ? L("common.cancel") : failed ? L("update.retry") : L("ob.install");
+        Action? ffmpegRun = ffmpeg ? null : FFmpegSetup.IsWorking ? FFmpegSetup.Cancel : FFmpegSetup.Start;
+        steps.Children.Add(Step(3, L("ob.ffmpeg"), (ffmpeg ? null : FFmpegSetup.StatusLine) ?? L("ob.ffmpeg.d"), ffmpeg, ffmpegAction, ffmpegRun,
+            optional: true, warning: failed && !ffmpeg));
         var login = Ui.Toggle(startWithWindows, value => startWithWindows = value, L("set.login"));
         steps.Children.Add(Row(Badge(4, false), L("set.login"), L("ob.startup.d"), login));
         stack.Children.Add(steps);
@@ -154,22 +176,25 @@ internal sealed class OnboardingWindow : AppWindow
         return badge;
     }
 
-    private static Border Step(int number, string title, string detail, bool done, string? action, Action? run, bool optional = false)
+    private static Border Step(int number, string title, string detail, bool done, string? action, Action? run, bool optional = false,
+                               bool warning = false)
     {
         UIElement? control = null;
         if (action != null && run != null) control = Ui.Button(action, run, compact: true);
         var heading = optional ? title + " · " + L("ob.optional") : title;
-        return Row(Badge(number, done), heading, detail, control);
+        return Row(Badge(number, done), heading, detail, control, warning);
     }
 
-    private static Border Row(FrameworkElement badge, string title, string detail, UIElement? control)
+    private static Border Row(FrameworkElement badge, string title, string detail, UIElement? control, bool warning = false)
     {
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         grid.Children.Add(badge);
-        var texts = Ui.Column(2, Ui.Text(title, 14, FontWeights.SemiBold, wrap: true), Ui.Caption(detail));
+        var caption = Ui.Caption(detail);
+        if (warning) caption.Foreground = Theme.Caution;
+        var texts = Ui.Column(2, Ui.Text(title, 14, FontWeights.SemiBold, wrap: true), caption);
         Grid.SetColumn(texts, 1);
         grid.Children.Add(texts);
         if (control is FrameworkElement element)

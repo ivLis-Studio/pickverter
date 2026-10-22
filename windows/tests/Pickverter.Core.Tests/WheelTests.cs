@@ -147,4 +147,72 @@ public class WheelTests
         layout.Reset(key);
         Assert.Equal(ids.Where(id => id != "tool.ocr"), layout.Arrange(options, key).Select(option => option.Id));
     }
+
+    [Fact]
+    public void HighlightAndClickShareOneReach()
+    {
+        using var sandbox = new Sandbox();
+        var wheel = Open(sandbox.Fixture("photo.jpg"));
+        wheel.DestinationOverride = ResultDestination.File;
+        PickOption? launched = null;
+        wheel.Launched += (option, _, _, _, _) => launched = option;
+        var g = wheel.Geometry;
+        // Past the disc (where a click used to close the wheel) a highlighted slot runs.
+        var (x, y) = WheelGeometry.Polar((g.DiscRadius + 26 + g.Reach) / 2, Math.PI / 2);
+        wheel.PointerMoved(x, y);
+        var target = wheel.Active?.Option.Id;
+        Assert.NotNull(target);
+        Assert.True(wheel.HandleClick(x, y, false));
+        Assert.Equal(target, launched?.Id);
+        // Past the reach nothing is highlighted, and a click closes the wheel.
+        wheel = Open(sandbox.Fixture("photo.jpg"));
+        (x, y) = WheelGeometry.Polar(g.Reach + 6, Math.PI / 2);
+        wheel.PointerMoved(x, y);
+        Assert.Null(wheel.Highlighted);
+        Assert.False(wheel.HandleClick(x, y, false));
+        Assert.False(wheel.IsVisible);
+    }
+
+    [Fact]
+    public void WheelMovesInwardAtScreenEdges()
+    {
+        var g = new WheelGeometry { TabWidth = 136 };
+        // A 1920×1080 monitor at 150 %, taskbar at the bottom: the work area ends at 1032.
+        const double right = 1920, bottom = 1032, scale = 1.5;
+        var drawn = Math.Max(g.SubOuter + 4, Math.Max(g.TabBarWidth / 2, g.TabBarOffset + g.TabBarHeight / 2)) * scale;
+        foreach (var (px, py) in new[] { (0.0, 0.0), (1919.0, 1079.0), (4.0, 600.0), (1000.0, 1031.0), (1916.0, 2.0) })
+        {
+            var (cx, cy) = g.CenterIn(px, py, 0, 0, right, bottom, scale);
+            Assert.True(cx - drawn >= 0 && cx + drawn <= right, $"{px},{py} -> x {cx}");
+            Assert.True(cy - drawn >= 0 && cy + drawn <= bottom, $"{px},{py} -> y {cy}");
+        }
+        Assert.Equal((960.0, 500.0), g.CenterIn(960, 500, 0, 0, right, bottom, scale));
+        // A display too small for the whole wheel centres it on that axis.
+        Assert.Equal((g.Envelope, 200.0), g.CenterIn(10, 10, 0, 0, 600, 400));
+    }
+
+    [Fact]
+    public void MissingFFmpegIsOfferedNotRefused()
+    {
+        using var sandbox = new Sandbox();
+        Environment.SetEnvironmentVariable("PICKVERTER_NO_FFMPEG", "1");
+        try
+        {
+            var wheel = Open(sandbox.Fixture("tone.wav"));
+            wheel.DestinationOverride = ResultDestination.File;
+            PickOption? launched = null;
+            wheel.Launched += (option, _, _, _, _) => launched = option;
+            var slot = wheel.Items.ToList().FindIndex(item => item.AsOption?.Unavailable == Tools.FFmpegHint);
+            Assert.True(slot >= 0, "no slot waits for ffmpeg");
+            Assert.True(wheel.Segments[slot].NeedsDownload);
+            wheel.Commit(slot);
+            Assert.NotNull(launched);
+            Assert.Null(launched!.Unavailable);
+            Assert.Null(wheel.Flash);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("PICKVERTER_NO_FFMPEG", null);
+        }
+    }
 }

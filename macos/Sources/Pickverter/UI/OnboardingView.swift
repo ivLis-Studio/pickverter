@@ -43,6 +43,10 @@ struct OnboardingView: View {
     @ObservedObject private var updater = Updater.shared
     @State private var hasFFmpeg = Tools.ffmpeg != nil
 
+    /// 664 pt tall, or less on a short screen (a "Larger Text" display mode): then the steps scroll and the button stays.
+    static var height: CGFloat { min(664, max(420, (NSScreen.main?.visibleFrame.height ?? 900) - 24)) }
+    static var compact: Bool { height < 664 }
+
     var body: some View {
         HStack(spacing: 0) {
             ZStack {
@@ -58,52 +62,15 @@ struct OnboardingView: View {
             Divider()
 
             VStack(alignment: .leading, spacing: 18) {
-                if updater.updatedFrom != nil {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(L("ob.updated", updater.currentVersion)).font(.system(size: 22, weight: .bold))
-                        Text(L("ob.updated.d"))
-                            .font(.system(size: 13)).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
+                if Self.compact {
+                    ScrollView(.vertical) {
+                        column.frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .scrollBounceBehavior(.basedOnSize)
                 } else {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Pickverter").font(.system(size: 26, weight: .bold))
-                        Text(L("ob.subtitle"))
-                            .font(.system(size: 13)).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
+                    column
+                    Spacer(minLength: 0)
                 }
-
-                VStack(alignment: .leading, spacing: 10) {
-                    StepRow(number: 1, title: L("perm.ax"), detail: L("ob.ax.d"), done: permissions.accessibility) {
-                        permissions.requestAccessibility()
-                    }
-                    StepRow(number: 2, title: L("perm.finder"), detail: L("ob.finder.d"), done: permissions.finder == .granted) {
-                        permissions.requestFinder()
-                    }
-                    FileAccessStep(number: 3)
-                    StepRow(number: 4, title: L("ob.ffmpeg"), detail: L("ob.ffmpeg.d"), done: hasFFmpeg,
-                            actionTitle: L("ob.install"), optional: true) {
-                        EngineInstaller.installFFmpeg()
-                    }
-                    if !permissions.accessibility {
-                        Text(L("ob.reset_hint"))
-                            .font(.system(size: 11)).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-
-                Divider()
-
-                VStack(alignment: .leading, spacing: 10) {
-                    SectionLabel(L("ob.how"))
-                    GuideRow(keys: [prefs.triggerKey.glyph], title: L("ob.tap.t"), detail: L("ob.tap.d", prefs.triggerKey.glyph))
-                    GuideRow(keys: [prefs.triggerKey.glyph, L("key.click")], title: L("ob.click.t"), detail: L("ob.click.d", prefs.triggerKey.glyph))
-                    GuideRow(keys: ["⇧", "⌘", "⌃"], title: L("ob.drag.t"), detail: L("ob.drag.d"))
-                    GuideRow(keys: ["↑", "↓"], title: L("ob.options.t"), detail: L("ob.options.d"))
-                }
-
-                Spacer(minLength: 0)
                 HStack {
                     Text(L("ob.local")).font(.system(size: 11)).foregroundStyle(.secondary)
                     Spacer()
@@ -122,7 +89,7 @@ struct OnboardingView: View {
             .padding(.bottom, 22)
             .frame(width: 470)
         }
-        .frame(height: 664)
+        .frame(height: Self.height)
         .onAppear {
             demo.start()
             guard Permissions.previewState == nil, !CLI.isSnapshotting else { return }
@@ -134,7 +101,74 @@ struct OnboardingView: View {
             Tools.refresh()
             hasFFmpeg = Tools.ffmpeg != nil
         }
+        .onReceive(FFmpegInstaller.shared.$phase) { _ in hasFFmpeg = Tools.ffmpeg != nil }
         .id(prefs.language)
+    }
+
+    /// Title, the setup steps and the gestures (everything above the button row).
+    private var column: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            if updater.updatedFrom != nil {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(L("ob.updated", updater.currentVersion)).font(.system(size: 22, weight: .bold))
+                    Text(L("ob.updated.d"))
+                        .font(.system(size: 13)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Pickverter").font(.system(size: 26, weight: .bold))
+                    Text(L("ob.subtitle"))
+                        .font(.system(size: 13)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                StepRow(number: 1, title: L("perm.ax"), detail: L("ob.ax.d"), done: permissions.accessibility) {
+                    permissions.requestAccessibility()
+                }
+                StepRow(number: 2, title: L("perm.finder"), detail: L("ob.finder.d"), done: permissions.finder == .granted) {
+                    permissions.requestFinder()
+                }
+                FileAccessStep(number: 3)
+                FFmpegStep(number: 4, done: hasFFmpeg)
+                if !permissions.accessibility {
+                    Text(L("ob.reset_hint"))
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 10) {
+                SectionLabel(L("ob.how"))
+                GuideRow(keys: [prefs.triggerKey.glyph], title: L("ob.tap.t"), detail: L("ob.tap.d", prefs.triggerKey.glyph))
+                GuideRow(keys: [prefs.triggerKey.glyph, L("key.click")], title: L("ob.click.t"), detail: L("ob.click.d", prefs.triggerKey.glyph))
+                GuideRow(keys: ["⇧", "⌘", "⌃"], title: L("ob.drag.t"), detail: L("ob.drag.d"))
+                GuideRow(keys: ["↑", "↓"], title: L("ob.options.t"), detail: L("ob.options.d"))
+            }
+        }
+    }
+}
+
+/// Optional step: one click downloads ffmpeg, with its progress right in the row.
+struct FFmpegStep: View {
+    let number: Int
+    let done: Bool
+    @ObservedObject private var installer = FFmpegInstaller.shared
+
+    var body: some View {
+        let progress: Double? = {
+            if case .downloading(let fraction) = installer.phase { return fraction }
+            return installer.phase == .installing ? 1 : nil
+        }()
+        StepRow(number: number, title: L("ob.ffmpeg"), detail: installer.statusLine ?? L("ob.ffmpeg.d"), done: done,
+                actionTitle: installer.isWorking ? L("common.cancel") : (installer.failure != nil ? L("update.retry") : L("ob.install")),
+                optional: true, progress: progress, warning: installer.failure != nil) {
+            if installer.isWorking { installer.cancel() } else { installer.start() }
+        }
     }
 }
 
@@ -145,6 +179,8 @@ struct StepRow: View {
     let done: Bool
     var actionTitle: String = L("perm.allow")
     var optional = false
+    var progress: Double? = nil
+    var warning = false
     let action: () -> Void
 
     var body: some View {
@@ -167,7 +203,11 @@ struct StepRow: View {
                             .background(Capsule().fill(Color.primary.opacity(0.07)))
                     }
                 }
-                Text(detail).font(.system(size: 11)).foregroundStyle(.secondary)
+                Text(detail).font(.system(size: 11)).foregroundStyle(warning ? Color.orange : Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                if let progress, !done {
+                    ProgressBar(value: progress).frame(width: 180, height: 3).padding(.top, 4)
+                }
             }
             Spacer()
             if done {

@@ -99,6 +99,8 @@ Filename: "{app}\Pickverter.exe"; Parameters: "--quit"; Flags: runhidden waitunt
 
 [UninstallDelete]
 Type: filesandordirs; Name: "{app}.old"
+; What Pickverter downloaded for itself (ffmpeg, the background-removal model) and its caches. Settings stay in Roaming.
+Type: filesandordirs; Name: "{localappdata}\Pickverter"
 
 [Code]
 function PrepareToInstall(var NeedsRestart: Boolean): String;

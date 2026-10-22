@@ -136,7 +136,7 @@ struct SegmentView: View, Equatable {
                 .position(x: side / 2 + CGFloat(cos(radians)) * labelRadius, y: side / 2 + CGFloat(sin(radians)) * labelRadius)
         }
         .frame(width: side, height: side)
-        .opacity(segment.unavailable ? 0.35 : 1)
+        .opacity(segment.unavailable ? (segment.needsDownload ? 0.6 : 0.35) : 1)
         .animation(.easeOut(duration: 0.12), value: highlighted)
         .animation(.easeOut(duration: 0.12), value: dimmed)
         .accessibilityElement(children: .ignore)
@@ -212,7 +212,7 @@ struct SubRingView: View {
                 SegmentLabel(segment: item, selected: selected, compact: true)
                     .frame(width: Self.labelWidth(angle: radians, arc: arc, thickness: g.subOuter - g.subInner))
                     .position(x: g.center.x + CGFloat(cos(radians)) * labelRadius, y: g.center.y + CGFloat(sin(radians)) * labelRadius)
-                    .opacity(item.unavailable ? 0.35 : 1)
+                    .opacity(item.unavailable ? (item.needsDownload ? 0.6 : 0.35) : 1)
             }
         }
         .animation(.easeOut(duration: 0.1), value: highlighted)
@@ -281,9 +281,11 @@ struct HubView: View {
                     Text(option.title).font(.system(size: 11, weight: .semibold)).foregroundStyle(Theme.accent)
                         .lineLimit(1).minimumScaleFactor(0.7)
                 }
-                Text(option.unavailable ?? model.previewLine(for: option, parent: parent))
+                let reason = option.unavailable ?? parent?.unavailable
+                let offersDownload = reason == Tools.ffmpegHint
+                Text(offersDownload ? L("ffmpeg.click") : (reason ?? model.previewLine(for: option, parent: parent)))
                     .font(.system(size: 9.5))
-                    .foregroundStyle(option.unavailable != nil ? Color.orange : Color.secondary)
+                    .foregroundStyle(offersDownload ? Theme.accent : (reason != nil ? Color.orange : Color.secondary))
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .truncationMode(.middle)

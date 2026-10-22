@@ -73,7 +73,7 @@ internal sealed class WheelCanvas : FrameworkElement
             var dimmed = highlighted && model.SubHighlighted != null;
             var selected = highlighted && !dimmed;
             var shape = RingGeometry.Segment(mid - span / 2, mid + span / 2, G.InnerRadius, G.OuterRadius);
-            if (segment.Unavailable) dc.PushOpacity(0.35);
+            if (segment.Unavailable) dc.PushOpacity(segment.NeedsDownload ? 0.6 : 0.35);
             dc.PushTransform(new TranslateTransform(Center.X, Center.Y));
             dc.DrawGeometry(selected ? Theme.Accent : highlighted ? Theme.AccentSubtle : Theme.Tile, null, shape);
             dc.Pop();
@@ -147,7 +147,7 @@ internal sealed class WheelCanvas : FrameworkElement
             var mid = start + spanDegrees / 2;
             var radians = mid * Math.PI / 180;
             var width = LabelWidth(radians, arc, G.SubOuter - G.SubInner);
-            if (item.Unavailable) dc.PushOpacity(0.35);
+            if (item.Unavailable) dc.PushOpacity(item.NeedsDownload ? 0.6 : 0.35);
             DrawLabel(dc, item, RingGeometry.Polar(Center, labelRadius, mid), width, selected, compact: true);
             if (item.Unavailable) dc.Pop();
         }
@@ -200,8 +200,11 @@ internal sealed class WheelCanvas : FrameworkElement
             else lines.Add(Glyphs.Formatted(option.Symbol.Length == 0 ? parent?.Symbol ?? "circle" : option.Symbol, 18, Theme.TextPrimary, Dip));
             if (parent != null) lines.Add(Fit(option.Title, width, 11, FontWeights.SemiBold, Theme.AccentText, 0.7));
             var unavailable = option.Unavailable ?? parent?.Unavailable;
-            lines.Add(Fit(unavailable ?? model.PreviewLine(option, parent), width, 9.5, FontWeights.Normal,
-                unavailable != null ? Theme.Caution : Theme.TextSecondary, 0.85, lines: 2, middle: unavailable == null));
+            // Missing ffmpeg is an offer, not a dead end: a click downloads it and carries on.
+            var offersDownload = unavailable == Tools.FFmpegHint;
+            lines.Add(Fit(offersDownload ? L("ffmpeg.click") : unavailable ?? model.PreviewLine(option, parent), width, 9.5, FontWeights.Normal,
+                offersDownload ? Theme.AccentText : unavailable != null ? Theme.Caution : Theme.TextSecondary, 0.85, lines: 2,
+                middle: unavailable == null));
             string? hint = null;
             if (parent != null && active.Implied) hint = "↑↓ " + LP("hint.options", parent.Variants.Count);
             else if (parent == null && option.Variants.Count > 0) hint = LP("hint.options", option.Variants.Count);

@@ -11,7 +11,7 @@ icons and conventions.
    no administrator rights — into `%LOCALAPPDATA%\Programs\Pickverter`.
 2. The installer isn't code-signed yet, so SmartScreen may show **"Windows protected your PC"**: click **More info › Run anyway**.
 3. The welcome window checks the few things worth setting up front: Windows Security's **controlled folder access**
-   (Pickverter offers to allow itself when it is on), **ffmpeg** (optional, installed with winget) and **Start with Windows**.
+   (Pickverter offers to allow itself when it is on), **ffmpeg** (optional — one click downloads it) and **Start with Windows**.
    Nothing else needs a permission — Windows lets Pickverter notice key taps and drags right away.
 
 Pickverter lives in the notification area. Click its icon for the quick panel, right-click for the menu.

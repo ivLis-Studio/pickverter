@@ -242,7 +242,7 @@ final class FloatWindows: NSObject, NSWindowDelegate {
                 preview.previewItem = url as NSURL
                 panel.contentView = preview
             }
-            if let screen = NSScreen.screens.first(where: { $0.frame.contains(point) }) {
+            if let screen = ScreenGeometry.screen(containing: point) {
                 var frame = panel.frame
                 frame.origin.x = min(max(frame.minX, screen.visibleFrame.minX), screen.visibleFrame.maxX - frame.width)
                 frame.origin.y = min(max(frame.minY, screen.visibleFrame.minY), screen.visibleFrame.maxY - frame.height)

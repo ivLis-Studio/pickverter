@@ -78,7 +78,7 @@ await page.locator("#lang-select").selectOption("ko");
 check("Korean title", (await page.title()).includes("모든 파일을"));
 check("Korean wheel", (await page.locator(".wtab.on").innerText()).includes("변환"));
 const untranslated = await page.$$eval("[data-t]", (ns) => ns.filter((n) => /[A-Za-z]{4,}/.test(n.textContent) && !/[가-힣]/.test(n.textContent)).map((n) => n.dataset.t));
-const allowed = new Set(["film.title", "dl.cmd"]);
+const allowed = new Set(["film.title"]);
 check("Korean copy complete", untranslated.filter((k) => !allowed.has(k) && !/^(g\.|t\.|a\.)/.test(k)).length === 0, untranslated.join(", "));
 
 // The Windows page: ?os=win shows the installer, Windows keys and Windows install steps; the switch goes back.
@@ -88,7 +88,7 @@ check("Windows: download button", (await page.locator(".hero .dl-link").innerTex
 check("Windows: title key", (await page.locator(".hero h1").innerText()).includes("Alt"));
 check("Windows: wheel keys", (await page.locator(".wtab").first().innerText()).includes("Shift"));
 check("Windows: install steps", (await page.locator("ol.only-win").isVisible()) && !(await page.locator("ol.only-mac").isVisible()));
-check("Windows: winget", (await page.locator("#brew-cmd").innerText()) === "winget install ffmpeg");
+check("Windows: ffmpeg in one click", (await page.locator('ol.only-win [data-t="instw.4.d"]').innerText()).includes("one click"));
 await page.mouse.move(10, 10);
 await page.locator("#wheel").focus();
 await page.keyboard.press("Control");

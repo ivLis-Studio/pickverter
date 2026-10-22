@@ -109,7 +109,8 @@ AirDrop 자리는 Windows 공유가, 실행 취소는 휴지통이 맡고, 강�
 3. **손쉬운 사용**(⌥ 탭·드래그 감지)과 **Finder 제어**(선택한 파일 읽기)를 허용하세요. 첫 화면이 차례대로 안내해요.
    이어서 **파일 접근**도 미리 허용할 수 있어요. **전체 디스크 접근 권한**(권장 — 어떤 폴더·드라이브도 다시 묻지 않음)을 켜거나,
    데스크탑·문서·다운로드·iCloud Drive만 허용하세요. 미리 해 두면 작업 도중에 macOS 권한 창이 끼어들지 않아요.
-4. 선택: [ffmpeg](https://ffmpeg.org)이 있으면 동영상·오디오 형식이 더 늘어나요 — `brew install ffmpeg` (첫 화면에 설치 버튼이 있어요).
+4. 선택: [ffmpeg](https://ffmpeg.org)이 있으면 동영상·오디오 형식이 더 늘어나요. 첫 화면이나 설정에서, 또는 그 형식이 처음 필요할 때
+   클릭 한 번으로 Pickverter가 직접 내려받아요(`brew install ffmpeg`로 설치해도 돼요).
    Pages·Keynote·Numbers나 LibreOffice가 설치되어 있으면 오피스/iWork 문서를 고품질로 내보낼 수 있어요.
 
 macOS 14 이상, Apple 실리콘과 Intel 모두 지원해요.
@@ -119,7 +120,7 @@ macOS 14 이상, Apple 실리콘과 Intel 모두 지원해요.
 1. [Releases](https://github.com/ivLis-Studio/pickverter/releases/latest)에서 **Pickverter-x.y.z-win-x64-setup.exe**(스냅드래곤 PC는 **win-arm64**)를 내려받아 실행하세요.
    내 계정에만 설치돼서 관리자 권한이 필요 없어요.
 2. 아직 코드 서명이 없어 **"Windows의 PC 보호"** 창이 뜰 수 있어요. **추가 정보 › 실행**을 누르세요.
-3. 첫 화면이 Windows 보안의 **제어된 폴더 액세스**를 확인하고(켜져 있으면 Pickverter를 허용하도록 도와줘요), winget으로 **ffmpeg**을 설치하고,
+3. 첫 화면이 Windows 보안의 **제어된 폴더 액세스**를 확인하고(켜져 있으면 Pickverter를 허용하도록 도와줘요), 클릭 한 번으로 **ffmpeg**을 내려받고,
    Windows 시작 시 실행을 켜 줘요. 그 밖에는 권한이 필요 없어요.
 
 Windows 10 2004 이상 또는 Windows 11(x64·Arm64)에서 동작해요. Pickverter는 알림 영역에 머물러요.

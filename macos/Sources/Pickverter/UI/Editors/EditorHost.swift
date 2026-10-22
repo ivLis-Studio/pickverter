@@ -17,17 +17,25 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
                               styleMask: [.titled, .closable, .resizable, .miniaturizable],
                               backing: .buffered, defer: false)
         window.contentViewController = hosting
-        window.setContentSize(size)
-        window.contentMinSize = minSize
         window.title = title
         window.isReleasedWhenClosed = false
         window.delegate = self
         window.tabbingMode = .disallowed
         let mouse = NSEvent.mouseLocation
-        if let screen = NSScreen.screens.first(where: { $0.frame.contains(mouse) }) ?? NSScreen.main {
-            let visible = screen.visibleFrame
+        var fitted = size
+        let visible = ScreenGeometry.screen(containing: mouse)?.visibleFrame
+        if let visible {
+            // Never bigger than the screen: the buttons along the bottom have to stay reachable.
+            let chrome = window.frameRect(forContentRect: CGRect(origin: .zero, size: size)).size
+            fitted.width = min(size.width, visible.width - 32 - (chrome.width - size.width))
+            fitted.height = min(size.height, visible.height - 32 - (chrome.height - size.height))
+        }
+        window.setContentSize(fitted)
+        window.contentMinSize = CGSize(width: min(minSize.width, fitted.width), height: min(minSize.height, fitted.height))
+        if let visible {
             let frame = window.frame
-            window.setFrameOrigin(CGPoint(x: visible.midX - frame.width / 2, y: visible.midY - frame.height / 2 + 20))
+            let y = min(visible.midY - frame.height / 2 + 20, visible.maxY - frame.height)
+            window.setFrameOrigin(CGPoint(x: visible.midX - frame.width / 2, y: max(visible.minY, y)))
         }
         self.window = window
         NSApp.activate(ignoringOtherApps: true)
