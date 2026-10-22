@@ -48,6 +48,8 @@ Heavy jobs wait in a small queue so your Mac stays responsive; result cards appe
 2. The app isn't notarized yet, so macOS asks once: open **System Settings › Privacy & Security** and click **Open Anyway**
    (or right-click Pickverter › Open).
 3. Allow **Accessibility** (to notice the ⌥ tap and drags) and **Finder** control (to read your selection). The welcome window walks you through it.
+   It then offers **File access**: turn on **Full Disk Access** (recommended — no prompts for any folder or drive), or allow
+   just Desktop, Documents, Downloads and iCloud Drive. Doing it up front means macOS never stops a job halfway to ask.
 4. Optional: [ffmpeg](https://ffmpeg.org) unlocks more video and audio formats — `brew install ffmpeg` (the welcome window has a button for it).
    Pages, Keynote, Numbers or LibreOffice, when installed, enable high-quality Office/iWork exports.
 
@@ -60,7 +62,8 @@ ready on the next restart — Settings › Updates). Every update is verified be
 over the release, its size and SHA-256, the bundle identifier and the code signature.
 
 Because releases are currently signed ad hoc (no Apple Developer ID yet), macOS treats each new version as a new app and asks
-for Accessibility again after an update. Pickverter clears the stale entry for you and shows where to switch it back on.
+for its permissions (Accessibility, Finder control, file access) again after an update. Pickverter clears the stale entries
+for you and reopens the welcome window so you can switch them back on.
 
 ### Privacy
 

@@ -62,14 +62,16 @@ if [ -n "${PICKVERTER_BUILD:-}" ]; then /usr/libexec/PlistBuddy -c "Set :CFBundl
 if [ "${PICKVERTER_RELEASE:-}" = "1" ]; then /usr/libexec/PlistBuddy -c "Add :PVReleaseBuild bool true" "$PLIST"; fi
 cp Resources/i18n.json "$APP/Contents/Resources/i18n.json"
 # Per-language folders make system-provided UI (panels, permission prompts) localized as well.
-"$APP/Contents/MacOS/Pickverter" cli i18n-plist "$APP/Contents/Resources" >/dev/null
+# Helpers run from the loose binary: the bundle isn't signed yet, and macOS kills an executable whose
+# bundle seal no longer matches (e.g. after Info.plist changed).
+build/Pickverter cli i18n-plist "$APP/Contents/Resources" >/dev/null
 
 ICNS="$ROOT/build/AppIcon.icns"
 if [ ! -f "$ICNS" ] || [ Sources/Pickverter/UI/BrandArt.swift -nt "$ICNS" ]; then
   echo "▸ rendering app icon"
   ICONSET="$ROOT/build/AppIcon.iconset"
   mkdir -p "$ICONSET"
-  "$APP/Contents/MacOS/Pickverter" cli icon "$ICONSET" >/dev/null
+  build/Pickverter cli icon "$ICONSET" >/dev/null
   iconutil -c icns "$ICONSET" -o "$ICNS"
 fi
 cp "$ICNS" "$APP/Contents/Resources/AppIcon.icns"

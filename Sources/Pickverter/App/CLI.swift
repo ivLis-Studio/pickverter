@@ -13,8 +13,12 @@ import SwiftUI
 /// PICKVERTER_LANG=ja selects the UI language.
 @MainActor
 enum CLI {
+    /// True while a developer command renders UI, so views skip first-run bookkeeping.
+    static var isSnapshotting = false
+
     static func run(_ args: [String]) -> Int32 {
         _ = NSApplication.shared
+        isSnapshotting = true
         guard let command = args.first else { return usage() }
         let rest = Array(args.dropFirst())
         switch command {
@@ -162,12 +166,16 @@ enum CLI {
         running.progress = 0.42
         let failed = Job(option: option, mode: .convert, files: [file], destination: .file)
         failed.state = .failed(L("err.already_small"))
+        let blocked = Job(option: option, mode: .convert, files: [file], destination: .file)
+        blocked.state = .failed(L("err.no_access", L("folder.documents")))
+        blocked.fixAction = Job.NoticeAction(title: L("access.fix"), symbol: "lock.open") {}
         pump(0.6)
         let view = VStack(spacing: 12) {
             JobCard(job: running, onClose: {}, onHover: { _ in })
             JobCard(job: done, onClose: {}, onHover: { _ in })
             JobCard(job: clip, onClose: {}, onHover: { _ in })
             JobCard(job: failed, onClose: {}, onHover: { _ in })
+            JobCard(job: blocked, onClose: {}, onHover: { _ in })
         }
         .padding(20)
         .background(dark ? Color(hex: 0x1E1E22) : Color(hex: 0xE4E6EB))
@@ -267,7 +275,11 @@ enum CLI {
             let folder = root.appendingPathComponent("\(language.code).lproj")
             try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             let escape: (String) -> String = { $0.replacingOccurrences(of: "\"", with: "\\\"") }
-            let body = "\"NSAppleEventsUsageDescription\" = \"\(escape(L("plist.apple_events")))\";\n"
+            var body = "\"NSAppleEventsUsageDescription\" = \"\(escape(L("plist.apple_events")))\";\n"
+            for key in ["NSDesktopFolderUsageDescription", "NSDocumentsFolderUsageDescription", "NSDownloadsFolderUsageDescription",
+                        "NSRemovableVolumesUsageDescription", "NSNetworkVolumesUsageDescription"] {
+                body += "\"\(key)\" = \"\(escape(L("plist.files")))\";\n"
+            }
             try? body.write(to: folder.appendingPathComponent("InfoPlist.strings"), atomically: true, encoding: .utf8)
         }
         print(root.path)

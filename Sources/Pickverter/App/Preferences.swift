@@ -154,8 +154,14 @@ final class Permissions: ObservableObject {
 
     @Published private(set) var accessibility = AXIsProcessTrusted()
     @Published private(set) var finder: Automation = .unknown
+    @Published private(set) var fullDiskAccess = FileAccess.hasFullDiskAccess
+    @Published private(set) var folders: [ProtectedFolder: FolderAccess] = [:]
+    /// Set once the user opened the Full Disk Access pane from Pickverter (shows the drag helper).
+    @Published private(set) var openedFullDiskAccess = false
+    @Published private(set) var askingFolders = false
     var onAccessibilityChange: ((Bool) -> Void)?
     private var timer: Timer?
+    private var ticks = 0
 
     func startMonitoring() {
         timer?.invalidate()
@@ -166,10 +172,67 @@ final class Permissions: ObservableObject {
     }
 
     func refresh() {
+        if Self.previewState != nil { return }
         let trusted = AXIsProcessTrusted()
         if trusted != accessibility {
             accessibility = trusted
             onAccessibilityChange?(trusted)
+        }
+        ticks += 1
+        if ticks % 2 == 0 {
+            let full = FileAccess.hasFullDiskAccess
+            if full != fullDiskAccess { fullDiskAccess = full }
+        }
+    }
+
+    /// Screenshots of the "not allowed yet" screens: PICKVERTER_PREVIEW_PERMISSIONS=none|folders.
+    static let previewState = ProcessInfo.processInfo.environment["PICKVERTER_PREVIEW_PERMISSIONS"]
+
+    private init() {
+        guard let preview = Self.previewState else { return }
+        accessibility = false
+        fullDiskAccess = false
+        openedFullDiskAccess = preview == "folders"
+        if preview == "folders" { folders = [.desktop: .granted, .documents: .granted, .downloads: .denied] }
+    }
+
+    /// Ready when Full Disk Access is on, or every guarded folder on this Mac was allowed.
+    var fileAccessReady: Bool {
+        fullDiskAccess || ProtectedFolder.available.allSatisfy { folders[$0] == .granted }
+    }
+
+    func requestFullDiskAccess() {
+        openedFullDiskAccess = true
+        FileAccess.openFullDiskAccessSettings()
+    }
+
+    /// Re-checks folders the user already answered for (never prompts).
+    func refreshFolders() {
+        let known = FileAccess.requestedFolders
+        guard Self.previewState == nil, !known.isEmpty, !askingFolders else { return }
+        Task.detached(priority: .utility) {
+            var results: [ProtectedFolder: FolderAccess] = [:]
+            for folder in ProtectedFolder.available where known.contains(folder) { results[folder] = FileAccess.probe(folder) }
+            let found = results
+            await MainActor.run { Permissions.shared.folders.merge(found) { _, new in new } }
+        }
+    }
+
+    /// Shows the macOS prompt for each guarded folder now, one after another, instead of mid-job.
+    func requestFolders() {
+        guard !askingFolders else { return }
+        askingFolders = true
+        let pending = ProtectedFolder.available
+        FileAccess.requestedFolders.formUnion(pending)
+        Task.detached(priority: .userInitiated) {
+            for folder in pending {
+                let state = FileAccess.probe(folder)
+                await MainActor.run { Permissions.shared.folders[folder] = state }
+            }
+            await MainActor.run {
+                Permissions.shared.askingFolders = false
+                if Permissions.shared.folders.values.contains(.denied) { FileAccess.openFolderSettings() }
+            }
         }
     }
 

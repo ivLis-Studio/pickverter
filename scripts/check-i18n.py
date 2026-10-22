@@ -33,6 +33,7 @@ DYNAMIC = {
     "collage": ["grid", "row", "column"],
     "viz": ["wave", "square", "spectrum"],
     "office.iwork": ["pages", "keynote", "numbers"],
+    "access.state": ["granted", "denied", "unknown"],
 }
 
 

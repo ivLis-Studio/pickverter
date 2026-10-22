@@ -100,6 +100,17 @@ extension CLI {
 
     static func layoutTests(_ files: [URL]) -> Int {
         var failures = 0
+        // Folder-access errors: TCC refusals (EPERM) get the "Grant Access" treatment, plain Unix permissions don't.
+        let tcc = NSError(domain: NSCocoaErrorDomain, code: NSFileReadNoPermissionError,
+                          userInfo: [NSUnderlyingErrorKey: NSError(domain: NSPOSIXErrorDomain, code: Int(EPERM))])
+        let unix = NSError(domain: NSCocoaErrorDomain, code: NSFileWriteNoPermissionError,
+                           userInfo: [NSUnderlyingErrorKey: NSError(domain: NSPOSIXErrorDomain, code: Int(EACCES))])
+        let tool = Shell.Failure(tool: "ffmpeg", status: 1, stderr: "x.mov: Operation not permitted")
+        check("blocked folder is recognized", "\(FileAccess.isAccessDenied(tcc)) \(FileAccess.isAccessDenied(tool))", "true true", &failures)
+        check("unix permissions are not", "\(FileAccess.isAccessDenied(unix))", "false", &failures)
+        if let desktop = ProtectedFolder.desktop.url {
+            check("blocked place is named", FileAccess.placeName(for: desktop.appendingPathComponent("a/b.png")), L("folder.desktop"), &failures)
+        }
         let suite = "com.pickverter.selftest.\(UUID().uuidString)"
         guard let store = UserDefaults(suiteName: suite) else { return 1 }
         defer { store.removePersistentDomain(forName: suite) }
@@ -228,6 +239,10 @@ extension CLI {
                     model.start = duration * 0.2
                     model.end = duration * 0.7
                     return (AnyView(TrimEditorView(url: file, model: model, finish: { _ in })), CGSize(width: 640, height: 250))
+                case "onboarding":
+                    return (AnyView(OnboardingView()), CGSize(width: 871, height: 664))
+                case "integrations":
+                    return (AnyView(IntegrationSettings()), CGSize(width: 600, height: 760))
                 default:
                     return (AnyView(UpdateView(close: {})), CGSize(width: 500, height: 200))
                 }
@@ -243,7 +258,7 @@ extension CLI {
         let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable],
                               backing: .buffered, defer: false)
         window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
-        let host = NSHostingView(rootView: view.environmentObject(Preferences.shared))
+        let host = NSHostingView(rootView: view.environmentObject(Preferences.shared).environmentObject(Permissions.shared))
         host.frame = CGRect(origin: .zero, size: size)
         window.contentView = host
         pump(1.2)

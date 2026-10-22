@@ -140,6 +140,31 @@ struct IntegrationSettings: View {
                 PermissionRow(title: L("perm.finder"), detail: L("perm.finder.d"), granted: permissions.finder == .granted) {
                     permissions.requestFinder()
                 }
+                PermissionRow(title: L("perm.fda"), detail: L("perm.fda.d"), granted: permissions.fullDiskAccess) {
+                    permissions.requestFullDiskAccess()
+                }
+                if !permissions.fullDiskAccess {
+                    HStack {
+                        Image(systemName: permissions.fileAccessReady ? "checkmark.circle.fill" : "circle.dashed")
+                            .foregroundStyle(permissions.fileAccessReady ? Color.green : Color.secondary)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(L("perm.folders"))
+                            FolderStatusChips()
+                        }
+                        Spacer()
+                        if FileAccess.requestedFolders.isEmpty {
+                            Button(L("access.request")) { permissions.requestFolders() }.disabled(permissions.askingFolders)
+                        } else {
+                            Button(L("access.open_settings")) { FileAccess.openFolderSettings() }
+                        }
+                    }
+                    if permissions.openedFullDiskAccess {
+                        HStack(spacing: 8) {
+                            AppDragChip()
+                            Text(L("access.drag")).font(.caption).foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
             Section(L("set.apps")) {
                 Picker(L("set.terminal"), selection: $prefs.terminal) {
@@ -167,7 +192,7 @@ struct IntegrationSettings: View {
             } footer: {
                 Text(L("engine.footer")).font(.caption).foregroundStyle(.secondary)
             }
-            .id(refresh)
+            .id("engines-\(refresh)")
             Section {
                 ForEach(OfficeEngine.IWork.allCases, id: \.self) { app in
                     AppRow(name: app.name, purpose: L("office.iwork." + app.rawValue), installed: app.isInstalled)
@@ -178,9 +203,10 @@ struct IntegrationSettings: View {
             } footer: {
                 Text(L("office.footer")).font(.caption).foregroundStyle(.secondary)
             }
-            .id(refresh)
+            .id("office-\(refresh)")
         }
         .formStyle(.grouped)
+        .onAppear { permissions.refreshFolders() }
     }
 }
 

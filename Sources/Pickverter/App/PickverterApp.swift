@@ -71,7 +71,10 @@ final class AppController {
         let updater = Updater.shared
         updater.start()
         AppMover.offerIfNeeded()
-        if !Preferences.shared.onboarded || !permissions.accessibility {
+        permissions.refreshFolders()
+        // Existing users see the new file-access step once.
+        let fileAccessNews = !UserDefaults.standard.bool(forKey: "fileAccess.offered") && !permissions.fileAccessReady
+        if !Preferences.shared.onboarded || !permissions.accessibility || fileAccessNews {
             WindowManager.shared.showOnboarding()
         } else if updater.updatedFrom != nil {
             JobCenter.shared.notice(L("update.card.done", updater.currentVersion), detail: L("update.card.done.d"),

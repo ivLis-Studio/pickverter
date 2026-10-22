@@ -81,7 +81,8 @@ struct OnboardingView: View {
                     StepRow(number: 2, title: L("perm.finder"), detail: L("ob.finder.d"), done: permissions.finder == .granted) {
                         permissions.requestFinder()
                     }
-                    StepRow(number: 3, title: L("ob.ffmpeg"), detail: L("ob.ffmpeg.d"), done: hasFFmpeg,
+                    FileAccessStep(number: 3)
+                    StepRow(number: 4, title: L("ob.ffmpeg"), detail: L("ob.ffmpeg.d"), done: hasFFmpeg,
                             actionTitle: L("ob.install"), optional: true) {
                         EngineInstaller.installFFmpeg()
                     }
@@ -121,8 +122,13 @@ struct OnboardingView: View {
             .padding(.bottom, 22)
             .frame(width: 470)
         }
-        .frame(height: 580)
-        .onAppear { demo.start() }
+        .frame(height: 664)
+        .onAppear {
+            demo.start()
+            guard Permissions.previewState == nil, !CLI.isSnapshotting else { return }
+            UserDefaults.standard.set(true, forKey: "fileAccess.offered")
+            permissions.refreshFolders()
+        }
         .onDisappear { demo.stop() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Tools.refresh()
@@ -168,6 +174,61 @@ struct StepRow: View {
                 Text(L("ob.done")).font(.system(size: 11)).foregroundStyle(.secondary)
             } else {
                 Button(actionTitle, action: action).controlSize(.small)
+            }
+        }
+    }
+}
+
+/// Full Disk Access (recommended) or just the guarded folders, asked now rather than in the middle of a job.
+struct FileAccessStep: View {
+    let number: Int
+    @EnvironmentObject var permissions: Permissions
+
+    var body: some View {
+        let done = permissions.fileAccessReady
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                Circle().fill(done ? Color.green : Color.primary.opacity(0.08))
+                if done {
+                    Image(systemName: "checkmark").font(.system(size: 10, weight: .bold)).foregroundStyle(.white)
+                } else {
+                    Text("\(number)").font(.system(size: 11, weight: .semibold))
+                }
+            }
+            .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(L("access.title")).font(.system(size: 13, weight: .medium))
+                        Text(L("access.detail")).font(.system(size: 11)).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                    if done {
+                        Text(L("ob.done")).font(.system(size: 11)).foregroundStyle(.secondary)
+                    } else {
+                        Button(L("access.full")) { permissions.requestFullDiskAccess() }.controlSize(.small)
+                    }
+                }
+                if permissions.fullDiskAccess {
+                    Label(L("access.full.on"), systemImage: "checkmark.shield")
+                        .font(.system(size: 10.5)).foregroundStyle(.secondary)
+                } else {
+                    if permissions.openedFullDiskAccess {
+                        HStack(spacing: 8) {
+                            AppDragChip()
+                            Text(L("access.drag")).font(.system(size: 10.5)).foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                    FolderStatusChips {
+                        Button(permissions.askingFolders ? L("access.asking") : L("access.folders_only")) { permissions.requestFolders() }
+                            .buttonStyle(.link)
+                            .font(.system(size: 11))
+                            .disabled(permissions.askingFolders)
+                            .padding(.trailing, 2)
+                    }
+                }
             }
         }
     }

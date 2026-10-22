@@ -43,6 +43,16 @@
     <true/>
     <key>NSAppleEventsUsageDescription</key>
     <string>Pickverter controls Finder to see which files you selected, and Pages, Keynote or Numbers when you export documents with them.</string>
+    <key>NSDesktopFolderUsageDescription</key>
+    <string>Pickverter reads the files you pick and saves the results next to them.</string>
+    <key>NSDocumentsFolderUsageDescription</key>
+    <string>Pickverter reads the files you pick and saves the results next to them.</string>
+    <key>NSDownloadsFolderUsageDescription</key>
+    <string>Pickverter reads the files you pick and saves the results next to them.</string>
+    <key>NSRemovableVolumesUsageDescription</key>
+    <string>Pickverter reads the files you pick and saves the results next to them.</string>
+    <key>NSNetworkVolumesUsageDescription</key>
+    <string>Pickverter reads the files you pick and saves the results next to them.</string>
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>

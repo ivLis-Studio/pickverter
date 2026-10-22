@@ -30,6 +30,8 @@ final class Job: ObservableObject, Identifiable {
     let lingers: Double?
     /// Interactive jobs stay invisible until the editor is confirmed.
     @Published var started = true
+    /// Offered on a failed card when System Settings can fix the failure (blocked folder access).
+    @Published var fixAction: NoticeAction?
 
     @Published var state: State = .running
     @Published var progress: Double?
@@ -226,11 +228,20 @@ final class JobCenter: ObservableObject {
                 if !Task.isCancelled, job.isRunning { self?.hud.show(job) }
             }
             do {
+                // Convert and tool jobs read their inputs; ask macOS about blocked folders up front.
+                if mode != .actions, let blocked = await FileAccess.firstBlocked(files) {
+                    throw FileAccess.Denied(url: blocked)
+                }
                 let result = try await option.perform(context)
                 job.complete(with: result)
             } catch {
                 if Task.isCancelled || error is CancellationError {
                     job.state = .cancelled
+                } else if FileAccess.isAccessDenied(error) {
+                    let message = (error as? FileAccess.Denied)?.errorDescription
+                        ?? L("err.no_access", FileAccess.placeName(for: files.first ?? URL(fileURLWithPath: "/")))
+                    job.fixAction = Job.NoticeAction(title: L("access.fix"), symbol: "lock.open") { FileAccess.openBestSettings() }
+                    job.state = .failed(message)
                 } else {
                     job.state = .failed(error.localizedDescription)
                 }
@@ -488,7 +499,7 @@ struct JobCard: View {
                     actionRow(compact: true)
                 }
             }
-            if let action = job.noticeAction {
+            if let action = job.noticeAction ?? (job.state == .running ? nil : job.fixAction) {
                 HStack {
                     CardButton(title: action.title, symbol: action.symbol, prominent: true) {
                         action.run()
