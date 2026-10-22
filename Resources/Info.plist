@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key>
+    <string>en</string>
+    <key>CFBundleLocalizations</key>
+    <array>
+        <string>en</string>
+        <string>ko</string>
+        <string>ja</string>
+        <string>zh-Hans</string>
+        <string>zh-Hant</string>
+        <string>es</string>
+        <string>fr</string>
+        <string>de</string>
+        <string>ru</string>
+        <string>pt-BR</string>
+    </array>
+    <key>CFBundleDisplayName</key>
+    <string>Pickverter</string>
+    <key>CFBundleExecutable</key>
+    <string>Pickverter</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.pickverter.app</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>CFBundleName</key>
+    <string>Pickverter</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleShortVersionString</key>
+    <string>0.1.0</string>
+    <key>CFBundleVersion</key>
+    <string>1</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.productivity</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Pickverter controls Finder to see which files you selected, and Pages, Keynote or Numbers when you export documents with them.</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 ivLis Studio · MIT License</string>
+    <key>PVUpdateRepository</key>
+    <string>ivLis-Studio/pickverter</string>
+    <key>PVUpdatePublicKey</key>
+    <string>QkE0+LXZq6uaUQXQ65SRB7BhKyDsFumJbHmc3EomcWE=</string>
+</dict>
+</plist>
