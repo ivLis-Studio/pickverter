@@ -1,0 +1,373 @@
+{
+ "1.square": [
+  "number_circle_1",
+  "document_one_page"
+ ],
+ "2.square": [
+  "number_circle_2",
+  "document_one_page"
+ ],
+ "app": [
+  "app_generic",
+  "apps"
+ ],
+ "apps.list": [
+  "apps_list"
+ ],
+ "archivebox": [
+  "archive",
+  "folder_zip"
+ ],
+ "arrow.clockwise": [
+  "arrow_clockwise"
+ ],
+ "arrow.counterclockwise": [
+  "arrow_counterclockwise"
+ ],
+ "arrow.down.circle": [
+  "arrow_circle_down"
+ ],
+ "arrow.down.forward.and.arrow.up.backward": [
+  "resize_image",
+  "resize",
+  "arrow_maximize"
+ ],
+ "arrow.down.right.and.arrow.up.left": [
+  "arrow_minimize",
+  "resize_small"
+ ],
+ "arrow.forward.circle": [
+  "arrow_circle_right"
+ ],
+ "arrow.right.to.line": [
+  "text_collapse",
+  "arrow_minimize_vertical"
+ ],
+ "arrow.triangle.2.circlepath": [
+  "arrow_sync",
+  "arrow_repeat_all"
+ ],
+ "arrow.up.arrow.down": [
+  "arrow_sort",
+  "arrow_swap"
+ ],
+ "arrow.up.forward.app": [
+  "open"
+ ],
+ "arrow.uturn.backward": [
+  "arrow_undo"
+ ],
+ "book": [
+  "book_open",
+  "book"
+ ],
+ "camera": [
+  "camera"
+ ],
+ "captions.bubble": [
+  "closed_caption"
+ ],
+ "checkerboard.rectangle": [
+  "blur",
+  "eye_off"
+ ],
+ "checkmark": [
+  "checkmark"
+ ],
+ "checkmark.circle": [
+  "checkmark_circle"
+ ],
+ "checkmark.circle.fill": [
+  "fill:checkmark_circle"
+ ],
+ "chevron.down": [
+  "chevron_down"
+ ],
+ "chevron.left.forwardslash.chevron.right": [
+  "code"
+ ],
+ "chevron.right": [
+  "chevron_right"
+ ],
+ "circle": [
+  "circle"
+ ],
+ "circle.dashed": [
+  "circle_hint",
+  "circle"
+ ],
+ "clock": [
+  "clock"
+ ],
+ "crop": [
+  "crop"
+ ],
+ "cursorarrow.click": [
+  "cursor_click",
+  "cursor"
+ ],
+ "curlybraces": [
+  "braces"
+ ],
+ "doc": [
+  "document"
+ ],
+ "doc.badge.ellipsis": [
+  "document_dismiss",
+  "document_page_break"
+ ],
+ "doc.on.clipboard": [
+  "clipboard_paste",
+  "clipboard"
+ ],
+ "doc.on.doc": [
+  "copy",
+  "document_copy"
+ ],
+ "doc.richtext": [
+  "document_pdf"
+ ],
+ "doc.text": [
+  "document_text"
+ ],
+ "ellipsis": [
+  "more_horizontal"
+ ],
+ "ellipsis.circle": [
+  "more_circle"
+ ],
+ "exclamationmark": [
+  "warning"
+ ],
+ "exclamationmark.triangle": [
+  "warning"
+ ],
+ "eye": [
+  "eye"
+ ],
+ "eye.slash": [
+  "eye_off"
+ ],
+ "film": [
+  "video_clip",
+  "video"
+ ],
+ "flip.horizontal": [
+  "flip_horizontal"
+ ],
+ "flip.vertical": [
+  "flip_vertical"
+ ],
+ "folder": [
+  "folder"
+ ],
+ "folder.open": [
+  "folder_open"
+ ],
+ "gearshape": [
+  "settings"
+ ],
+ "globe": [
+  "globe"
+ ],
+ "hand.draw": [
+  "hand_draw",
+  "draw_shape"
+ ],
+ "hand.raised": [
+  "hand_left"
+ ],
+ "hare": [
+  "top_speed",
+  "fast_forward"
+ ],
+ "info.circle": [
+  "info"
+ ],
+ "keyboard": [
+  "keyboard"
+ ],
+ "link": [
+  "link"
+ ],
+ "list.bullet": [
+  "text_bullet_list_ltr",
+  "list"
+ ],
+ "location.slash": [
+  "location_off"
+ ],
+ "lock": [
+  "lock_closed"
+ ],
+ "lock.open": [
+  "lock_open"
+ ],
+ "lock.shield": [
+  "shield_lock"
+ ],
+ "magnifyingglass": [
+  "search"
+ ],
+ "menubar.dock.rectangle": [
+  "desktop"
+ ],
+ "minus": [
+  "subtract"
+ ],
+ "minus.circle": [
+  "subtract_circle"
+ ],
+ "number": [
+  "number_symbol"
+ ],
+ "pause.fill": [
+  "fill:pause"
+ ],
+ "pencil": [
+  "edit"
+ ],
+ "person.crop.square": [
+  "person_square"
+ ],
+ "photo": [
+  "image"
+ ],
+ "photo.on.rectangle": [
+  "image_multiple"
+ ],
+ "pin": [
+  "pin"
+ ],
+ "pin.slash": [
+  "pin_off"
+ ],
+ "play.fill": [
+  "fill:play"
+ ],
+ "plus": [
+  "add"
+ ],
+ "plus.square.on.square": [
+  "copy_add"
+ ],
+ "power": [
+  "power"
+ ],
+ "puzzlepiece.extension": [
+  "puzzle_piece"
+ ],
+ "questionmark.circle": [
+  "question_circle"
+ ],
+ "rectangle.compress.vertical": [
+  "arrow_minimize_vertical",
+  "resize_small"
+ ],
+ "rectangle.dashed": [
+  "select_object",
+  "crop"
+ ],
+ "rectangle.on.rectangle": [
+  "slide_multiple"
+ ],
+ "rectangle.split.1x2": [
+  "split_horizontal"
+ ],
+ "rectangle.split.3x1": [
+  "split_vertical"
+ ],
+ "rectangle.stack.badge.plus": [
+  "document_add",
+  "image_add"
+ ],
+ "rotate.left": [
+  "arrow_rotate_counterclockwise"
+ ],
+ "rotate.right": [
+  "arrow_rotate_clockwise"
+ ],
+ "scissors": [
+  "cut"
+ ],
+ "shippingbox": [
+  "box"
+ ],
+ "sparkles": [
+  "sparkle"
+ ],
+ "speaker.slash": [
+  "speaker_mute"
+ ],
+ "speaker.wave.1": [
+  "speaker_1"
+ ],
+ "speaker.wave.2": [
+  "speaker_2"
+ ],
+ "square.and.arrow.down": [
+  "arrow_download",
+  "save"
+ ],
+ "square.and.arrow.up": [
+  "share"
+ ],
+ "square.grid.2x2": [
+  "grid"
+ ],
+ "square.grid.3x3": [
+  "grid_dots",
+  "apps"
+ ],
+ "square.split.2x1": [
+  "split_vertical"
+ ],
+ "stop.fill": [
+  "fill:stop"
+ ],
+ "tablecells": [
+  "table"
+ ],
+ "target": [
+  "target"
+ ],
+ "terminal": [
+  "window_console",
+  "code"
+ ],
+ "text.alignleft": [
+  "text_align_left"
+ ],
+ "text.insert": [
+  "document_arrow_right",
+  "text_add"
+ ],
+ "text.viewfinder": [
+  "scan_text"
+ ],
+ "timeline.selection": [
+  "timeline",
+  "cut"
+ ],
+ "trash": [
+  "delete"
+ ],
+ "wand": [
+  "wand",
+  "sparkle"
+ ],
+ "waveform": [
+  "music_note_2",
+  "sound_wave_circle"
+ ],
+ "waveform.circle": [
+  "sound_wave_circle"
+ ],
+ "waveform.path.badge.minus": [
+  "sound_wave_circle_subtract",
+  "speaker_off"
+ ],
+ "xmark": [
+  "dismiss"
+ ]
+}

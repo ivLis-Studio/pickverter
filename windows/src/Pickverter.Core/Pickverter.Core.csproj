@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Everything that doesn't need Windows itself: models, catalog, wheel logic, engines, updater.
+       Builds and tests on any OS (the Mac CI and a developer Mac included). -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>Pickverter</RootNamespace>
+    <AssemblyName>Pickverter.Core</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Magick.NET-Q8-AnyCPU" Version="14.17.2" />
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <PackageReference Include="PdfPig" Version="0.1.16" />
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.6.2" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.30.0" />
+    <!-- PDFsharp pulls in 8.0.1, which has known advisories. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- One translation table for both apps; the Windows overlay swaps Mac wording (Finder, ⌥, Trash…) and adds Windows-only strings. -->
+    <EmbeddedResource Include="../../../macos/Resources/i18n.json" LogicalName="i18n.json" />
+    <EmbeddedResource Include="../../Resources/i18n.windows.json" LogicalName="i18n.windows.json" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyMetadata Include="PickverterRelease" Value="$(PickverterRelease)" />
+    <AssemblyMetadata Include="PickverterRepository" Value="ivLis-Studio/pickverter" />
+    <AssemblyMetadata Include="PickverterUpdateKey" Value="QkE0+LXZq6uaUQXQ65SRB7BhKyDsFumJbHmc3EomcWE=" />
+    <InternalsVisibleTo Include="Pickverter.Core.Tests" />
+    <InternalsVisibleTo Include="Pickverter" />
+  </ItemGroup>
+</Project>

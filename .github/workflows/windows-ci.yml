@@ -1,0 +1,97 @@
+name: Windows CI
+
+on:
+  push:
+    paths: ["windows/**", "macos/Resources/i18n.json", ".github/workflows/windows-ci.yml"]
+  pull_request:
+    paths: ["windows/**", "macos/Resources/i18n.json", ".github/workflows/windows-ci.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: windows-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: pwsh
+    working-directory: windows
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  PYTHONUTF8: 1
+
+jobs:
+  test:
+    runs-on: windows-2025
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Strings
+        run: python scripts/check-i18n.py
+
+      - name: Build
+        run: dotnet build Pickverter.slnx -c Release
+
+      - name: Unit tests
+        run: dotnet test --project tests/Pickverter.Core.Tests/Pickverter.Core.Tests.csproj -c Release --no-build
+
+      - name: Glyphs
+        run: |
+          & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli glyphs | Out-Host
+          exit $LASTEXITCODE
+
+      - name: Windows self test
+        run: |
+          & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli selftest "$env:RUNNER_TEMP\selftest" | Out-Host
+          exit $LASTEXITCODE
+
+      - name: Snapshots
+        run: |
+          & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli snapshot "$env:RUNNER_TEMP\snapshots" --lang en,ko,ja,zh-Hans,de,ru --theme light,dark | Out-Host
+          exit $LASTEXITCODE
+
+      - name: Screenshots
+        continue-on-error: true
+        run: |
+          & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli screenshot "$env:RUNNER_TEMP\snapshots\screens" | Out-Host
+          exit $LASTEXITCODE
+
+      - name: Package (x64)
+        env:
+          PICKVERTER_UPDATE_KEY: ${{ secrets.PICKVERTER_UPDATE_KEY }}
+        run: |
+          if (-not $env:PICKVERTER_UPDATE_KEY) {
+            # Forks have no signing key: sign with a throwaway one so the packaging path is still exercised.
+            $key = Join-Path $env:RUNNER_TEMP "throwaway.key"
+            & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli update-keygen $key | Out-Host
+            $env:PICKVERTER_UPDATE_KEY = (Get-Content $key -Raw).Trim()
+          }
+          scripts/release.ps1 -Version "0.0.0-ci.${{ github.run_number }}" -Architectures x64
+
+      - name: Keep the snapshots
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-snapshots
+          path: ${{ runner.temp }}/snapshots
+          if-no-files-found: ignore
+
+      - name: Keep the package
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-package
+          path: |
+            windows/dist/*/*.exe
+            windows/dist/*/*.zip
+            windows/dist/*/*.json
+            windows/dist/*/*.txt
+          if-no-files-found: ignore
+

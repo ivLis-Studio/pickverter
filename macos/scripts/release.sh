@@ -91,8 +91,19 @@ ls -lh "$OUT"
 if [ "$PUBLISH" = "1" ]; then
   PRERELEASE=()
   [[ "$VERSION" == *-* ]] && PRERELEASE=(--prerelease)
-  gh release create "$TAG" "$DMG" "$ZIP" "$OUT/update.json" "$OUT/SHA256SUMS.txt" \
-    --repo "$REPO" --title "Pickverter $VERSION" --notes-file "$BODY" \
-    ${DRAFT[@]+"${DRAFT[@]}"} ${PRERELEASE[@]+"${PRERELEASE[@]}"}
+  if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+    # The Windows workflow got there first: add the Mac files and put the Mac notes above its section.
+    gh release upload "$TAG" "$DMG" "$ZIP" "$OUT/update.json" "$OUT/SHA256SUMS.txt" --repo "$REPO" --clobber
+    EXISTING="$(gh release view "$TAG" --repo "$REPO" --json body --jq .body)"
+    if ! grep -q '<!-- mac -->' <<<"$EXISTING"; then
+      { echo '<!-- mac -->'; cat "$BODY"; echo; printf '%s\n' "$EXISTING"; } > "$OUT/release-body-merged.md"
+      gh release edit "$TAG" --repo "$REPO" --title "Pickverter $VERSION" --notes-file "$OUT/release-body-merged.md"
+    fi
+  else
+    { echo '<!-- mac -->'; cat "$BODY"; } > "$OUT/release-body-marked.md"
+    gh release create "$TAG" "$DMG" "$ZIP" "$OUT/update.json" "$OUT/SHA256SUMS.txt" \
+      --repo "$REPO" --title "Pickverter $VERSION" --notes-file "$OUT/release-body-marked.md" \
+      ${DRAFT[@]+"${DRAFT[@]}"} ${PRERELEASE[@]+"${PRERELEASE[@]}"}
+  fi
   echo "✓ published $TAG"
 fi

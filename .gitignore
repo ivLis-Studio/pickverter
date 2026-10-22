@@ -4,3 +4,7 @@ dist/
 .swiftpm/
 .DS_Store
 *.xcodeproj/xcuserdata/
+bin/
+obj/
+*.user
+.vs/

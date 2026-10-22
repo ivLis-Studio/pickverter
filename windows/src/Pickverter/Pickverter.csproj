@@ -1,0 +1,33 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- The Windows app: tray icon, File Explorer gestures, the wheel, result cards, editors and the Windows
+       implementations of every Platform service the core needs. Compiles on any OS (EnableWindowsTargeting),
+       runs on Windows 10 2004 or later. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Pickverter</RootNamespace>
+    <AssemblyName>Pickverter</AssemblyName>
+    <StartupObject>Pickverter.Program</StartupObject>
+    <ApplicationIcon>Resources\Pickverter.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <RuntimeIdentifiers>win-x64;win-arm64</RuntimeIdentifiers>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <Description>Pickverter</Description>
+    <AssemblyTitle>Pickverter</AssemblyTitle>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Pickverter.Core\Pickverter.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Resource Include="Resources\Fonts\PickverterIcons-Regular.ttf" />
+    <Resource Include="Resources\Fonts\PickverterIcons-Filled.ttf" />
+    <EmbeddedResource Include="Resources\Pickverter.ico" LogicalName="Pickverter.ico" />
+    <EmbeddedResource Include="Resources\Tray-Light.ico" LogicalName="Tray-Light.ico" />
+    <EmbeddedResource Include="Resources\Tray-Dark.ico" LogicalName="Tray-Dark.ico" />
+    <EmbeddedResource Include="Resources\Sounds\done.wav" LogicalName="done.wav" />
+    <EmbeddedResource Include="Resources\Sounds\failed.wav" LogicalName="failed.wav" />
+    <None Include="Resources\Fonts\LICENSE-FluentSystemIcons.txt" CopyToOutputDirectory="PreserveNewest" Link="Licenses\FluentSystemIcons.txt" />
+  </ItemGroup>
+</Project>
