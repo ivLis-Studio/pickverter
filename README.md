@@ -11,14 +11,17 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ivLis-Studio/pickverter?style=flat-square&label=release&color=0A84FF"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=downloads&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
+  <img alt="Windows 10+" src="https://img.shields.io/badge/Windows-10%2B-1D1D1F?style=flat-square&logo=windows&logoColor=white">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
-  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=CI"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="macOS CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=macOS%20CI"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>Download</b></a> ·
   <a href="https://ivlis-studio.github.io/pickverter/"><b>Website</b></a> ·
   <a href="#install">Install</a> ·
+  <a href="windows/README.md">Windows</a> ·
   <a href="macos/CHANGELOG.md">Changelog</a> ·
   <a href="README.ko.md">한국어</a>
 </p>
@@ -72,6 +75,17 @@ https://github.com/user-attachments/assets/feb93e2b-2654-4059-9b74-615e5dddc990
   <img src="docs/screenshots/cards.png" width="400" alt="Result cards">
 </p>
 
+### On Windows
+
+The same wheel, made for Windows: **tap Alt** with files selected in File Explorer or on the desktop, **Alt+click** a file,
+or **tap Shift / Ctrl / Alt** while dragging. Enter runs, Esc closes, Ctrl+C / Ctrl+S send one result to the clipboard or a file.
+Share takes AirDrop's place, Undo uses the Recycle Bin, and everything follows your accent color and light or dark mode.
+
+<p align="center">
+  <img src="docs/screenshots/windows-wheel.png" width="400" alt="The Windows wheel with the rotate options fanned out">
+  <img src="docs/screenshots/windows-cards.png" width="400" alt="Result cards on Windows">
+</p>
+
 <details>
 <summary><b>Keyboard</b></summary>
 
@@ -90,6 +104,8 @@ https://github.com/user-attachments/assets/feb93e2b-2654-4059-9b74-615e5dddc990
 
 ## Install
 
+### Mac
+
 1. Download **Pickverter-x.y.z.dmg** from [Releases](https://github.com/ivLis-Studio/pickverter/releases/latest) and drag Pickverter into Applications.
 2. The app isn't notarized yet, so macOS asks once: open **System Settings › Privacy & Security** and click **Open Anyway**
    (or right-click Pickverter › Open).
@@ -101,6 +117,17 @@ https://github.com/user-attachments/assets/feb93e2b-2654-4059-9b74-615e5dddc990
 
 Requires macOS 14 or later, Apple silicon or Intel.
 
+### Windows
+
+1. Download **Pickverter-x.y.z-win-x64-setup.exe** (**win-arm64** for Snapdragon PCs) from [Releases](https://github.com/ivLis-Studio/pickverter/releases/latest)
+   and run it. It installs for your account only — no administrator rights.
+2. The installer isn't code-signed yet, so SmartScreen may say **"Windows protected your PC"**: click **More info › Run anyway**.
+3. The welcome window checks Windows Security's **controlled folder access** (Pickverter offers to allow itself when it is on),
+   can install **ffmpeg** with winget and starts Pickverter with Windows. Nothing else needs a permission.
+
+Requires Windows 10 version 2004 or later, or Windows 11 (x64 or Arm64). Pickverter lives in the notification area;
+keys, engines and build notes are in [windows/README.md](windows/README.md).
+
 ### Updates
 
 Pickverter checks this repository's releases about once a day and installs updates with one click (or in the background,
@@ -111,14 +138,19 @@ Because releases are currently signed ad hoc (no Apple Developer ID yet), macOS 
 for its permissions (Accessibility, Finder control, file access) again after an update. Pickverter clears the stale entries
 for you and reopens the welcome window so you can switch them back on.
 
+On Windows the app reads `update-windows.json` from the same release, checks the same Ed25519 signature, size and SHA-256,
+then swaps its own folder and restarts — no administrator prompt.
+
 ### Privacy
 
-Files never leave your Mac. The only network request is the update check to github.com, which you can turn off.
+Files never leave your computer. The only network request is the update check to github.com, which you can turn off
+(plus, on Windows, the one-time download of the background-removal model if you use it).
 
 ## Languages
 
 English · 한국어 · 日本語 · 简体中文 · 繁體中文 · Español · Français · Deutsch · Русский · Português (Brasil).
-Switch any time in Settings › General. All strings live in `macos/Resources/i18n.json`; corrections are welcome.
+Switch any time in Settings › General. All strings live in `macos/Resources/i18n.json` (the Windows app adds its own wording in
+`windows/Resources/i18n.windows.json`); corrections are welcome.
 
 ## Build from source
 
@@ -141,22 +173,35 @@ Developer commands (from `macos/`): `build/Pickverter.app/Contents/MacOS/Pickver
 `editor-snapshot`, `selftest`, `fixtures`, `inspect`. Editors can be answered from the environment (`PICKVERTER_EDITOR_CROP='{"rect":…}'`),
 which is how the tests run them without windows. `PICKVERTER_LANG=ja` picks a language, `PICKVERTER_DEBUG=1` logs gestures.
 
+The Windows app lives in `windows/` (.NET 10, WPF):
+
+```powershell
+cd windows
+scripts/build.ps1 -Run          # debug build, then start it
+scripts/test.ps1                # strings, unit tests, glyphs, Windows self test
+```
+
+Its core and tests also build and run on a Mac (`dotnet test --project tests/Pickverter.Core.Tests/Pickverter.Core.Tests.csproj`).
+CI renders every window in six languages and both themes, and drives File Explorer end to end on a Windows runner.
+
 ## Releasing
 
-1. Add a `## [x.y.z]` section to `macos/CHANGELOG.md` — it becomes the release notes and the text in the update window.
+1. Add a `## [x.y.z]` section to `macos/CHANGELOG.md` and to `windows/CHANGELOG.md` — they become the release notes and the text in the update windows.
 2. Tag and push: `git tag vx.y.z && git push origin vx.y.z`. The **macOS Release** workflow tests, builds a universal app,
-   creates the DMG, the ZIP and the signed `update.json`, and publishes the GitHub release.
-   (Locally: `macos/scripts/release.sh x.y.z --publish`.)
+   creates the DMG, the ZIP and the signed `update.json`; the **Windows Release** workflow builds x64 and Arm64, the installers,
+   portable ZIPs and the signed `update-windows.json`. Both attach to the same GitHub release, whichever finishes first creates it.
+   (Locally: `macos/scripts/release.sh x.y.z --publish` and `windows/scripts/release.ps1 -Version x.y.z -Publish`.)
 
 The update signing key is the `PICKVERTER_UPDATE_KEY` repository secret (its public half is `PVUpdatePublicKey` in
-`macos/Resources/Info.plist`). Keep a backup: installed copies only accept updates signed with it.
+`macos/Resources/Info.plist` and `PickverterUpdateKey` in `windows/src/Pickverter.Core/Pickverter.Core.csproj`). Keep a backup:
+installed copies only accept updates signed with it.
 Optional secrets for a Developer ID build: `MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`,
 and for notarization `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 
 ## Repository layout
 
 - [`macos/`](macos) — the Mac app: Swift sources, resources, build/test/release scripts and the changelog
-- [`windows/`](windows) — the Windows app (in progress)
+- [`windows/`](windows) — the Windows app: .NET 10 / WPF sources, tests, the Inno Setup installer, build/test/release scripts and its changelog
 - [`website/`](website) — [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/); GitHub Pages publishes `website/public/`
 - [`promo/`](promo) — the launch film and the README artwork
 - [`docs/`](docs) — images used in this README

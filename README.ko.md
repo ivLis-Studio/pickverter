@@ -11,14 +11,17 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><img alt="최신 버전" src="https://img.shields.io/github/v/release/ivLis-Studio/pickverter?style=flat-square&label=%EC%B5%9C%EC%8B%A0&color=0A84FF"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="다운로드" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
+  <img alt="Windows 10+" src="https://img.shields.io/badge/Windows-10%2B-1D1D1F?style=flat-square&logo=windows&logoColor=white">
   <a href="LICENSE"><img alt="MIT 라이선스" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
-  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=CI"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="macOS CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=macOS%20CI"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>다운로드</b></a> ·
   <a href="https://ivlis-studio.github.io/pickverter/?lang=ko"><b>웹사이트</b></a> ·
   <a href="#설치">설치</a> ·
+  <a href="windows/README.md">Windows</a> ·
   <a href="macos/CHANGELOG.md">변경 내역</a> ·
   <a href="README.md">English</a>
 </p>
@@ -70,6 +73,17 @@ https://github.com/user-attachments/assets/6fce639f-3d08-496d-bed4-327f38d73594
   <img src="docs/screenshots/cards.png" width="400" alt="결과 카드">
 </p>
 
+### Windows에서는
+
+같은 휠을 Windows 방식으로 써요. 파일 탐색기(또는 바탕 화면)에서 파일을 고르고 **Alt 톡**, 파일을 **Alt+클릭**,
+파일을 끄는 동안 **Shift / Ctrl / Alt 톡**. Enter로 실행, Esc로 닫기, Ctrl+C / Ctrl+S로 이번 결과만 클립보드나 파일로 보내요.
+AirDrop 자리는 Windows 공유가, 실행 취소는 휴지통이 맡고, 강조 색과 라이트·다크 모드를 그대로 따라가요.
+
+<p align="center">
+  <img src="docs/screenshots/windows-wheel.png" width="400" alt="회전 옵션이 펼쳐진 Windows 휠">
+  <img src="docs/screenshots/windows-cards.png" width="400" alt="Windows 결과 카드">
+</p>
+
 <details>
 <summary><b>키보드</b></summary>
 
@@ -88,6 +102,8 @@ https://github.com/user-attachments/assets/6fce639f-3d08-496d-bed4-327f38d73594
 
 ## 설치
 
+### Mac
+
 1. [Releases](https://github.com/ivLis-Studio/pickverter/releases/latest)에서 **Pickverter-x.y.z.dmg**를 내려받아 Pickverter를 응용 프로그램 폴더로 끌어 놓으세요.
 2. 아직 공증(notarization)을 받지 않아 처음 한 번은 **시스템 설정 › 개인정보 보호 및 보안**에서 **그래도 열기**를 눌러야 해요(또는 앱 우클릭 › 열기).
 3. **손쉬운 사용**(⌥ 탭·드래그 감지)과 **Finder 제어**(선택한 파일 읽기)를 허용하세요. 첫 화면이 차례대로 안내해요.
@@ -98,6 +114,17 @@ https://github.com/user-attachments/assets/6fce639f-3d08-496d-bed4-327f38d73594
 
 macOS 14 이상, Apple 실리콘과 Intel 모두 지원해요.
 
+### Windows
+
+1. [Releases](https://github.com/ivLis-Studio/pickverter/releases/latest)에서 **Pickverter-x.y.z-win-x64-setup.exe**(스냅드래곤 PC는 **win-arm64**)를 내려받아 실행하세요.
+   내 계정에만 설치돼서 관리자 권한이 필요 없어요.
+2. 아직 코드 서명이 없어 **"Windows의 PC 보호"** 창이 뜰 수 있어요. **추가 정보 › 실행**을 누르세요.
+3. 첫 화면이 Windows 보안의 **제어된 폴더 액세스**를 확인하고(켜져 있으면 Pickverter를 허용하도록 도와줘요), winget으로 **ffmpeg**을 설치하고,
+   Windows 시작 시 실행을 켜 줘요. 그 밖에는 권한이 필요 없어요.
+
+Windows 10 2004 이상 또는 Windows 11(x64·Arm64)에서 동작해요. Pickverter는 알림 영역에 머물러요.
+키 배치·엔진·빌드 방법은 [windows/README.md](windows/README.md)에 있어요.
+
 ### 업데이트
 
 하루에 한 번쯤 이 저장소의 릴리스를 확인하고, 클릭 한 번으로(또는 백그라운드에서 받아 두었다가 다음 재시작 때) 설치해요 — 설정 › 업데이트.
@@ -106,14 +133,18 @@ macOS 14 이상, Apple 실리콘과 Intel 모두 지원해요.
 지금은 Apple Developer ID 없이 애드혹 서명으로 배포하기 때문에, macOS가 새 버전을 다른 앱으로 보고 업데이트 후 권한(손쉬운 사용·Finder 제어·파일 접근)을 한 번 더 요청해요.
 Pickverter가 예전 항목을 정리하고 첫 화면을 다시 열어 바로 켤 수 있게 해 줘요.
 
+Windows 앱은 같은 릴리스의 `update-windows.json`을 읽고 같은 Ed25519 서명·크기·SHA-256을 확인한 뒤, 자기 폴더를 바꿔 끼우고 다시 실행해요. 관리자 권한 창은 뜨지 않아요.
+
 ### 개인정보
 
-파일은 Mac 밖으로 나가지 않아요. 네트워크 요청은 github.com의 업데이트 확인 하나뿐이고, 끌 수 있어요.
+파일은 내 컴퓨터 밖으로 나가지 않아요. 네트워크 요청은 github.com의 업데이트 확인 하나뿐이고, 끌 수 있어요
+(Windows에서 배경 제거를 처음 쓸 때 모델을 한 번 내려받는 것 말고는요).
 
 ## 언어
 
 English · 한국어 · 日本語 · 简体中文 · 繁體中文 · Español · Français · Deutsch · Русский · Português (Brasil).
-설정 › 일반에서 언제든 바꿀 수 있어요. 문구는 모두 `macos/Resources/i18n.json` 한 파일에 있어요. 번역 수정 환영합니다.
+설정 › 일반에서 언제든 바꿀 수 있어요. 문구는 모두 `macos/Resources/i18n.json`에 있고, Windows 앱만의 표현은
+`windows/Resources/i18n.windows.json`에 있어요. 번역 수정 환영합니다.
 
 ## 직접 빌드하기
 
@@ -135,20 +166,33 @@ Xcode나 SwiftPM을 쓴다면 `macos/Package.swift`를 여세요.
 개발용 명령(`macos/`에서 실행): `build/Pickverter.app/Contents/MacOS/Pickverter cli …` — `list`, `run <option-id> <파일>`, `snapshot`,
 `editor-snapshot`, `selftest`, `fixtures`, `inspect`. 편집 창의 답은 환경 변수로 넣을 수 있어서(`PICKVERTER_EDITOR_CROP='{"rect":…}'`) 테스트는 창 없이 돌아가요.
 
+Windows 앱은 `windows/` 폴더에 있어요(.NET 10, WPF).
+
+```powershell
+cd windows
+scripts/build.ps1 -Run          # debug 빌드 후 실행
+scripts/test.ps1                # 번역 검사, 단위 테스트, 아이콘 검사, Windows 자체 테스트
+```
+
+코어와 테스트는 Mac에서도 빌드·실행돼요(`dotnet test --project tests/Pickverter.Core.Tests/Pickverter.Core.Tests.csproj`).
+CI가 Windows 러너에서 모든 창을 6개 언어·두 테마로 렌더링하고, 파일 탐색기를 실제로 조작해 처음부터 끝까지 확인해요.
+
 ## 릴리스하기
 
-1. `macos/CHANGELOG.md`에 `## [x.y.z]` 섹션을 추가하세요. 릴리스 노트와 업데이트 창의 내용이 돼요.
-2. 태그를 푸시하세요: `git tag vx.y.z && git push origin vx.y.z`. **macOS Release** 워크플로가 테스트 → 유니버설 빌드 → DMG·ZIP·서명된 `update.json` 생성 → GitHub 릴리스 게시까지 해요.
-   (로컬에서는 `macos/scripts/release.sh x.y.z --publish`)
+1. `macos/CHANGELOG.md`와 `windows/CHANGELOG.md`에 `## [x.y.z]` 섹션을 추가하세요. 릴리스 노트와 업데이트 창의 내용이 돼요.
+2. 태그를 푸시하세요: `git tag vx.y.z && git push origin vx.y.z`. **macOS Release** 워크플로가 유니버설 앱·DMG·ZIP·서명된 `update.json`을,
+   **Windows Release** 워크플로가 x64·Arm64 설치 파일·포터블 ZIP·서명된 `update-windows.json`을 만들어 같은 GitHub 릴리스에 올려요. 먼저 끝난 쪽이 릴리스를 만들어요.
+   (로컬에서는 `macos/scripts/release.sh x.y.z --publish`, `windows/scripts/release.ps1 -Version x.y.z -Publish`)
 
-업데이트 서명 키는 저장소 시크릿 `PICKVERTER_UPDATE_KEY`이고, 공개 키는 `macos/Resources/Info.plist`의 `PVUpdatePublicKey`예요.
+업데이트 서명 키는 저장소 시크릿 `PICKVERTER_UPDATE_KEY`이고, 공개 키는 `macos/Resources/Info.plist`의 `PVUpdatePublicKey`와
+`windows/src/Pickverter.Core/Pickverter.Core.csproj`의 `PickverterUpdateKey`예요.
 이 키로 서명한 업데이트만 설치되니 꼭 백업해 두세요. Developer ID 빌드용 선택 시크릿: `MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`,
 공증용: `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 
 ## 저장소 구성
 
 - [`macos/`](macos) — Mac 앱: Swift 소스, 리소스, 빌드·테스트·릴리스 스크립트, 변경 내역
-- [`windows/`](windows) — Windows 앱 (준비 중)
+- [`windows/`](windows) — Windows 앱: .NET 10 / WPF 소스, 테스트, Inno Setup 설치 프로그램, 빌드·테스트·릴리스 스크립트, 변경 내역
 - [`website/`](website) — 소개 사이트 [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/?lang=ko). GitHub Pages가 `website/public/`을 게시해요
 - [`promo/`](promo) — 소개 영상과 README 이미지
 - [`docs/`](docs) — 이 README에 쓰는 이미지
