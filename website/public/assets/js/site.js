@@ -1,43 +1,84 @@
-// Page behaviour: language, icons, reveal, tabs, comparison slider, destinations, film, release info.
+// Page behaviour: language, platform (Mac or Windows), icons, reveal, tabs, comparison slider, destinations, film, release info.
 (function () {
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const LANGS = ["en", "ko"];
+  const OSES = ["mac", "win"];
+  const RELEASES = "https://github.com/ivLis-Studio/pickverter/releases/latest";
+  const stored = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const keep = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
   // ---- icons
-  $$("[data-i]").forEach((n) => { n.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + (window.ICONS[n.dataset.i] || "") + "</svg>"; });
+  const paint = (n) => { n.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + (window.ICONS[n.dataset.i] || "") + "</svg>"; };
+  $$("[data-i]").forEach(paint);
 
   // ---- language: ?lang= → saved → browser
   const params = new URLSearchParams(location.search);
-  const saved = (() => { try { return localStorage.getItem("pv.lang"); } catch { return null; } })();
   const browser = (navigator.languages || [navigator.language || "en"]).map((l) => l.slice(0, 2).toLowerCase()).find((l) => LANGS.includes(l));
-  let lang = [params.get("lang"), saved, browser, "en"].find((l) => LANGS.includes(l));
+  let lang = [params.get("lang"), stored("pv.lang"), browser, "en"].find((l) => LANGS.includes(l));
+
+  // ---- platform: ?os= → saved → this computer
+  function systemOS() {
+    const platform = (navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || "";
+    return /win/i.test(platform) || /Windows/.test(navigator.userAgent) ? "win" : "mac";
+  }
+  let os = [params.get("os"), stored("pv.os"), systemOS()].find((o) => OSES.includes(o));
+  let arm = false; // a Windows PC on Arm gets the Arm64 installer first
+
   const originals = new Map($$("[data-t]").map((n) => [n, n.innerHTML]));
   const X = (k, ...a) => ((window.SITE_EXTRA[lang] || window.SITE_EXTRA.en)[k] || window.SITE_EXTRA.en[k] || k).replace(/%@/g, () => a.shift());
 
+  // English copy lives in index.html, Korean in SITE_I18N; on the Windows page SITE_WIN replaces what differs.
   function applyLang(l) {
     lang = l;
     document.documentElement.lang = l;
-    const dict = window.SITE_I18N[l] || {};
-    for (const [n, en] of originals) n.innerHTML = l === "en" ? en : dict[n.dataset.t] ?? en;
-    $$("[data-t] [data-i], [data-i]").forEach((n) => { if (!n.firstChild) n.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + (window.ICONS[n.dataset.i] || "") + "</svg>"; });
+    const dict = window.SITE_I18N[l] || {}, win = os === "win" ? window.SITE_WIN[l] || {} : {};
+    for (const [n, en] of originals) {
+      const k = n.dataset.t;
+      n.innerHTML = k in win ? win[k] : l === "en" ? en : dict[k] ?? en;
+    }
+    $$("[data-t] [data-i], [data-i]").forEach((n) => { if (!n.firstChild) paint(n); });
     const meta = window.SITE_META[l] || window.SITE_META.en;
     document.title = meta.title;
     $('meta[name="description"]').setAttribute("content", meta.desc);
     $("#lang-select").value = l;
     $("#play").setAttribute("aria-label", X("film.play"));
     $("#wheel").setAttribute("aria-label", X("wheel.label"));
+    $("#os-switch").setAttribute("aria-label", X("os.label"));
     setFilm();
-    if (wheel) wheel.setLang(l), wheel.setLabels({ done: X("demo.done") });
+    if (wheel) wheel.setLang(l, os), wheel.setLabels({ done: X("demo.done") });
     renderRelease();
     renderDest();
     renderLangShow();
   }
   $("#lang-select").addEventListener("change", (e) => {
-    try { localStorage.setItem("pv.lang", e.target.value); } catch {}
+    keep("pv.lang", e.target.value);
     const u = new URL(location.href); u.searchParams.set("lang", e.target.value); history.replaceState(null, "", u);
     applyLang(e.target.value);
   });
+
+  function applyOS(o) {
+    os = o;
+    document.documentElement.dataset.os = o;
+    $$("#os-switch button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.os === o)));
+    $$("[data-src-win]").forEach((img) => {
+      if (!img.dataset.srcMac) img.dataset.srcMac = img.getAttribute("src");
+      img.setAttribute("src", o === "win" ? img.dataset.srcWin : img.dataset.srcMac);
+    });
+    $$("[data-href-win]").forEach((a) => {
+      if (!a.dataset.hrefMac) a.dataset.hrefMac = a.getAttribute("href");
+      a.setAttribute("href", o === "win" ? a.dataset.hrefWin : a.dataset.hrefMac);
+    });
+    $$(".os-other").forEach((a) => a.setAttribute("href", "?os=" + (o === "win" ? "mac" : "win")));
+    applyLang(lang);
+  }
+  function chooseOS(o) {
+    keep("pv.os", o);
+    const u = new URL(location.href); u.searchParams.set("os", o); history.replaceState(null, "", u);
+    applyOS(o);
+  }
+  $$("#os-switch button").forEach((b) => b.addEventListener("click", () => chooseOS(b.dataset.os)));
+  $$(".os-other").forEach((a) => a.addEventListener("click", (e) => { e.preventDefault(); chooseOS(os === "win" ? "mac" : "win"); }));
 
   // ---- header border on scroll
   const bar = $("#bar");
@@ -49,7 +90,7 @@
 
   // ---- live wheel
   let wheel = null;
-  wheel = window.PickWheel.mount($("#wheel"), { lang, file: "Lisbon.heic", done: X("demo.done"), live: $("#wheel-live") });
+  wheel = window.PickWheel.mount($("#wheel"), { lang, os, file: "Lisbon.heic", done: X("demo.done"), live: $("#wheel-live") });
 
   // ---- ring tabs (roving tabindex)
   const tabs = $$(".ring-tab");
@@ -80,7 +121,7 @@
   }
   $$(".dest").forEach((b) => b.addEventListener("click", () => { dest = b.dataset.dest; renderDest(); }));
 
-  // ---- language showcase: the wheel's own words, straight from the app
+  // ---- language showcase: the wheel's own words, straight from the app (the Windows app's on the Windows page)
   const SHOW = ["en", "ko", "ja", "zh-Hans", "zh-Hant", "es", "fr", "de", "ru", "pt-BR"];
   const NAMES = { en: "English", ko: "한국어", ja: "日本語", "zh-Hans": "简体中文", "zh-Hant": "繁體中文", es: "Español", fr: "Français", de: "Deutsch", ru: "Русский", "pt-BR": "Português" };
   let shown = null;
@@ -88,11 +129,11 @@
   SHOW.forEach((l) => { const b = document.createElement("button"); b.type = "button"; b.lang = l; b.textContent = NAMES[l]; b.dataset.l = l; langsBox.appendChild(b); });
   langsBox.addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) { shown = b.dataset.l; renderLangShow(); } });
   function renderLangShow() {
-    const l = shown || lang, app = window.APP, i = app.languages.indexOf(l);
+    const l = shown || lang, app = window.APP, i = app.languages.indexOf(l), W = os === "win" ? window.APP_WIN.strings : {};
     $$("#langs button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.l === l));
     const keys = ["mode.convert", "mode.tools", "mode.actions", "tool.removebg", "tool.ocr", "tool.rotate", "dest.clipboard", "job.in_clipboard", "card.reveal", "card.undo"];
     const box = $("#lang-show"); box.lang = l;
-    box.innerHTML = keys.map((k) => '<span class="chip">' + app.strings[k][i] + "</span>").join("");
+    box.innerHTML = keys.map((k) => '<span class="chip">' + (W[k] || app.strings[k])[i] + "</span>").join("");
   }
 
   // ---- film
@@ -109,33 +150,44 @@
   $("#play").addEventListener("click", () => { video.controls = true; player.classList.add("playing"); video.play(); });
   video.addEventListener("play", () => { video.controls = true; player.classList.add("playing"); });
 
-  // ---- latest release from GitHub (falls back to the releases page)
+  // ---- latest release from GitHub: the DMG on the Mac page, the installer on the Windows page (falls back to the releases page)
   let release = null;
   function renderRelease() {
-    if (!release) return;
-    $$(".dl-version").forEach((n) => (n.textContent = X("dl.version", release.version)));
-    $$(".dl-version-long").forEach((n) => (n.textContent = X("dl.size", "v" + release.version, release.size)));
+    const r = release;
+    const main = r && (os === "win" ? (arm && r.winArm) || r.winX64 : r.mac);
+    const sums = r && (os === "win" ? r.winSums : r.macSums);
+    $$(".dl-link").forEach((a) => (a.href = main ? main.browser_download_url : RELEASES));
+    $$(".dl-sums").forEach((a) => (a.href = sums ? sums.browser_download_url : RELEASES));
+    $$(".dl-win-arm").forEach((a) => (a.href = r && r.winArm ? r.winArm.browser_download_url : RELEASES));
+    $$(".dl-win-zip").forEach((a) => (a.href = r && r.winZip ? r.winZip.browser_download_url : RELEASES));
+    if (!main) return;
+    $$(".dl-version").forEach((n) => (n.textContent = X("dl.version", r.version)));
+    $$(".dl-version-long").forEach((n) => (n.textContent = X("dl.size", "v" + r.version, (main.size / 1048576).toFixed(1))));
   }
   fetch("https://api.github.com/repos/ivLis-Studio/pickverter/releases/latest", { headers: { Accept: "application/vnd.github+json" } })
     .then((r) => (r.ok ? r.json() : null))
     .then((j) => {
       if (!j) return;
-      const dmg = (j.assets || []).find((a) => /\.dmg$/i.test(a.name));
-      const sums = (j.assets || []).find((a) => /SHA256SUMS/i.test(a.name));
-      release = { version: j.tag_name.replace(/^v/, ""), size: dmg ? (dmg.size / 1048576).toFixed(1) : "—" };
-      if (dmg) $$(".dl-link").forEach((a) => (a.href = dmg.browser_download_url));
-      if (sums) $$(".dl-sums").forEach((a) => (a.href = sums.browser_download_url));
+      const assets = j.assets || [], find = (re) => assets.find((a) => re.test(a.name));
+      release = {
+        version: j.tag_name.replace(/^v/, ""),
+        mac: find(/\.dmg$/i), macSums: find(/^SHA256SUMS\.txt$/i),
+        winX64: find(/-win-x64-setup\.exe$/i), winArm: find(/-win-arm64-setup\.exe$/i),
+        winZip: find(/-win-x64\.zip$/i), winSums: find(/^SHA256SUMS-windows\.txt$/i),
+      };
       renderRelease();
     })
     .catch(() => {});
+  if (systemOS() === "win" && navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+    navigator.userAgentData.getHighEntropyValues(["architecture"]).then((v) => { arm = v.architecture === "arm"; renderRelease(); }).catch(() => {});
+  }
 
-  // ---- copy brew command
+  // ---- copy the ffmpeg command (brew on the Mac page, winget on the Windows page)
   $("#copy-brew").addEventListener("click", async (e) => {
     try { await navigator.clipboard.writeText($("#brew-cmd").textContent); } catch { return; }
     const span = e.currentTarget.querySelector("span[data-t]"), old = span.textContent;
     span.textContent = X("copied"); setTimeout(() => (span.textContent = old), 1400);
   });
 
-  applyLang(lang);
+  applyOS(os);
 })();
-

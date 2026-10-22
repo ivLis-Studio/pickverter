@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-os="mac">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Pickverter — every file, one key away</title>
-<meta name="description" content="Pick a file in Finder, tap one key, and convert, edit or share it right next to your cursor. Free, open source and 100% on your Mac.">
+<meta name="description" content="Pick a file, tap one key, and convert, edit or share it right next to your cursor. Free for Mac and Windows, and 100% on your computer.">
 <meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0F1012" media="(prefers-color-scheme: dark)">
 <link rel="icon" type="image/png" href="assets/media/favicon-64.png">
@@ -13,7 +13,7 @@
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Pickverter">
 <meta property="og:title" content="Pickverter — every file, one key away">
-<meta property="og:description" content="Convert, edit and share files right at your cursor in Finder. Free, open source, 100% local.">
+<meta property="og:description" content="Convert, edit and share files right at your cursor in Finder or File Explorer. Free for Mac and Windows, 100% local.">
 <meta property="og:url" content="https://ivlis-studio.github.io/pickverter/">
 <meta property="og:image" content="https://ivlis-studio.github.io/pickverter/assets/media/og-en.png">
 <meta property="og:image:width" content="1200">
@@ -22,9 +22,9 @@
 <meta name="twitter:image" content="https://ivlis-studio.github.io/pickverter/assets/media/og-en.png">
 <link rel="stylesheet" href="assets/css/site.css">
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pickverter","operatingSystem":"macOS 14 or later","applicationCategory":"UtilitiesApplication",
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pickverter","operatingSystem":"macOS 14 or later, Windows 10 or later","applicationCategory":"UtilitiesApplication",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Organization","name":"ivLis Studio"},
- "downloadUrl":"https://github.com/ivLis-Studio/pickverter/releases/latest","license":"https://opensource.org/licenses/MIT"}
+ "downloadUrl":"https://github.com/ivLis-Studio/pickverter/releases/latest","license":"https://creativecommons.org/licenses/by-nc-nd/4.0/"}
 </script>
 </head>
 <body>
@@ -32,7 +32,7 @@
 
 <header class="bar" id="bar">
   <div class="wrap">
-    <a class="brand" href="#top" aria-label="Pickverter home"><img src="assets/media/icon-512.png" alt="" width="30" height="30">Pickverter</a>
+    <a class="brand" href="#top" aria-label="Pickverter home"><img src="assets/media/icon-512.png" alt="" width="30" height="30"><span>Pickverter</span></a>
     <nav class="nav" aria-label="Sections">
       <a href="#how" data-t="nav.how">How it works</a>
       <a href="#rings" data-t="nav.features">Features</a>
@@ -41,6 +41,9 @@
       <a href="#faq" data-t="nav.faq">FAQ</a>
     </nav>
     <div class="bar-end">
+      <div class="os" role="group" id="os-switch" aria-label="Platform">
+        <button type="button" data-os="mac" aria-pressed="true">Mac</button><button type="button" data-os="win" aria-pressed="false">Windows</button>
+      </div>
       <label class="lang"><span class="sr" data-t="lang.label">Language</span><i class="ico" data-i="globe"></i>
         <select id="lang-select"><option value="en">English</option><option value="ko">한국어</option></select>
       </label>
@@ -54,7 +57,7 @@
 <section class="hero" id="top">
   <div class="wrap">
     <div>
-      <span class="eyebrow"><i class="ico" data-i="sparkles"></i><span data-t="hero.eyebrow">Free &amp; open source for macOS</span></span>
+      <span class="eyebrow"><i class="ico" data-i="sparkles"></i><span data-t="hero.eyebrow">Free for Mac and Windows</span></span>
       <h1 data-t="hero.title">Every file.<br>One <span class="key" aria-label="Option">⌥</span> away.</h1>
       <p class="lede" data-t="hero.lede">Pick a file in Finder, tap a key, and a wheel opens right at your cursor. Convert, edit, share — and you never leave the folder you’re in.</p>
       <div class="ctas">
@@ -65,6 +68,7 @@
         <span><i class="ico" data-i="check"></i><span class="dl-version" data-t="fine.version">Latest release</span></span>
         <span><i class="ico" data-i="check"></i><span data-t="fine.req">macOS 14+, Apple silicon &amp; Intel</span></span>
         <span><i class="ico" data-i="check"></i><span data-t="fine.local">Nothing is uploaded</span></span>
+        <span><i class="ico" data-i="arrow-right"></i><a class="os-other" href="?os=win" data-t="fine.other">Also on Windows</a></span>
       </div>
     </div>
     <div class="stagebox">
@@ -117,7 +121,8 @@
         <h3 data-t="how.2.t">Tap ⌥</h3>
         <p data-t="how.2.d">Tap Option, ⌥-click a file, or tap ⇧ ⌘ ⌃ while dragging. The wheel opens at your cursor.</p>
         <div class="art" aria-hidden="true">
-          <div class="keyrow"><div class="kcap down"><b>⌥</b><small>option</small></div><div class="kcap"><b>⌘</b><small>command</small></div></div>
+          <div class="keyrow only-mac"><div class="kcap down"><b>⌥</b><small>option</small></div><div class="kcap"><b>⌘</b><small>command</small></div></div>
+          <div class="keyrow only-win"><div class="kcap word down"><b>Alt</b></div><div class="kcap word"><b>Ctrl</b></div></div>
         </div>
       </article>
       <article class="step reveal">
@@ -144,9 +149,9 @@
     </div>
     <div class="rings reveal">
       <div class="ring-tabs" role="tablist" aria-label="Rings">
-        <button class="ring-tab" role="tab" id="tab-convert" aria-controls="panel-convert" aria-selected="true"><span class="k">⇧</span><span><b data-t="ring.convert">Convert</b><span data-t="ring.convert.d">Into any format that makes sense</span></span></button>
-        <button class="ring-tab" role="tab" id="tab-tools" aria-controls="panel-tools" aria-selected="false" tabindex="-1"><span class="k">⌘</span><span><b data-t="ring.tools">Tools</b><span data-t="ring.tools.d">Edit without opening an app</span></span></button>
-        <button class="ring-tab" role="tab" id="tab-actions" aria-controls="panel-actions" aria-selected="false" tabindex="-1"><span class="k">⌃</span><span><b data-t="ring.actions">Actions</b><span data-t="ring.actions.d">Send it where it needs to go</span></span></button>
+        <button class="ring-tab" role="tab" id="tab-convert" aria-controls="panel-convert" aria-selected="true"><span class="k" data-t="ring.k.convert">⇧</span><span><b data-t="ring.convert">Convert</b><span data-t="ring.convert.d">Into any format that makes sense</span></span></button>
+        <button class="ring-tab" role="tab" id="tab-tools" aria-controls="panel-tools" aria-selected="false" tabindex="-1"><span class="k" data-t="ring.k.tools">⌘</span><span><b data-t="ring.tools">Tools</b><span data-t="ring.tools.d">Edit without opening an app</span></span></button>
+        <button class="ring-tab" role="tab" id="tab-actions" aria-controls="panel-actions" aria-selected="false" tabindex="-1"><span class="k" data-t="ring.k.actions">⌃</span><span><b data-t="ring.actions">Actions</b><span data-t="ring.actions.d">Send it where it needs to go</span></span></button>
       </div>
       <div>
         <div class="ring-panel" role="tabpanel" id="panel-convert" aria-labelledby="tab-convert">
@@ -196,8 +201,9 @@
           <div class="groups">
             <div class="group"><h3><i class="ico" data-i="share"></i><span data-t="g.send">Send</span></h3>
               <ul class="tool-list">
-                <li><i class="ico" data-i="radio"></i><span><b>AirDrop</b> <span data-t="a.airdrop.d">— to nearby Apple devices</span></span></li>
+                <li class="only-mac"><i class="ico" data-i="radio"></i><span><b>AirDrop</b> <span data-t="a.airdrop.d">— to nearby Apple devices</span></span></li>
                 <li><i class="ico" data-i="share"></i><span><b data-t="a.share">Share</b> <span data-t="a.share.d">— Messages, Mail and more</span></span></li>
+                <li class="only-win"><i class="ico" data-i="external-link"></i><span><b data-t="a.openwith">Open with</b> <span data-t="a.openwith.d">— any app, like File Explorer’s own menu</span></span></li>
                 <li><i class="ico" data-i="clipboard"></i><span><b data-t="a.copy">Copy the file</b> <span data-t="a.copy.d">— paste it anywhere</span></span></li>
               </ul></div>
             <div class="group"><h3><i class="ico" data-i="terminal"></i><span data-t="g.dev">For developers</span></h3>
@@ -280,7 +286,7 @@
         <div class="body"><h3 data-t="ed.hide">Hide what shouldn’t be seen</h3><p data-t="ed.hide.d">Mosaic, blur or fill. Find Faces and Find Text mark them for you.</p></div></article>
       <article class="ed w7 reveal"><div class="shot"><img src="assets/media/editor-pages.webp" alt="Organizing PDF pages by drag and drop" loading="lazy" width="1760" height="1280"></div>
         <div class="body"><h3 data-t="ed.pages">Organize PDF pages</h3><p data-t="ed.pages.d">Drag to reorder, rotate, duplicate or delete, then save the whole PDF or just the selection.</p></div></article>
-      <article class="ed w5 reveal"><div class="shot"><img src="assets/media/cards.webp" alt="Result cards" loading="lazy" width="784" height="721"></div>
+      <article class="ed w5 reveal"><div class="shot"><img src="assets/media/cards.webp" data-src-win="assets/media/cards-win.webp" alt="Result cards" loading="lazy" width="784" height="721"></div>
         <div class="body"><h3 data-t="ed.cards">Results you can act on</h3><p data-t="ed.cards.d">Every job ends in a card: show in Finder, open, copy, or undo in one click.</p></div></article>
       <article class="ed w6 text reveal"><i class="ico" data-i="scissors"></i><div><h3 data-t="ed.trim">Trim video and audio</h3><p data-t="ed.trim.d">QuickTime-style handles, frame-accurate or instant.</p></div></article>
       <article class="ed w6 text reveal"><i class="ico" data-i="info"></i><div><h3 data-t="ed.meta">Edit info</h3><p data-t="ed.meta.d">Title, author, camera, location — losslessly for photos wherever possible.</p></div></article>
@@ -301,11 +307,11 @@
       <div class="feat reveal"><i class="ico" data-i="undo-2"></i><h3 data-t="det.3.t">Nothing to lose</h3><p data-t="det.3.d">Originals are never overwritten, and every result card can undo the job.</p></div>
       <div class="feat reveal"><i class="ico" data-i="refresh-ccw"></i><h3 data-t="det.4.t">Updates itself, safely</h3><p data-t="det.4.d">New versions come from GitHub Releases and are checked — Ed25519 signature, SHA-256 and code signature — before installing.</p></div>
       <div class="feat reveal"><i class="ico" data-i="keyboard"></i><h3 data-t="det.5.t">Keyboard all the way</h3><p data-t="det.5.d">Arrow keys, number keys, type a format name to jump, Return to run. VoiceOver announces every slot.</p></div>
-      <div class="feat reveal"><i class="ico" data-i="code"></i><h3 data-t="det.6.t">Free and open source</h3><p data-t="det.6.d">MIT licensed. Read the code, file an issue, or send a translation fix on GitHub.</p></div>
+      <div class="feat reveal"><i class="ico" data-i="code"></i><h3 data-t="det.6.t">Free, with the source on GitHub</h3><p data-t="det.6.d">Licensed under CC BY-NC-ND 4.0. Read the code, file an issue, or suggest a translation fix on GitHub.</p></div>
     </div>
     <table class="kbd-table reveal">
       <thead><tr><th data-t="kb.gesture">Gesture</th><th data-t="kb.does">What it does</th></tr></thead>
-      <tbody>
+      <tbody class="only-mac">
         <tr><td><kbd>⌥</kbd></td><td data-t="kb.1">With files selected in Finder: open the wheel for them</td></tr>
         <tr><td><kbd>⌥</kbd> + click</td><td data-t="kb.2">Open the wheel for the file you clicked</td></tr>
         <tr><td><kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>⌃</kbd></td><td data-t="kb.3">While dragging files: open the Convert, Tools or Actions ring — drop on a slot</td></tr>
@@ -313,6 +319,15 @@
         <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td data-t="kb.5">Step through a slot’s options on the outer ring</td></tr>
         <tr><td><kbd>png</kbd> <kbd>mp3</kbd>…</td><td data-t="kb.6">Type a format name to jump straight to it</td></tr>
         <tr><td><kbd>⌥</kbd>-click · <kbd>⌘C</kbd> · <kbd>⌘S</kbd></td><td data-t="kb.7">Send this one result to the clipboard or to a file</td></tr>
+      </tbody>
+      <tbody class="only-win">
+        <tr><td><kbd>Alt</kbd></td><td data-t="kbw.1">With files selected in File Explorer or on the desktop: open the wheel for them</td></tr>
+        <tr><td><kbd>Alt</kbd> + click</td><td data-t="kb.2">Open the wheel for the file you clicked</td></tr>
+        <tr><td><kbd>Shift</kbd> <kbd>Ctrl</kbd> <kbd>Alt</kbd></td><td data-t="kb.3">While dragging files: open the Convert, Tools or Actions ring — drop on a slot</td></tr>
+        <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>1</kbd>–<kbd>0</kbd></td><td data-t="kb.4">Move around the wheel, or run a slot by number</td></tr>
+        <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td data-t="kb.5">Step through a slot’s options on the outer ring</td></tr>
+        <tr><td><kbd>Enter</kbd> · <kbd>Esc</kbd></td><td data-t="kbw.8">Run the highlighted slot, or close the wheel</td></tr>
+        <tr><td><kbd>Alt</kbd>+click · <kbd>Ctrl+C</kbd> · <kbd>Ctrl+S</kbd></td><td data-t="kb.7">Send this one result to the clipboard or to a file</td></tr>
       </tbody>
     </table>
   </div>
@@ -339,22 +354,29 @@
       <h2 id="inst-title" data-t="inst.title">Up and running in a minute.</h2>
     </div>
     <div class="install">
-      <ol class="reveal">
+      <ol class="reveal only-mac">
         <li><div><b data-t="inst.1.t">Download and drag to Applications</b><span data-t="inst.1.d">Open the DMG and drag Pickverter into the Applications folder.</span></div></li>
         <li><div><b data-t="inst.2.t">Open it once with “Open Anyway”</b><span data-t="inst.2.d">The app isn’t notarized yet, so macOS asks once: System Settings › Privacy &amp; Security › Open Anyway. Or right-click the app › Open.</span></div></li>
         <li><div><b data-t="inst.3.t">Allow what the welcome window asks for</b><span data-t="inst.3.d">Accessibility to notice the key tap, Finder control to read your selection, and file access so no prompt interrupts a job.</span></div></li>
         <li><div><b data-t="inst.4.t">Optional: more formats with ffmpeg</b><span data-t="inst.4.d">Unlocks more video and audio formats. The welcome window has a button for it, or use Homebrew.</span></div></li>
       </ol>
+      <ol class="reveal only-win">
+        <li><div><b data-t="instw.1.t">Download and run the installer</b><span data-t="instw.1.d">Run Pickverter-x.y.z-win-x64-setup.exe (win-arm64 on Snapdragon PCs). It installs for your account only — no administrator rights.</span></div></li>
+        <li><div><b data-t="instw.2.t">If SmartScreen appears: More info › Run anyway</b><span data-t="instw.2.d">The installer isn’t code-signed yet, so Windows may say “Windows protected your PC” once.</span></div></li>
+        <li><div><b data-t="instw.3.t">Finish the welcome window</b><span data-t="instw.3.d">It checks Windows Security’s controlled folder access, offers to allow Pickverter, and can start it with Windows. Nothing else needs a permission.</span></div></li>
+        <li><div><b data-t="inst.4.t">Optional: more formats with ffmpeg</b><span data-t="instw.4.d">Unlocks more video and audio formats. The welcome window installs it with winget, or run the command yourself.</span></div></li>
+      </ol>
       <aside class="dl-card reveal" aria-label="Download">
         <div class="top"><img src="assets/media/icon-512.png" alt="" width="76" height="76"><div><h3>Pickverter</h3><div class="ver dl-version-long" data-t="dl.latest">Latest release on GitHub</div></div></div>
         <a class="btn primary dl-link" href="https://github.com/ivLis-Studio/pickverter/releases/latest"><i class="ico" data-i="download"></i><span data-t="cta.download">Download for Mac</span></a>
+        <p class="dl-alt only-win"><a class="dl-win-arm" href="https://github.com/ivLis-Studio/pickverter/releases/latest" data-t="dl.arm">Arm64 installer</a> · <a class="dl-win-zip" href="https://github.com/ivLis-Studio/pickverter/releases/latest" data-t="dl.zip">Portable ZIP</a></p>
         <dl>
           <dt data-t="dl.req">Requires</dt><dd data-t="dl.req.v">macOS 14 Sonoma or later</dd>
           <dt data-t="dl.chip">Chips</dt><dd data-t="dl.chip.v">Apple silicon and Intel (universal)</dd>
-          <dt data-t="dl.price">Price</dt><dd data-t="dl.price.v">Free · MIT license</dd>
+          <dt data-t="dl.price">Price</dt><dd data-t="dl.price.v">Free · CC BY-NC-ND 4.0</dd>
           <dt data-t="dl.verify">Verify</dt><dd><a class="dl-sums" href="https://github.com/ivLis-Studio/pickverter/releases/latest" data-t="dl.verify.v">SHA-256 checksums</a></dd>
         </dl>
-        <div class="brew"><code id="brew-cmd">brew install ffmpeg</code><button type="button" id="copy-brew"><i class="ico" data-i="clipboard"></i><span data-t="copy">Copy</span></button></div>
+        <div class="brew"><code id="brew-cmd" data-t="dl.cmd">brew install ffmpeg</code><button type="button" id="copy-brew"><i class="ico" data-i="clipboard"></i><span data-t="copy">Copy</span></button></div>
       </aside>
     </div>
   </div>
@@ -365,7 +387,7 @@
   <div class="wrap">
     <div class="section-head center reveal"><span class="kicker">FAQ</span><h2 id="faq-title" data-t="faq.title">Good questions.</h2></div>
     <div class="faq reveal">
-      <details><summary data-t="faq.1.q">Is it really free?</summary><p data-t="faq.1.a">Yes. Pickverter is free and open source under the MIT license — no account, no subscription, no ads.</p></details>
+      <details><summary data-t="faq.1.q">Is it really free?</summary><p data-t="faq.1.a">Yes — no account, no subscription, no ads. The source is published under CC BY-NC-ND 4.0: share it unchanged, with credit, for non-commercial purposes.</p></details>
       <details><summary data-t="faq.2.q">Are my files uploaded anywhere?</summary><p data-t="faq.2.a">No. Every conversion and edit runs on your Mac with Apple’s frameworks and, if you install it, ffmpeg. The only network request checks GitHub for updates, and you can turn it off.</p></details>
       <details><summary data-t="faq.3.q">Why does it need Accessibility and Finder access?</summary><p data-t="faq.3.a">Accessibility lets Pickverter notice the ⌥ tap and drags anywhere on screen. Finder control lets it read which files you selected. File access lets it read and write files in Desktop, Documents and Downloads without a prompt in the middle of a job.</p></details>
       <details><summary data-t="faq.4.q">Why does macOS ask for permissions again after an update?</summary><p data-t="faq.4.a">Releases are currently signed ad hoc (there’s no Apple Developer ID yet), so macOS treats each new version as a new app. Pickverter clears the stale entries and reopens the welcome window so you can switch them back on.</p></details>
@@ -392,14 +414,14 @@
 
 <footer>
   <div class="wrap">
-    <span>© 2026 ivLis Studio · <span data-t="foot.mit">MIT License</span></span>
+    <span>© 2026 ivLis Studio · <a href="https://github.com/ivLis-Studio/pickverter/blob/main/LICENSE" data-t="foot.license">CC BY-NC-ND 4.0</a></span>
     <nav aria-label="Footer">
       <a href="https://github.com/ivLis-Studio/pickverter">GitHub</a>
       <a href="https://github.com/ivLis-Studio/pickverter/releases" data-t="foot.releases">Releases</a>
-      <a href="https://github.com/ivLis-Studio/pickverter/blob/main/macos/CHANGELOG.md" data-t="foot.changelog">Changelog</a>
+      <a href="https://github.com/ivLis-Studio/pickverter/blob/main/macos/CHANGELOG.md" data-href-win="https://github.com/ivLis-Studio/pickverter/blob/main/windows/CHANGELOG.md" data-t="foot.changelog">Changelog</a>
       <a href="https://github.com/ivLis-Studio/pickverter/issues" data-t="foot.issues">Report an issue</a>
     </nav>
-    <span style="width:100%;font-size:13px;color:var(--faint)" data-t="foot.credits">Icons by Lucide (ISC). Photos in the demo were generated for it. macOS and Finder are trademarks of Apple Inc.</span>
+    <span style="width:100%;font-size:13px;color:var(--faint)" data-t="foot.credits">Icons by Lucide (ISC). Photos in the demo were generated for it. macOS and Finder are trademarks of Apple Inc.; Windows is a trademark of Microsoft.</span>
   </div>
 </footer>
 

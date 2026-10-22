@@ -1,4 +1,5 @@
 // Live wheel for the hero: the app's geometry (WheelView.swift), hit-testing, outer option rings and keyboard.
+// The Windows page shows the Windows app's wording and keys (Shift · Ctrl · Alt) from APP_WIN.
 (function () {
   const NS = "http://www.w3.org/2000/svg";
   const G = { outer: 150, inner: 62, disc: 158, subInner: 164, subOuter: 218, box: 480, tabW: 94, tabH: 28, tabSp: 2, tabPad: 3, tabGap: 12 };
@@ -26,16 +27,18 @@
   };
   const icon = (name) => '<span class="wi"><svg viewBox="0 0 24 24" aria-hidden="true">' + (window.ICONS[name] || "") + "</svg></span>";
 
-  function strings(lang) {
+  function strings(lang, os) {
     const L = window.APP.languages, i = Math.max(0, L.indexOf(lang));
-    const raw = (k) => (window.APP.strings[k] ? window.APP.strings[k][i] : k);
+    const W = os === "win" && window.APP_WIN ? window.APP_WIN.strings : {};
+    const raw = (k) => (W[k] ? W[k][i] : window.APP.strings[k] ? window.APP.strings[k][i] : k);
     const t = (k, ...a) => raw(k).replace(/%(\d)\$@/g, (_, n) => a[+n - 1]).replace(/%@/g, () => a.shift());
     const tp = (k, n) => { const f = raw(k).split("|"); return (f.length > 1 && n !== 1 ? f[1] : f[0]).replace(/%1\$@|%@/g, n); };
     return { t, tp };
   }
 
-  function rings(lang) {
-    const { t } = strings(lang);
+  function rings(lang, os) {
+    const { t } = strings(lang, os);
+    const win = os === "win";
     const v = (title, ic) => ({ title, icon: ic });
     return {
       convert: ["JPG", "PNG", "WebP", "AVIF", "TIFF", "GIF", "BMP", "PDF", "ICO"].map((f) => ({ title: f, format: true })),
@@ -51,14 +54,16 @@
         { title: t("tool.zip"), icon: "archive", d: t("tool.zip.d") },
       ],
       actions: [
-        { title: "AirDrop", icon: "radio", d: t("action.airdrop.d") },
-        { title: t("action.terminal"), icon: "terminal", d: t("action.terminal.d", t("action.terminal")) },
-        { title: t("action.copypath"), icon: "link", d: t("action.copypath.d"), variants: [v(t("path.full"), "link"), v(t("path.tilde"), "link"), v(t("path.name"), "link"), v(t("path.quoted"), "link")] },
+        win ? { title: t("action.share"), icon: "share", d: t("action.share.d") } : { title: "AirDrop", icon: "radio", d: t("action.airdrop.d") },
+        { title: t("action.terminal"), icon: "terminal", d: t("action.terminal.d", win ? "Windows Terminal" : t("action.terminal")) },
+        { title: t("action.copypath"), icon: "link", d: t("action.copypath.d"), variants: win
+          ? [v(t("path.full"), "link"), v(t("path.quoted"), "link"), v(t("path.name"), "link"), v(t("path.unix"), "link")]
+          : [v(t("path.full"), "link"), v(t("path.tilde"), "link"), v(t("path.name"), "link"), v(t("path.quoted"), "link")] },
         { title: t("action.copyfile"), icon: "clipboard", d: t("action.copyfile.d") },
         { title: t("action.move"), icon: "folder-input", d: t("action.move.d"), variants: [v(t("folder.choose"), "folder"), v(t("folder.desktop"), "folder"), v(t("folder.downloads"), "download")] },
         { title: t("action.duplicate"), icon: "copy-plus", d: t("action.duplicate.d") },
         { title: t("action.float"), icon: "pin", d: t("action.float.d") },
-        { title: t("action.share"), icon: "share", d: t("action.share.d") },
+        win ? { title: t("action.openwith"), icon: "external-link", d: t("action.openwith.d") } : { title: t("action.share"), icon: "share", d: t("action.share.d") },
         { title: "VS Code", icon: "code", d: t("action.editor.d", "VS Code") },
         { title: t("action.hash"), icon: "hash", d: t("action.hash.d"), variants: [v("SHA-256", "hash"), v("SHA-1", "hash"), v("MD5", "hash")] },
       ],
@@ -67,8 +72,8 @@
 
   function mount(host, opts) {
     const MODES = ["convert", "tools", "actions"];
-    const state = { lang: opts.lang, mode: "convert", slot: null, sub: null, open: null, flash: null, pointer: null, user: false };
-    let R = rings(state.lang), S = strings(state.lang);
+    const state = { lang: opts.lang, os: opts.os || "mac", mode: "convert", slot: null, sub: null, open: null, flash: null, pointer: null, user: false };
+    let R = rings(state.lang, state.os), S = strings(state.lang, state.os);
     host.innerHTML = "";
     const svg = el("svg", { viewBox: "0 0 " + G.box + " " + G.box, class: "wsvg", "aria-hidden": "true" }, host);
     const defs = el("defs", {}, svg);
@@ -84,13 +89,24 @@
     const arc = el("path", { class: "w-arc" }, svg);
     const hubFO = el("foreignObject", { x: C - (G.inner - 5), y: C - (G.inner - 5), width: (G.inner - 5) * 2, height: (G.inner - 5) * 2 }, svg);
     const hub = el("div", { class: "whub" }, hubFO);
-    const tabW = G.tabW * 3 + G.tabSp * 2 + G.tabPad * 2, tabH = G.tabH + G.tabPad * 2, tabY = C + G.disc + G.tabGap;
+    // Windows tabs spell the key out ("Shift Convert"), so they are wider.
+    let tw = G.tabW, tabW = 0;
+    const tabH = G.tabH + G.tabPad * 2, tabY = C + G.disc + G.tabGap;
     const tabsG = el("g", { class: "w-tabs" }, svg);
-    el("rect", { x: C - tabW / 2, y: tabY, width: tabW, height: tabH, rx: tabH / 2, class: "w-tabbg" }, tabsG);
-    const pill = el("rect", { x: C - tabW / 2 + G.tabPad, y: tabY + G.tabPad, width: G.tabW, height: G.tabH, rx: G.tabH / 2, class: "w-pill" }, tabsG);
-    const tabFO = el("foreignObject", { x: C - tabW / 2, y: tabY, width: tabW, height: tabH }, tabsG);
+    const tabBg = el("rect", { y: tabY, height: tabH, rx: tabH / 2, class: "w-tabbg" }, tabsG);
+    const pill = el("rect", { y: tabY + G.tabPad, height: G.tabH, rx: G.tabH / 2, class: "w-pill" }, tabsG);
+    const tabFO = el("foreignObject", { y: tabY, height: tabH }, tabsG);
     const tabRow = el("div", { class: "wtabs" }, tabFO);
     const card = el("div", { class: "wcard", role: "status" }, host);
+    function layoutTabs() {
+      tw = state.os === "win" ? 112 : G.tabW;
+      tabW = tw * 3 + G.tabSp * 2 + G.tabPad * 2;
+      tabBg.setAttribute("x", C - tabW / 2); tabBg.setAttribute("width", tabW);
+      pill.setAttribute("width", tw);
+      tabFO.setAttribute("x", C - tabW / 2); tabFO.setAttribute("width", tabW);
+    }
+    const KEYCAPS = () => (state.os === "win" ? [S.t("key.shift"), S.t("key.ctrl"), S.t("key.alt")] : ["⇧", "⌘", "⌃"]);
+    const MODKEYS = () => (state.os === "win" ? { Shift: "convert", Control: "tools", Alt: "actions" } : { Shift: "convert", Meta: "tools", Control: "actions" });
 
     let segs = [], subs = [];
     function build() {
@@ -121,8 +137,10 @@
         });
         return { g, lab, tiles, first, last: first + SUB_SPAN * m };
       });
-      tabRow.innerHTML = MODES.map((m, i) => '<span class="wtab' + (m === state.mode ? " on" : "") + '" data-mode="' + m + '"><i>' + ["⇧", "⌘", "⌃"][i] + "</i>" + S.t("mode." + m) + "</span>").join("");
-      pill.setAttribute("x", C - tabW / 2 + G.tabPad + MODES.indexOf(state.mode) * (G.tabW + G.tabSp));
+      layoutTabs();
+      const caps = KEYCAPS();
+      tabRow.innerHTML = MODES.map((m, i) => '<span class="wtab' + (m === state.mode ? " on" : "") + '" data-mode="' + m + '"><i>' + caps[i] + "</i>" + S.t("mode." + m) + "</span>").join("");
+      pill.setAttribute("x", C - tabW / 2 + G.tabPad + MODES.indexOf(state.mode) * (tw + G.tabSp));
       render();
     }
 
@@ -230,7 +248,7 @@
     let modTap = null;
     host.addEventListener("keydown", (e) => {
       const items = R[state.mode], n = items.length;
-      if (["Shift", "Meta", "Control"].includes(e.key)) { modTap = e.key; return; }
+      if (e.key in MODKEYS()) { modTap = e.key; if (e.key === "Alt") e.preventDefault(); return; }
       modTap = null;
       let handled = true;
       userInput();
@@ -248,7 +266,7 @@
       if (handled) { e.preventDefault(); render(); }
     });
     host.addEventListener("keyup", (e) => {
-      if (modTap && e.key === modTap) { setMode({ Shift: "convert", Meta: "tools", Control: "actions" }[e.key]); userInput(); }
+      if (modTap && e.key === modTap) { setMode(MODKEYS()[e.key]); userInput(); if (e.key === "Alt") e.preventDefault(); }
       modTap = null;
     });
 
@@ -274,7 +292,10 @@
 
     build();
     return {
-      setLang(lang) { state.lang = lang; R = rings(lang); S = strings(lang); state.slot = null; state.sub = null; state.open = null; build(); },
+      setLang(lang, os) {
+        state.lang = lang; if (os) state.os = os;
+        R = rings(lang, state.os); S = strings(lang, state.os); state.slot = null; state.sub = null; state.open = null; build();
+      },
       setLabels(o) { Object.assign(opts, o); render(); },
     };
   }

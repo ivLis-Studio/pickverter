@@ -353,6 +353,28 @@ footer a { color: var(--ink-2); }
   html { scroll-behavior: auto; }
 }
 
+/* ---------- platforms: html[data-os] is "mac" or "win", picked from the visitor's system by site.js */
+html[data-os="win"] .only-mac, html:not([data-os="win"]) .only-win { display: none !important; }
+html[data-os="win"] { --accent: #005FB8; --accent-ink: #005FB8; --accent-soft: rgba(0,95,184,0.1); }
+@media (prefers-color-scheme: dark) {
+  html[data-os="win"] { --accent: #0078D4; --accent-ink: #60CDFF; --accent-soft: rgba(96,205,255,0.14); }
+}
+.os { display: flex; padding: 3px; gap: 2px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+.os button { border: 0; background: transparent; color: var(--ink-2); font: inherit; font-size: 13.5px; font-weight: 600; line-height: 1.2; padding: 5px 12px;
+  border-radius: 999px; cursor: pointer; white-space: nowrap; }
+.os button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+.hero h1 .key.word { font-size: 0.6em; height: 1.43em; min-width: 1.43em; padding: 0 0.32em; border-radius: 0.27em; font-weight: 600; letter-spacing: -0.01em; vertical-align: 0.1em; }
+.kcap.word b { right: auto; left: 12px; top: 10px; font-size: 20px; font-weight: 500; }
+html[data-os="win"] .ring-tab .k { width: auto; min-width: 34px; padding: 0 9px; font-size: 13px; font-weight: 600; }
+.dl-alt { margin: 12px 0 0; font-size: 14px; text-align: center; color: var(--muted); }
+.fine .os-other { font-weight: 600; }
+@media (max-width: 520px) {
+  .brand span { display: none; }
+  .bar .wrap { gap: 12px; }
+  .bar-end { gap: 8px; }
+  .os button { padding: 5px 10px; font-size: 13px; }
+}
+
 /* ---------- responsive */
 @media (max-width: 1000px) {
   .nav { display: none; }
