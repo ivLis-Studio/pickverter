@@ -63,9 +63,18 @@ internal static class EndToEnd
         IntPtr window = IntPtr.Zero;
         IReadOnlyList<string> selection = [];
         var watch = Stopwatch.StartNew();
+        var scripted = false;
         while (selection.Count == 0 && watch.Elapsed < TimeSpan.FromSeconds(20))
         {
             await Task.Delay(250);
+            // A fresh folder can open before /select applies (seen on Windows Server 2025): select the file the way a
+            // script would. What's being tested is reading the selection, not Explorer's command line.
+            if (!scripted && watch.Elapsed > TimeSpan.FromSeconds(4))
+            {
+                scripted = true;
+                var done = await StaWorker.Run("e2e select", () => SelectWithAutomation(photo), TimeSpan.FromSeconds(10), false);
+                Console.WriteLine($"  /select left nothing selected; selected through Explorer's automation: {done}");
+            }
             foreach (var candidate in ExplorerWindows())
             {
                 var selected = await Explorer.SelectionAsync(candidate);
@@ -148,5 +157,42 @@ internal static class EndToEnd
         foreach (var explorer in ExplorerWindows()) Native.PostMessage(explorer, 0x0010, IntPtr.Zero, IntPtr.Zero);
         Console.WriteLine(failures == 0 ? "end-to-end passed" : $"{failures} end-to-end check(s) failed");
         return failures == 0 ? 0 : 1;
+    }
+
+    /// Selects a file in the File Explorer window showing its folder, through Explorer's scripting objects.
+    private static bool SelectWithAutomation(string path)
+    {
+        var type = Type.GetTypeFromCLSID(ShellIds.CLSID_ShellWindows);
+        if (type == null || Activator.CreateInstance(type) is not IShellWindows windows) return false;
+        var folder = Path.TrimEndingDirectorySeparator(Path.GetDirectoryName(path)!);
+        try
+        {
+            var count = windows.Count;
+            for (var index = 0; index < count; index++)
+            {
+                try
+                {
+                    dynamic? item = windows.Item(index);
+                    if (item == null) continue;
+                    var document = item.Document;
+                    string location = document.Folder.Self.Path;
+                    if (!string.Equals(Path.TrimEndingDirectorySeparator(location), folder, StringComparison.OrdinalIgnoreCase)) continue;
+                    var target = document.Folder.ParseName(Path.GetFileName(path));
+                    if (target == null) continue;
+                    // SVSI_SELECT | SVSI_DESELECTOTHERS | SVSI_ENSUREVISIBLE | SVSI_FOCUSED
+                    document.SelectItem(target, 1 | 4 | 8 | 16);
+                    return true;
+                }
+                catch (Exception error)
+                {
+                    Console.WriteLine("  automation: " + error.Message);
+                }
+            }
+            return false;
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(windows);
+        }
     }
 }
