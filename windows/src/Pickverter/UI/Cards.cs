@@ -302,8 +302,9 @@ internal sealed class CardWindow : Window
                 host.Children.Add(Glyphs.Icon(Job.IsNotice ? Job.Symbol : Job.Outputs.Count == 0 ? "checkmark" : Job.Symbol, 15, Theme.AccentText));
                 break;
             case JobState.Failed:
-                host.Children.Add(new Border { CornerRadius = new CornerRadius(17), Background = Job.Tone == JobTone.Info ? Theme.Tile : Theme.CautionSubtle });
-                host.Children.Add(Glyphs.Icon(Job.IsNotice ? Job.Symbol : "exclamationmark", 15, Job.Tone == JobTone.Info ? Theme.AccentText : Theme.Caution));
+                var informational = Job.IsNotice && Job.Tone == JobTone.Info;
+                host.Children.Add(new Border { CornerRadius = new CornerRadius(17), Background = informational ? Theme.Tile : Theme.CautionSubtle });
+                host.Children.Add(Glyphs.Icon(Job.IsNotice ? Job.Symbol : "exclamationmark", 15, informational ? Theme.AccentText : Theme.Caution));
                 break;
             default:
                 host.Children.Add(new Border { CornerRadius = new CornerRadius(17), Background = Theme.Tile });

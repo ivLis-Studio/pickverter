@@ -178,7 +178,7 @@ internal static class Snapshots
 
         var onboarding = new OnboardingWindow();
         onboarding.Step(6);
-        await Take(onboarding, Path.Combine(output, "onboarding.png"), 980, 680);
+        await Take(onboarding, Path.Combine(output, "onboarding.png"), 980, 720);
 
         var notes = "- **New** — Pickverter now runs on Windows: tap Alt in File Explorer.\n- Result cards stay in the corner you choose.\n- [Release notes](https://github.com)";
         Updater.Shared.Simulate(Updater.UpdatePhase.Available, new UpdateManifest { Version = "0.3.0", Notes = notes, NotesUrl = "https://github.com" });
@@ -200,7 +200,7 @@ internal static class Snapshots
         await Take(redact, Path.Combine(output, "editor-redact.png"), 980, 720);
         await Take(new TrimEditor(file("tone.wav"), 4, false), Path.Combine(output, "editor-trim.png"), 720, 360);
         var pages = new PagesEditor([file("report.pdf")]);
-        await Task.Delay(1500);
+        await Task.Delay(3000);
         await Take(pages, Path.Combine(output, "editor-pages.png"), 1000, 720);
         var snapshot = await MetadataKit.Read(photo);
         await Take(new MetadataEditor(photo, snapshot), Path.Combine(output, "editor-metadata.png"), 600, 640);
@@ -226,6 +226,7 @@ internal static class Snapshots
         var files = Fixtures.Make(FileSystem.TempFolder("screen-fixtures"), media: false);
         var photo = files.First(path => Path.GetFileName(path) == "photo.jpg");
         JobCenter.Shared.Presenter = new CardPresenter();
+        InputMonitor.Shared.Start();
         foreach (var dark in new[] { false, true })
         {
             Application.Current.ThemeMode = dark ? ThemeMode.Dark : ThemeMode.Light;

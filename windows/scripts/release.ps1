@@ -36,15 +36,15 @@ if (-not $SkipInstaller -and -not (Test-Path $iscc)) { throw "Inno Setup 6 (ISCC
 $zips = [ordered]@{}
 foreach ($arch in $Architectures) {
     Write-Host "▸ win-$arch"
-    $publish = Join-Path $Out "publish-$arch\Pickverter"
+    $publishDir = Join-Path $Out "publish-$arch\Pickverter"
     $properties = @("-p:PickverterRelease=true", "-p:Version=$Version", "-p:FileVersion=$FileVersion", "-p:InformationalVersion=$Version", "-p:DebugType=none")
-    dotnet publish src/Pickverter/Pickverter.csproj -c Release -r "win-$arch" --self-contained true @properties -o $publish
+    dotnet publish src/Pickverter/Pickverter.csproj -c Release -r "win-$arch" --self-contained true @properties -o $publishDir
     if ($LASTEXITCODE) { throw "publish win-$arch failed" }
     $zip = Join-Path $Out "Pickverter-$Version-win-$arch.zip"
-    [IO.Compression.ZipFile]::CreateFromDirectory($publish, $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
+    [IO.Compression.ZipFile]::CreateFromDirectory($publishDir, $zip, [IO.Compression.CompressionLevel]::Optimal, $true)
     $zips[$arch] = $zip
     if (-not $SkipInstaller) {
-        & $iscc /Qp "/DVersion=$Version" "/DArch=$arch" "/DSource=$publish" "/O$Out" (Join-Path $Root "installer\Pickverter.iss")
+        & $iscc /Qp "/DVersion=$Version" "/DArch=$arch" "/DSource=$publishDir" "/O$Out" (Join-Path $Root "installer\Pickverter.iss")
         if ($LASTEXITCODE) { throw "installer win-$arch failed" }
     }
 }

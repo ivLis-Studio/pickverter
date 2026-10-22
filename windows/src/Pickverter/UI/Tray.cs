@@ -395,20 +395,30 @@ internal sealed class TrayFlyout : Window
 
     private static FrameworkElement Gesture(IReadOnlyList<string> keys, string? prefix, string? suffix, string text)
     {
-        var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var left = Ui.Row(5);
-        if (prefix != null) left.Children.Add(Ui.Text(prefix, 12, brush: Theme.TextSecondary));
-        foreach (var key in keys) left.Children.Add(KeyCap.Make(key));
-        if (suffix != null) left.Children.Add(Ui.Text(suffix, 12, brush: Theme.TextSecondary));
-        grid.Children.Add(left);
+        SpacedStack Keys()
+        {
+            var left = Ui.Row(5);
+            if (prefix != null) left.Children.Add(Ui.Text(prefix, 12, brush: Theme.TextSecondary));
+            foreach (var key in keys) left.Children.Add(KeyCap.Make(key));
+            if (suffix != null) left.Children.Add(Ui.Text(suffix, 12, brush: Theme.TextSecondary));
+            return left;
+        }
+        // One line when it fits; otherwise the description moves under the keys (never cut off).
+        var line = new Grid();
+        line.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        line.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        line.Children.Add(Keys());
         var label = Ui.Text(text, 12.5, alignment: TextAlignment.Right);
-        label.Margin = new Thickness(10, 0, 0, 0);
+        label.Margin = new Thickness(12, 0, 0, 0);
         label.HorizontalAlignment = HorizontalAlignment.Right;
+        label.TextTrimming = TextTrimming.None;
         Grid.SetColumn(label, 1);
-        grid.Children.Add(label);
-        return grid;
+        line.Children.Add(label);
+        var stacked = Ui.Column(3, Keys(), Ui.Text(text, 12.5, brush: Theme.TextSecondary, wrap: true));
+        var fits = new ViewThatFits();
+        fits.Children.Add(line);
+        fits.Children.Add(stacked);
+        return fits;
     }
 
     private FrameworkElement Recent(Job job)

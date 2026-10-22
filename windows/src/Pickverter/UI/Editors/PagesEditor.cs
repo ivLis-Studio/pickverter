@@ -29,6 +29,7 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
     private Page? dragging;
     private int? dropIndex;
     private readonly bool slides;
+    private bool closed;
 
     public PagesEditor(IReadOnlyList<string> files)
     {
@@ -52,6 +53,7 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
             }
         };
         Focusable = true;
+        Closed += (_, _) => closed = true;
         Rebuild();
         _ = Load();
     }
@@ -79,7 +81,7 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
         {
             foreach (var page in pages.ToList())
             {
-                if (!IsLoaded && !IsVisible) return;
+                if (closed) return;
                 var png = Path.Combine(scratch, $"{page.File}-{page.Index}.png");
                 try
                 {

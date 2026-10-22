@@ -19,6 +19,7 @@ internal sealed class WheelCanvas : FrameworkElement
         SnapsToDevicePixels = true;
         UseLayoutRounding = false;
         TextOptions.SetTextFormattingMode(this, TextFormattingMode.Ideal);
+        model.Changed += _ => InvalidateVisual();
     }
 
     /// Nearly invisible but hit-testable: the drop target that catches a drag before its files are known.

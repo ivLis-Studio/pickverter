@@ -26,7 +26,7 @@ internal sealed class OnboardingWindow : AppWindow
     public OnboardingWindow()
     {
         Width = 980;
-        Height = 680;
+        Height = 720;
         ResizeMode = ResizeMode.CanMinimize;
         canvas = new WheelCanvas(demo) { IsHitTestVisible = false };
         demo.Changed += _ => canvas.InvalidateVisual();
@@ -91,12 +91,12 @@ internal sealed class OnboardingWindow : AppWindow
         DockPanel.SetDock(footer, Dock.Bottom);
         content.Children.Add(footer);
 
-        var stack = Ui.Column(18);
+        var stack = Ui.Column(14);
         stack.Children.Add(Ui.Column(6,
             Ui.Text("Pickverter", 30, FontWeights.SemiBold),
             Ui.Text(L("ob.subtitle"), 14, brush: Theme.TextSecondary, wrap: true)));
 
-        var steps = Ui.Column(10);
+        var steps = Ui.Column(8);
         var input = InputMonitor.Shared.IsRunning;
         steps.Children.Add(Step(1, L("perm.input"), input ? L("ob.input.d") : L("perm.input.failed"), input, null, null));
         var protection = FolderProtection.State;
@@ -110,7 +110,7 @@ internal sealed class OnboardingWindow : AppWindow
         stack.Children.Add(steps);
 
         stack.Children.Add(Ui.Divider());
-        var guide = Ui.Column(10, Ui.Text(L("ob.how"), 12, FontWeights.SemiBold, Theme.TextSecondary));
+        var guide = Ui.Column(9, Ui.Text(L("ob.how"), 12, FontWeights.SemiBold, Theme.TextSecondary));
         var trigger = Preferences.Shared.TriggerKey.Glyph();
         guide.Children.Add(Guide([trigger], L("ob.tap.t"), L("ob.tap.d", trigger)));
         guide.Children.Add(Guide([trigger, L("key.click")], L("ob.click.t"), L("ob.click.d", trigger)));
@@ -158,7 +158,6 @@ internal sealed class OnboardingWindow : AppWindow
     {
         UIElement? control = null;
         if (action != null && run != null) control = Ui.Button(action, run, compact: true);
-        else if (done) control = SettingsWindow.Status(true, L(optional ? "office.installed" : "perm.ready"));
         var heading = optional ? title + " · " + L("ob.optional") : title;
         return Row(Badge(number, done), heading, detail, control);
     }
@@ -180,13 +179,13 @@ internal sealed class OnboardingWindow : AppWindow
             Grid.SetColumn(element, 2);
             grid.Children.Add(element);
         }
-        return Ui.Card(grid, new Thickness(14, 12, 14, 12));
+        return Ui.Card(grid, new Thickness(14, 10, 14, 10));
     }
 
     private static FrameworkElement Guide(IReadOnlyList<string> keys, string title, string detail)
     {
         var grid = new Grid();
-        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(150) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(140) });
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var caps = Ui.Row(4);
         foreach (var key in keys) caps.Children.Add(KeyCap.Make(key));

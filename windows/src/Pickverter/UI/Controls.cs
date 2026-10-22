@@ -87,9 +87,17 @@ internal sealed class FlatButton : Button
     private static readonly ControlTemplate Chrome = BuildTemplate();
     private readonly TextBlock? label;
     private readonly TextBlock? glyph;
+    private Brush? tint;
 
     public bool Prominent { get; }
     public bool Subtle { get; }
+
+    /// Text colour that wins over the style (links).
+    public void Tint(Brush brush)
+    {
+        tint = brush;
+        Update();
+    }
 
     public FlatButton(string? title, string? icon = null, bool prominent = false, bool subtle = false, bool compact = false, double iconSize = 0)
     {
@@ -177,9 +185,11 @@ internal sealed class FlatButton : Button
         }
         Background = background;
         BorderBrush = Theme.ControlStroke;
+        if (tint != null && IsEnabled) foreground = tint;
         Foreground = foreground;
         if (label != null) label.Foreground = foreground;
         if (glyph != null) glyph.Foreground = foreground;
+        if (label != null && tint != null) label.TextDecorations = IsMouseOver ? TextDecorations.Underline : null;
     }
 
     /// Only the icon is shown; the title becomes the tooltip and the accessible name.
@@ -539,10 +549,7 @@ internal static class Ui
     public static FlatButton Link(string title, Action click)
     {
         var button = new FlatButton(title, null, subtle: true, compact: true) { Padding = new Thickness(4, 0, 4, 0) };
-        button.Loaded += (_, _) =>
-        {
-            if (button.Content is StackPanel { Children.Count: > 0 } row && row.Children[^1] is TextBlock label) label.Foreground = Theme.AccentText;
-        };
+        button.Tint(Theme.AccentText);
         button.Click += (_, _) => click();
         return button;
     }
