@@ -281,6 +281,8 @@ internal static class Snapshots
         return 0;
     }
 
+    public static void CaptureScreen(string path) => Capture(path);
+
     private static void Capture(string path)
     {
         int x = Native.GetSystemMetrics(76), y = Native.GetSystemMetrics(77), width = Native.GetSystemMetrics(78), height = Native.GetSystemMetrics(79);

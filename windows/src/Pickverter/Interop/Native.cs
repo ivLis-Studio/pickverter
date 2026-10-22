@@ -99,6 +99,9 @@ internal static class Native
     [DllImport("user32.dll")]
     public static extern bool PostThreadMessage(uint thread, uint msg, IntPtr wParam, IntPtr lParam);
 
+    [DllImport("user32.dll")]
+    public static extern bool PostMessage(IntPtr hwnd, uint msg, IntPtr wParam, IntPtr lParam);
+
     // Synthetic input
 
     [StructLayout(LayoutKind.Sequential)]

@@ -72,6 +72,9 @@ internal static class CommandLine
                 case "screenshot":
                     if (rest.Length == 0) break;
                     return WithApp(() => Snapshots.Screens(rest[0]));
+                case "e2e":
+                    if (rest.Length == 0) break;
+                    return WithApp(() => EndToEnd.Run(rest[0]));
                 case "inspect":
                     return WithApp(Inspect);
                 case "update-keygen":
@@ -140,9 +143,15 @@ internal static class CommandLine
     {
         Prepare();
         var app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown, ThemeMode = ThemeMode.Light };
+        app.DispatcherUnhandledException += (_, error) =>
+        {
+            Console.Error.WriteLine("dispatcher: " + error.Exception);
+            error.Handled = true;
+        };
+        AppDomain.CurrentDomain.UnhandledException += (_, error) => Console.Error.WriteLine("unhandled: " + error.ExceptionObject);
         WindowsPlatform.Install(app.Dispatcher);
         Platform.Editors = new InjectedEditors();
-        var code = 1;
+        var code = -1;
         app.Dispatcher.InvokeAsync(async () =>
         {
             try
@@ -159,7 +168,9 @@ internal static class CommandLine
                 app.Shutdown();
             }
         });
-        app.Run();
+        var result = app.Run();
+        if (code != 0) Console.Error.WriteLine($"exit code {code} (application {result})");
+        if (code < 0) code = 70;
         return code;
     }
 

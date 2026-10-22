@@ -63,6 +63,12 @@ jobs:
           & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli screenshot "$env:RUNNER_TEMP\snapshots\screens" | Out-Host
           exit $LASTEXITCODE
 
+      - name: End to end (File Explorer, hooks, wheel, keys)
+        continue-on-error: true
+        run: |
+          & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli e2e "$env:RUNNER_TEMP\snapshots\e2e" | Out-Host
+          exit $LASTEXITCODE
+
       - name: Package (x64)
         env:
           PICKVERTER_UPDATE_KEY: ${{ secrets.PICKVERTER_UPDATE_KEY }}
