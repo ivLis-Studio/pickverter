@@ -115,6 +115,68 @@ internal static class Explorer
         }
     }
 
+    /// What each step of reading the selection sees, for "cli inspect" and the end-to-end check.
+    public static Task<string> DiagnoseAsync(IntPtr root) =>
+        StaWorker.Run("explorer diagnostics", () => Diagnose(root), TimeSpan.FromSeconds(10), "timed out");
+
+    private static string Diagnose(IntPtr root)
+    {
+        var activeTab = Native.FindWindowEx(root, IntPtr.Zero, "ShellTabWindowClass", null);
+        var lines = new List<string> { $"window {root:X} {Native.ClassName(root)} · desktop {IsDesktop(root)} · first tab {activeTab:X}" };
+        var type = Type.GetTypeFromCLSID(ShellIds.CLSID_ShellWindows);
+        if (type == null || Activator.CreateInstance(type) is not IShellWindows windows) return lines[0] + "\nno ShellWindows";
+        try
+        {
+            var count = windows.Count;
+            lines.Add($"shell windows: {count}");
+            for (var index = 0; index < count; index++)
+            {
+                object? item = null;
+                try
+                {
+                    item = windows.Item(index);
+                    if (BrowserOf(item) is not { } browser)
+                    {
+                        lines.Add($"  {index}: no IShellBrowser");
+                        continue;
+                    }
+                    var line = $"  {index}:";
+                    var result = browser.GetWindow(out var hwnd);
+                    line += $" window {hwnd:X} {Native.ClassName(hwnd)} (0x{result:X8}) root {Native.GetAncestor(hwnd, Native.GA_ROOT):X}";
+                    result = browser.QueryActiveShellView(out var view);
+                    line += $" · view 0x{result:X8}";
+                    if (view is IFolderView folder)
+                    {
+                        var counted = folder.ItemCount(ShellIds.SVGIO_SELECTION, out var selected);
+                        line += $" · selected {selected} (0x{counted:X8})";
+                        var iid = ShellIds.IID_IShellItemArray;
+                        result = folder.Items(ShellIds.SVGIO_SELECTION | ShellIds.SVGIO_FLAG_VIEWORDER, ref iid, out var items);
+                        line += $" · items 0x{result:X8} {(items is IShellItemArray ? "IShellItemArray" : items?.GetType().Name ?? "null")}";
+                        line += " · " + string.Join(", ", ItemsOf(browser).Select(Path.GetFileName));
+                    }
+                    else
+                    {
+                        line += " · no IFolderView";
+                    }
+                    lines.Add(line);
+                }
+                catch (Exception error)
+                {
+                    lines.Add($"  {index}: {error.GetType().Name} 0x{error.HResult:X8} {error.Message}");
+                }
+                finally
+                {
+                    if (item != null && Marshal.IsComObject(item)) Marshal.ReleaseComObject(item);
+                }
+            }
+        }
+        finally
+        {
+            Marshal.ReleaseComObject(windows);
+        }
+        return string.Join("\n", lines);
+    }
+
     private static IShellBrowser? BrowserOf(object? item)
     {
         if (item is not IComServiceProvider provider) return null;

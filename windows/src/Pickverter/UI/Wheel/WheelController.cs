@@ -86,6 +86,7 @@ internal sealed class WheelController
         overlay.Canvas.Probing = false;
         var center = overlay.Place(point);
         overlay.Canvas.Thumbnail = null;
+        Model.Geometry.TabWidth = WheelCanvas.TabWidthFor(1);
         Model.Present(files, origin, mode, new ScreenPoint(center.X, center.Y));
         if (files.Count > 0)
         {
@@ -290,6 +291,6 @@ internal sealed class WheelController
         }
         var center = overlay.CenterPixels;
         InputMonitor.Shared.Wheel = new WheelSnapshot(true, Model.Origin, menuOpen, center.X, center.Y, overlay.Scale, Model.Reach,
-            Model.Choice == null && !Model.TabsHidden);
+            Model.Choice == null && !Model.TabsHidden, Model.Geometry.TabBarWidth);
     }
 }

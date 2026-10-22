@@ -75,12 +75,7 @@ jobs:
             "{0,-11} exit 0x{1:X8}" -f $probe, $code | Out-Host
             if ($code -ne 0) { $failing += $probe }
           }
-          $env:PICKVERTER_NO_RELEASE = "1"
-          foreach ($probe in "pdf-3", "editor") {
-            & $exe cli probe $probe 2>&1 | Out-Null
-            "{0,-11} exit 0x{1:X8} without releasing first" -f $probe, $LASTEXITCODE | Out-Host
-          }
-          Remove-Item Env:PICKVERTER_NO_RELEASE
+          "probes that failed: $($failing -join ', ')"
           $cdb = @("${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64\cdb.exe", "$env:ProgramFiles\Windows Kits\10\Debuggers\x64\cdb.exe") |
             Where-Object { Test-Path $_ } | Select-Object -First 1
           if (-not $cdb) {

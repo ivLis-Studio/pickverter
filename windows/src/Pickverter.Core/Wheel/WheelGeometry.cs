@@ -10,7 +10,8 @@ public sealed class WheelGeometry
     public double SubGap { get; } = 6;
     public double SubThickness { get; } = 54;
     public double Margin { get; } = 22;
-    public double TabWidth { get; } = 96;
+    /// Wide enough for a ring's key and name in the current language (the Windows wheel measures it).
+    public double TabWidth { get; set; } = 96;
     public double TabHeight { get; } = 28;
     public double TabSpacing { get; } = 2;
     public double TabPadding { get; } = 3;

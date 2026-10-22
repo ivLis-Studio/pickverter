@@ -116,7 +116,6 @@ internal sealed class PickverterApp : Application
     {
         InputMonitor.Shared.Stop();
         WindowManager.StopTray();
-        NativeObjects.ReleaseUnused();
         base.OnExit(e);
     }
 }

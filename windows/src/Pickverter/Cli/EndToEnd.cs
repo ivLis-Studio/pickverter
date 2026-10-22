@@ -62,7 +62,8 @@ internal static class EndToEnd
         Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + photo + "\"") { UseShellExecute = true });
         IntPtr window = IntPtr.Zero;
         IReadOnlyList<string> selection = [];
-        for (var attempt = 0; attempt < 40 && selection.Count == 0; attempt++)
+        var watch = Stopwatch.StartNew();
+        while (selection.Count == 0 && watch.Elapsed < TimeSpan.FromSeconds(20))
         {
             await Task.Delay(250);
             foreach (var candidate in ExplorerWindows())
@@ -76,9 +77,13 @@ internal static class EndToEnd
                 }
             }
         }
-        Report(selection.Count > 0, $"File Explorer selection read over COM ({selection.Count} item)");
+        Report(selection.Count > 0, $"File Explorer selection read over COM ({selection.Count} item, {watch.ElapsedMilliseconds} ms)");
         if (window == IntPtr.Zero)
         {
+            var frames = ExplorerWindows().ToList();
+            Console.WriteLine($"  File Explorer windows: {frames.Count}");
+            foreach (var frame in frames) Console.WriteLine(await Explorer.DiagnoseAsync(frame));
+            Snapshots.CaptureScreen(Path.Combine(shots, "0-no-selection.png"));
             tray.Dispose();
             return 1;
         }

@@ -279,6 +279,7 @@ internal sealed class WheelCanvas : FrameworkElement
 
     private void DrawTabs(DrawingContext dc)
     {
+        G.TabWidth = TabWidthFor(Dip);
         var bar = new Rect(Center.X - G.TabBarWidth / 2, Center.Y + G.TabBarOffset - G.TabBarHeight / 2, G.TabBarWidth, G.TabBarHeight);
         dc.DrawRoundedRectangle(Theme.Surface, new Pen(Theme.Hairline, 1), bar, bar.Height / 2, bar.Height / 2);
         foreach (var mode in WheelModes.All)
@@ -296,7 +297,7 @@ internal sealed class WheelCanvas : FrameworkElement
                 dc.DrawRoundedRectangle(Theme.SubtleHover, null, rect, h / 2, h / 2);
             }
             if (empty) dc.PushOpacity(0.3);
-            var key = Fit(mode.TabKey(), 40, 10.5, FontWeights.Medium, Theme.TextSecondary);
+            var key = Fit(mode.KeyName(), 64, 10.5, FontWeights.Medium, Theme.TextSecondary);
             var title = Fit(mode.Title(), w - 14 - TextWidth(key), 12, active ? FontWeights.SemiBold : FontWeights.Normal, Theme.TextPrimary, 0.7);
             var total = TextWidth(key) + 5 + TextWidth(title);
             var left = rect.X + (w - total) / 2;
@@ -304,6 +305,20 @@ internal sealed class WheelCanvas : FrameworkElement
             dc.DrawText(title, new Point(left + TextWidth(key) + 5, rect.Y + (h - title.Height) / 2));
             if (empty) dc.Pop();
         }
+    }
+
+    /// Each ring tab fits its key and name in the current language: "Umschalt Umwandeln" needs more room than "Shift Convert".
+    public static double TabWidthFor(double pixelsPerDip)
+    {
+        var widest = 0.0;
+        foreach (var mode in WheelModes.All)
+        {
+            var key = new FormattedText(mode.KeyName(), Loc.Culture, FlowDirection.LeftToRight, Theme.Face(FontWeights.Medium), 10.5, Brushes.Black, pixelsPerDip);
+            var title = new FormattedText(mode.Title(), Loc.Culture, FlowDirection.LeftToRight, Theme.Face(FontWeights.SemiBold), 12, Brushes.Black,
+                pixelsPerDip);
+            widest = Math.Max(widest, key.WidthIncludingTrailingWhitespace + 5 + title.WidthIncludingTrailingWhitespace + 24);
+        }
+        return Math.Clamp(Math.Ceiling(widest), 96, 136);
     }
 
     private void DrawChoiceCaption(DrawingContext dc)

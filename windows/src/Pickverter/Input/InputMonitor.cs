@@ -7,9 +7,9 @@ namespace Pickverter.Input;
 
 /// What the hook thread needs to know about the wheel, published by the UI thread on every change.
 internal sealed record WheelSnapshot(bool IsVisible, WheelModel.WheelOrigin Origin, bool MenuOpen, double CenterX, double CenterY,
-                                     double Scale, double Reach, bool TabsVisible)
+                                     double Scale, double Reach, bool TabsVisible, double TabBarWidth)
 {
-    public static readonly WheelSnapshot Hidden = new(false, WheelModel.WheelOrigin.Selection, false, 0, 0, 1, 0, false);
+    public static readonly WheelSnapshot Hidden = new(false, WheelModel.WheelOrigin.Selection, false, 0, 0, 1, 0, false, 0);
     private static readonly WheelGeometry Geometry = new();
 
     /// A screen point (physical pixels) belongs to the wheel: inside its reach, or on the ring tabs below it.
@@ -20,7 +20,7 @@ internal sealed record WheelSnapshot(bool IsVisible, WheelModel.WheelOrigin Orig
         var dy = (y - CenterY) / Scale;
         if (dx * dx + dy * dy <= Reach * Reach) return true;
         if (!TabsVisible) return false;
-        var half = Geometry.TabBarWidth / 2;
+        var half = TabBarWidth / 2;
         var top = Geometry.TabBarOffset - Geometry.TabBarHeight / 2 - 6;
         var bottom = Geometry.TabBarOffset + Geometry.TabBarHeight / 2 + 6;
         return dx >= -half && dx <= half && dy >= top && dy <= bottom;

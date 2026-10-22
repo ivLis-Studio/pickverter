@@ -141,14 +141,7 @@ internal static class CommandLine
         Platform.Media = new WinMedia();
         Platform.Codecs = new WinCodecs();
         Platform.Clipboard = new WinClipboard();
-        try
-        {
-            return body();
-        }
-        finally
-        {
-            NativeObjects.ReleaseUnused();
-        }
+        return body();
     }
 
     /// Everything, with a WPF application running the dispatcher (snapshots, self test, screenshots).
@@ -182,7 +175,6 @@ internal static class CommandLine
             }
         });
         var result = app.Run();
-        if (Environment.GetEnvironmentVariable("PICKVERTER_NO_RELEASE") is not { Length: > 0 }) NativeObjects.ReleaseUnused();
         Console.WriteLine($"▸ exit {code} (application {result})");
         if (code < 0) code = 70;
         Console.Out.Flush();
@@ -284,6 +276,7 @@ internal static class CommandLine
         if (explorer != IntPtr.Zero)
         {
             foreach (var path in await Explorer.SelectionAsync(explorer)) Console.WriteLine("  selected " + path);
+            Console.WriteLine(await Explorer.DiagnoseAsync(explorer));
         }
         InputMonitor.Shared.Start();
         Console.WriteLine($"hooks {(InputMonitor.Shared.IsRunning ? "installed" : "unavailable")}");

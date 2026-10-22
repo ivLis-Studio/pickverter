@@ -1,3 +1,4 @@
+using Pickverter.Interop;
 using Pickverter.Services;
 
 namespace Pickverter;
@@ -9,7 +10,12 @@ public static class Program
     [STAThread]
     public static int Main(string[] args)
     {
-        if (args.Length > 0 && args[0] == "cli") return Cli.CommandLine.Run(args[1..]);
+        if (args.Length > 0 && args[0] == "cli")
+        {
+            var status = Cli.CommandLine.Run(args[1..]);
+            ProcessEnd.Now(status);
+            return status;
+        }
         if (args.Length > 0 && args[0] == "--apply-update") return UpdateApplier.Apply(args[1..]);
         if (args.Length > 0 && args[0] == "--quit") return QuitRunning();
         using var mutex = new Mutex(true, InstanceName, out var first);
@@ -29,7 +35,9 @@ public static class Program
         using var show = new EventWaitHandle(false, EventResetMode.AutoReset, InstanceName + ".Show");
         using var quit = new EventWaitHandle(false, EventResetMode.AutoReset, InstanceName + ".Quit");
         var app = new PickverterApp(args, show, quit);
-        return app.Run();
+        var code = app.Run();
+        ProcessEnd.Now(code);
+        return code;
     }
 
     /// The installer and uninstaller ask a running copy to quit before they touch its files.

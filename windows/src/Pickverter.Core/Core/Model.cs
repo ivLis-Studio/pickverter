@@ -24,9 +24,6 @@ public static class WheelModes
         _ => KeyNames.Alt,
     };
 
-    /// Compact keycap for the wheel's tab bar ("⇧" where "Shift" is a long word).
-    public static string TabKey(this WheelMode mode) => mode == WheelMode.Convert ? KeyNames.ShiftShort : mode.KeyName();
-
     public static string Raw(this WheelMode mode) => mode switch
     {
         WheelMode.Convert => "convert",
@@ -47,7 +44,6 @@ public static class WheelModes
 public static class KeyNames
 {
     public static string Shift => L("key.shift");
-    public static string ShiftShort => L("key.shift.short");
     public static string Ctrl => L("key.ctrl");
     public static string Alt => L("key.alt");
     public static string Enter => L("key.enter");
