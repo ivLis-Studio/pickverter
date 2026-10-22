@@ -52,6 +52,18 @@ jobs:
           & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli selftest "$env:RUNNER_TEMP\selftest" | Out-Host
           exit $LASTEXITCODE
 
+      - name: Snapshot sections (process exit check)
+        continue-on-error: true
+        run: |
+          $exe = "src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe"
+          foreach ($section in "wheels", "cards", "flyout", "settings", "onboarding", "update", "crop", "redact", "trim", "pages", "metadata", "dialogs") {
+            & $exe cli snapshot "$env:RUNNER_TEMP\sections\$section" --only $section 2>&1 | Out-Null
+            "{0,-11} exit 0x{1:X8}" -f $section, $LASTEXITCODE | Out-Host
+          }
+          $env:PICKVERTER_NO_HOOKS = "1"
+          & $exe cli snapshot "$env:RUNNER_TEMP\sections\all-no-hooks" 2>&1 | Out-Null
+          "{0,-11} exit 0x{1:X8}" -f "no hooks", $LASTEXITCODE | Out-Host
+
       - name: Snapshots
         env:
           PICKVERTER_DEBUG: "1"

@@ -151,7 +151,8 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
             var at = pages.IndexOf(only);
             if (at >= 0 && at < grid.Children.Count)
             {
-                grid.Children[at] = Tile(only, at);
+                grid.Children.RemoveAt(at);
+                grid.Children.Insert(at, Tile(only, at));
                 return;
             }
         }

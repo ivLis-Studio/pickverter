@@ -17,17 +17,23 @@ namespace Pickverter.Cli;
 internal static class Snapshots
 {
     private static readonly string[] Everyone = Loc.Languages.Select(language => language.Code).ToArray();
+    private static HashSet<string>? only;
+
+    /// --only wheels,cards,flyout,settings,onboarding,update,crop,redact,trim,pages,metadata,dialogs
+    private static bool On(string section) => only == null || only.Contains(section);
 
     public static async Task<int> Run(string[] args)
     {
         var folder = Path.GetFullPath(args[0]);
         var languages = Option(args, "--lang") is { } list ? (list == "all" ? Everyone : list.Split(',')) : ["en"];
         var themes = Option(args, "--theme") is { } names ? names.Split(',') : ["light"];
+        only = Option(args, "--only") is { } sections ? sections.Split(',').ToHashSet(StringComparer.Ordinal) : null;
         var fixtures = FileSystem.TempFolder("snapshot-fixtures");
         var files = Fixtures.Make(fixtures, media: false);
         string F(string name) => files.First(file => Path.GetFileName(file) == name);
         // The tray panel and Settings show the keyboard hook's state: run it like the app does.
-        InputMonitor.Shared.Start();
+        var hooks = Environment.GetEnvironmentVariable("PICKVERTER_NO_HOOKS") is not { Length: > 0 };
+        if (hooks) InputMonitor.Shared.Start();
         foreach (var theme in themes)
         {
             var dark = theme == "dark";
@@ -39,8 +45,8 @@ internal static class Snapshots
                 var output = Path.Combine(folder, language + "-" + theme);
                 Directory.CreateDirectory(output);
                 Console.WriteLine("▸ " + output);
-                await Wheels(output, F("photo.jpg"), F("report.pdf"), files);
-                await Cards(output, F("photo.jpg"));
+                if (On("wheels")) await Wheels(output, F("photo.jpg"), F("report.pdf"), files);
+                if (On("cards")) await Cards(output, F("photo.jpg"));
                 await Windows(output, files, F);
             }
         }
@@ -165,49 +171,77 @@ internal static class Snapshots
 
     private static async Task Windows(string output, IReadOnlyList<string> files, Func<string, string> file)
     {
-        var flyout = new TrayFlyout();
-        flyout.Rebuild();
-        await Take(flyout, Path.Combine(output, "flyout.png"), 336, null);
-
-        var settings = new SettingsWindow();
-        foreach (var page in Enum.GetValues<SettingsPage>())
+        if (On("flyout"))
         {
-            settings.Select(page);
-            await Take(settings, Path.Combine(output, "settings-" + page.ToString().ToLowerInvariant() + ".png"), 920, null, keep: true);
+            var flyout = new TrayFlyout();
+            flyout.Rebuild();
+            await Take(flyout, Path.Combine(output, "flyout.png"), 336, null);
         }
-        settings.Close();
 
-        var onboarding = new OnboardingWindow();
-        onboarding.Step(6);
-        await Take(onboarding, Path.Combine(output, "onboarding.png"), 980, 720);
+        if (On("settings"))
+        {
+            var settings = new SettingsWindow();
+            foreach (var page in Enum.GetValues<SettingsPage>())
+            {
+                settings.Select(page);
+                await Take(settings, Path.Combine(output, "settings-" + page.ToString().ToLowerInvariant() + ".png"), 920, null, keep: true);
+            }
+            settings.Close();
+        }
 
-        var notes = "- **New** — Pickverter now runs on Windows: tap Alt in File Explorer.\n- Result cards stay in the corner you choose.\n- [Release notes](https://github.com)";
-        Updater.Shared.Simulate(Updater.UpdatePhase.Available, new UpdateManifest { Version = "0.3.0", Notes = notes, NotesUrl = "https://github.com" });
-        await Take(new UpdateWindow(), Path.Combine(output, "update-available.png"), 540, null);
-        Updater.Shared.Simulate(Updater.UpdatePhase.UpToDate, null);
-        await Take(new UpdateWindow(), Path.Combine(output, "update-latest.png"), 540, null);
-        Updater.Shared.Simulate(Updater.UpdatePhase.Idle, null);
+        if (On("onboarding"))
+        {
+            var onboarding = new OnboardingWindow();
+            onboarding.Step(6);
+            await Take(onboarding, Path.Combine(output, "onboarding.png"), 980, 720);
+        }
+
+        if (On("update"))
+        {
+            var notes = "- **New** — Pickverter now runs on Windows: tap Alt in File Explorer.\n- Result cards stay in the corner you choose.\n- [Release notes](https://github.com)";
+            Updater.Shared.Simulate(Updater.UpdatePhase.Available, new UpdateManifest { Version = "0.3.0", Notes = notes, NotesUrl = "https://github.com" });
+            await Take(new UpdateWindow(), Path.Combine(output, "update-available.png"), 540, null);
+            Updater.Shared.Simulate(Updater.UpdatePhase.UpToDate, null);
+            await Take(new UpdateWindow(), Path.Combine(output, "update-latest.png"), 540, null);
+            Updater.Shared.Simulate(Updater.UpdatePhase.Idle, null);
+        }
 
         var photo = file("photo.jpg");
-        var crop = new CropEditor(photo, 1);
-        await Task.Delay(1200);
-        await Take(crop, Path.Combine(output, "editor-crop.png"), 980, 720);
-        var redact = new RedactEditor(photo, 2);
-        await Task.Delay(1200);
-        redact.Stage.Regions.Add(new NormRect(0.62, 0.12, 0.2, 0.28));
-        redact.Stage.Regions.Add(new NormRect(0.1, 0.62, 0.3, 0.14));
-        redact.Stage.Selected = 1;
-        redact.Stage.Prepare();
-        await Take(redact, Path.Combine(output, "editor-redact.png"), 980, 720);
-        await Take(new TrimEditor(file("tone.wav"), 4, false), Path.Combine(output, "editor-trim.png"), 720, 360);
-        var pages = new PagesEditor([file("report.pdf")]);
-        await Task.Delay(3000);
-        if (pages.ThumbnailCount == 0) Console.WriteLine("  page thumbnails: none · " + (pages.LastError ?? "no error"));
-        await Take(pages, Path.Combine(output, "editor-pages.png"), 1000, 720);
-        var snapshot = await MetadataKit.Read(photo);
-        await Take(new MetadataEditor(photo, snapshot), Path.Combine(output, "editor-metadata.png"), 600, 640);
-        await Take(new PasswordDialog(file("report.pdf")), Path.Combine(output, "dialog-password.png"), 460, null);
-        await Take(new RangeDialog(file("report.pdf"), 3), Path.Combine(output, "dialog-range.png"), 460, null);
+        if (On("crop"))
+        {
+            var crop = new CropEditor(photo, 1);
+            await Task.Delay(1200);
+            await Take(crop, Path.Combine(output, "editor-crop.png"), 980, 720);
+        }
+        if (On("redact"))
+        {
+            var redact = new RedactEditor(photo, 2);
+            await Task.Delay(1200);
+            redact.Stage.Regions.Add(new NormRect(0.62, 0.12, 0.2, 0.28));
+            redact.Stage.Regions.Add(new NormRect(0.1, 0.62, 0.3, 0.14));
+            redact.Stage.Selected = 1;
+            redact.Stage.Prepare();
+            await Take(redact, Path.Combine(output, "editor-redact.png"), 980, 720);
+        }
+        if (On("trim")) await Take(new TrimEditor(file("tone.wav"), 4, false), Path.Combine(output, "editor-trim.png"), 720, 360);
+        if (On("pages"))
+        {
+            var pages = new PagesEditor([file("report.pdf")]);
+            for (var wait = 0; wait < 40 && pages.ThumbnailCount < 3; wait++) await Task.Delay(100);
+            await Task.Delay(200);
+            if (pages.ThumbnailCount < 3) Console.WriteLine($"  page thumbnails: {pages.ThumbnailCount} · " + (pages.LastError ?? "no error"));
+            await Take(pages, Path.Combine(output, "editor-pages.png"), 1000, 720);
+        }
+        if (On("metadata"))
+        {
+            var snapshot = await MetadataKit.Read(photo);
+            await Take(new MetadataEditor(photo, snapshot), Path.Combine(output, "editor-metadata.png"), 600, 640);
+        }
+        if (On("dialogs"))
+        {
+            await Take(new PasswordDialog(file("report.pdf")), Path.Combine(output, "dialog-password.png"), 460, null);
+            await Take(new RangeDialog(file("report.pdf"), 3), Path.Combine(output, "dialog-range.png"), 460, null);
+        }
     }
 
     private static async Task Take(Window window, string path, double width, double? height, bool keep = false)
