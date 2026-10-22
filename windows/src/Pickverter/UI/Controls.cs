@@ -548,4 +548,25 @@ internal static class Ui
     }
 
     public static Border Divider() => new() { Height = 1, Background = Theme.Divider, Margin = new Thickness(0, 4, 0, 4) };
+
+    /// Takes an element out of whatever holds it, so a rebuilt layout can reuse it.
+    public static T Detach<T>(T element) where T : FrameworkElement
+    {
+        switch (element.Parent)
+        {
+            case Panel panel:
+                panel.Children.Remove(element);
+                break;
+            case Decorator decorator:
+                decorator.Child = null;
+                break;
+            case ContentControl control:
+                control.Content = null;
+                break;
+            case ItemsControl items:
+                items.Items.Remove(element);
+                break;
+        }
+        return element;
+    }
 }

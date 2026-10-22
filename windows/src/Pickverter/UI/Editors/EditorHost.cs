@@ -232,9 +232,9 @@ internal sealed class PasswordDialog : EditorWindow<string>
         var form = Ui.Column(10,
             Ui.Text(L("pdf.password.title"), 20, FontWeights.SemiBold),
             Ui.Text(L("pdf.password.info", FileNames.Name(file)), 13, brush: Theme.TextSecondary, wrap: true),
-            Ui.Caption(L("pdf.password.placeholder")), first,
-            Ui.Caption(L("pdf.password.confirm")), second,
-            error);
+            Ui.Caption(L("pdf.password.placeholder")), Ui.Detach(first),
+            Ui.Caption(L("pdf.password.confirm")), Ui.Detach(second),
+            Ui.Detach(error));
         form.Margin = new Thickness(24, 22, 24, 18);
         var dock = new DockPanel();
         var footer = Footer(null, CancelButton(this), lockButton);
@@ -284,7 +284,7 @@ internal sealed class RangeDialog : EditorWindow<string>
         var form = Ui.Column(10,
             Ui.Text(L("pdf.range.title"), 20, FontWeights.SemiBold),
             Ui.Text(L("pdf.range.info", FileNames.Name(file), pages.ToString(Loc.Culture)), 13, brush: Theme.TextSecondary, wrap: true),
-            input, error);
+            Ui.Detach(input), Ui.Detach(error));
         form.Margin = new Thickness(24, 22, 24, 18);
         var dock = new DockPanel();
         var footer = Footer(null, CancelButton(this), extract);
@@ -343,7 +343,7 @@ internal sealed class MetadataEditor : EditorWindow<MetadataEdit>
             box.Tag = MetadataKit.Placeholder(key);
             var label = Ui.Caption(MetadataKit.Label(key, snapshot.Family));
             var placeholder = MetadataKit.Placeholder(key);
-            form.Children.Add(Ui.Column(4, label, box));
+            form.Children.Add(Ui.Column(4, label, Ui.Detach(box)));
             if (placeholder.Length > 0) box.ToolTip = placeholder;
         }
         if (snapshot.HasLocation)

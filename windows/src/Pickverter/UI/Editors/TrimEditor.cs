@@ -172,7 +172,7 @@ internal sealed class TrimEditor : EditorWindow<TrimSelection>
     private bool playing;
     private bool previewFailed;
     private bool lossless;
-    private FlatButton? play;
+    private readonly Border playHolder = new();
 
     public TrimEditor(string file, double duration, bool video)
     {
@@ -201,6 +201,16 @@ internal sealed class TrimEditor : EditorWindow<TrimSelection>
         clock.Tick += (_, _) => Tick();
         timeline.Seek += SeekTo;
         timeline.Changed += UpdateFields;
+        start.KeyDown += (_, args) =>
+        {
+            if (args.Key == Key.Enter) Commit(start, true);
+        };
+        start.LostKeyboardFocus += (_, _) => Commit(start, true);
+        end.KeyDown += (_, args) =>
+        {
+            if (args.Key == Key.Enter) Commit(end, false);
+        };
+        end.LostKeyboardFocus += (_, _) => Commit(end, false);
         Closed += (_, _) =>
         {
             clock.Stop();
@@ -269,7 +279,14 @@ internal sealed class TrimEditor : EditorWindow<TrimSelection>
             player.Pause();
             clock.Stop();
         }
-        if (play != null) Rebuild();
+        UpdatePlayButton();
+    }
+
+    private void UpdatePlayButton()
+    {
+        var button = FlatButton.IconOnly(playing ? L("trim.pause") : L("trim.play"), playing ? "pause.fill" : "play.fill", Toggle, compact: false);
+        button.IsEnabled = !previewFailed;
+        playHolder.Child = button;
     }
 
     private void UpdateFields()
@@ -298,26 +315,15 @@ internal sealed class TrimEditor : EditorWindow<TrimSelection>
         var controls = Ui.Column(12);
         controls.Margin = new Thickness(20, 14, 20, 14);
         if (previewFailed) controls.Children.Add(Ui.Caption(L("trim.fallback")));
-        controls.Children.Add(timeline);
+        controls.Children.Add(Ui.Detach(timeline));
         var row = new Grid();
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        play = FlatButton.IconOnly(playing ? L("trim.pause") : L("trim.play"), playing ? "pause.fill" : "play.fill", Toggle, compact: false);
-        play.IsEnabled = !previewFailed;
-        row.Children.Add(play);
-        start.KeyDown += (_, args) =>
-        {
-            if (args.Key == Key.Enter) Commit(start, true);
-        };
-        start.LostKeyboardFocus += (_, _) => Commit(start, true);
-        end.KeyDown += (_, args) =>
-        {
-            if (args.Key == Key.Enter) Commit(end, false);
-        };
-        end.LostKeyboardFocus += (_, _) => Commit(end, false);
-        var times = Ui.Row(10, Ui.Text(L("trim.start"), 13, brush: Theme.TextSecondary), Detach(start),
-            Ui.Text(L("trim.end"), 13, brush: Theme.TextSecondary), Detach(end), length);
+        UpdatePlayButton();
+        row.Children.Add(Ui.Detach(playHolder));
+        var times = Ui.Row(10, Ui.Text(L("trim.start"), 13, brush: Theme.TextSecondary), Ui.Detach(start),
+            Ui.Text(L("trim.end"), 13, brush: Theme.TextSecondary), Ui.Detach(end), Ui.Detach(length));
         times.HorizontalAlignment = HorizontalAlignment.Center;
         Grid.SetColumn(times, 1);
         row.Children.Add(times);
@@ -350,12 +356,6 @@ internal sealed class TrimEditor : EditorWindow<TrimSelection>
         dock.Children.Add(stage);
         Content = dock;
         UpdateFields();
-    }
-
-    private static UIElement Detach(TextBox box)
-    {
-        if (box.Parent is Panel panel) panel.Children.Remove(box);
-        return box;
     }
 
     protected override void OnPreviewKeyDown(KeyEventArgs e)

@@ -26,6 +26,8 @@ internal static class Snapshots
         var fixtures = FileSystem.TempFolder("snapshot-fixtures");
         var files = Fixtures.Make(fixtures, media: false);
         string F(string name) => files.First(file => Path.GetFileName(file) == name);
+        // The tray panel and Settings show the keyboard hook's state: run it like the app does.
+        InputMonitor.Shared.Start();
         foreach (var theme in themes)
         {
             var dark = theme == "dark";
@@ -42,6 +44,7 @@ internal static class Snapshots
                 await Windows(output, files, F);
             }
         }
+        InputMonitor.Shared.Stop();
         return 0;
     }
 

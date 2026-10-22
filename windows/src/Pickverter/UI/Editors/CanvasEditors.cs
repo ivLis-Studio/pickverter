@@ -317,7 +317,7 @@ internal sealed class CropEditor : EditorWindow<CropSelection>
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         toolbar.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         toolbar.Children.Add(Ui.Row(10, Ui.Text(L("crop.aspect"), 13, brush: Theme.TextSecondary), aspects));
-        Grid.SetColumn(size, 2);
+        Grid.SetColumn(Ui.Detach(size), 2);
         size.VerticalAlignment = VerticalAlignment.Center;
         toolbar.Children.Add(size);
         var reset = Ui.Button(L("crop.reset"), () =>
@@ -634,7 +634,7 @@ internal sealed class RedactEditor : EditorWindow<RedactSelection>
             Finish(new RedactSelection(stage.Regions.Select(region => region.Clipped()).ToList(), stage.Look));
         }, prominent: true);
         apply.IsDefault = true;
-        var note = Ui.Column(2, status);
+        var note = Ui.Column(2, Ui.Detach(status));
         if (count > 1) note.Children.Add(Ui.Caption(LP("editor.applies_to", count)));
         var footer = Footer(note, CancelButton(this), apply);
         var dock = new DockPanel();

@@ -291,7 +291,7 @@ internal sealed class CardWindow : Window
         {
             case JobState.Running:
                 ring.Value = Job.Progress;
-                host.Children.Add(ring);
+                host.Children.Add(Ui.Detach(ring));
                 host.Children.Add(Glyphs.Icon(Job.Symbol, 13, Theme.TextSecondary));
                 break;
             case JobState.Succeeded when preview != null && !Job.Undone:

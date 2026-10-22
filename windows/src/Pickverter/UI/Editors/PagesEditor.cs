@@ -116,7 +116,7 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
         saveSelected.IsEnabled = selected.Count > 0;
         var save = Ui.Button(L("pages.save"), () => Save(onlySelected: false), prominent: true);
         save.IsDefault = true;
-        var footer = Footer(status, CancelButton(this), saveSelected, save);
+        var footer = Footer(Ui.Detach(status), CancelButton(this), saveSelected, save);
         var dock = new DockPanel();
         DockPanel.SetDock(toolbar, Dock.Top);
         DockPanel.SetDock(hint, Dock.Top);
