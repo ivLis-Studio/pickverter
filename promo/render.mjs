@@ -3,11 +3,13 @@
 //   node render.mjs --video out/video-en.mp4 [--lang en] [--aspect h|v] [--dpr 2] [--fps 60] [--workers 6] [--from 0] [--to 30]
 //   node render.mjs --events out/events-en.json [--lang en]
 // --aspect v renders the 9:16 cut (1080×1920 CSS pixels × dpr) for Reels, Shorts and TikTok.
+// --platform win renders the Windows cut (win.html): File Explorer, the Windows wheel and an Android phone.
 import { chromium } from "playwright-core";
 import sharp from "sharp";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import http from "node:http";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -20,18 +22,83 @@ const dpr = +(opt.dpr || 1);
 const fps = +(opt.fps || 60);
 const aspect = opt.aspect === "v" ? "v" : "h";
 const W = aspect === "v" ? 1080 : 1920, H = aspect === "v" ? 1920 : 1080;
+const platform = opt.platform === "win" ? "win" : "mac";
+const WIN = platform === "win";
+const PAGE = WIN ? "/win.html" : "/index.html";
 
-// The app's own strings, so the wheel and cards read exactly like Pickverter.
+// The app's own strings, so the wheel and cards read exactly like Pickverter. The Windows app layers its own
+// strings (File Explorer, Alt, Ctrl…) over the shared ones.
 const i18n = JSON.parse(fs.readFileSync(path.join(here, "../macos/Resources/i18n.json"), "utf8"));
+if (WIN) {
+  const overlay = JSON.parse(fs.readFileSync(path.join(here, "../windows/Resources/i18n.windows.json"), "utf8"));
+  for (const [key, values] of Object.entries(overlay.strings)) {
+    const base = i18n.strings[key] || [];
+    i18n.strings[key] = i18n.languages.map((language, i) => {
+      const j = overlay.languages.indexOf(language);
+      return j >= 0 && values[j] != null ? values[j] : base[i] ?? values[0];
+    });
+  }
+}
 const i18nJS = "window.I18N = " + JSON.stringify(i18n) + ";\n";
-const i18nFile = path.join(here, "src/i18n-data.js");
+const i18nFile = path.join(here, WIN ? "src/i18n-data-win.js" : "src/i18n-data.js");
 // Chunk processes start together: only write when it changed, so no page ever reads a half-written file.
 if (!fs.existsSync(i18nFile) || fs.readFileSync(i18nFile, "utf8") !== i18nJS) fs.writeFileSync(i18nFile, i18nJS);
 
 // CSS masks (SF Symbols) need http: file:// pages can't load them.
-const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json", ".ttf": "font/ttf" };
+const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".png": "image/png", ".jpg": "image/jpeg", ".json": "application/json",
+  ".ttf": "font/ttf", ".woff": "font/woff", ".woff2": "font/woff2" };
 // San Francisco straight from macOS, so Latin text never falls back to the locale's UI font.
 const SYSTEM_FONTS = { "/sysfonts/SFNS.ttf": "/System/Library/Fonts/SFNS.ttf", "/sysfonts/SFNSMono.ttf": "/System/Library/Fonts/SFNSMono.ttf" };
+// The Windows cut is set in Windows' own faces. They aren't redistributable, so they are read from wherever this Mac
+// has them (Microsoft Office ships Segoe UI, Malgun Gothic and Consolas); missing ones fall back in CSS.
+if (WIN) {
+  const office = path.join(os.homedir(), "Library/Group Containers/UBF8T346G9.Office");
+  const word = "/Applications/Microsoft Word.app/Contents/Resources/DFonts";
+  const scan = (dir, depth = 4) => {
+    const out = [];
+    const walk = (d, n) => {
+      let entries = [];
+      try { entries = fs.readdirSync(d, { withFileTypes: true }); } catch { return; }
+      for (const e of entries) {
+        const p = path.join(d, e.name);
+        if (e.isDirectory() && n > 0) walk(p, n - 1);
+        else if (e.isFile()) out.push(p);
+      }
+    };
+    walk(dir, depth);
+    return out;
+  };
+  const pool = [...scan(path.join(office, "SolutionPackages")), ...scan(path.join(office, "FontCache"), 5), ...scan(word, 0),
+    ...scan("/Library/Fonts", 0), ...scan(path.join(os.homedir(), "Library/Fonts"), 0)];
+  const pick = (...patterns) => {
+    for (const re of patterns) { const hit = pool.find((p) => re.test(path.basename(p)) || re.test(p)); if (hit) return hit; }
+    return null;
+  };
+  const WIN_FONTS = {
+    "segoe-300": pick(/^segoeui-light_.*\.woff2?$/i, /^segoeuil\.ttf$/i),
+    "segoe-350": pick(/^segoeui-semilight_.*\.woff2?$/i, /^segoeuisl\.ttf$/i),
+    "segoe-400": pick(/^segoeui-regular_.*\.woff2?$/i, /^segoeui\.ttf$/i, /CloudFonts\/Segoe UI\/[^/]+\.ttf$/),
+    "segoe-600": pick(/^segoeui-semibold_.*\.woff$/i, /^Segoe-UI-Semibold_.*\.woff2$/i, /^seguisb\.ttf$/i),
+    "segoe-700": pick(/^segoeuib\.ttf$/i),
+    "segoesans-700": pick(/^Segoe-Sans-Display-Bold_.*\.woff2$/i),
+    "segoesanstext-600": pick(/^Segoe-Sans-Text-Semibold_.*\.woff2$/i),
+    "malgun-300": pick(/^malgunsl\.ttf$/i), "malgun-400": pick(/^malgun\.ttf$/i), "malgun-700": pick(/^malgunbd\.ttf$/i),
+    "consolas-400": pick(/^Consola\.ttf$/i), "consolas-700": pick(/^Consolab\.ttf$/i),
+    "roboto-400": null, "roboto-700": null,
+  };
+  // Office's cloud copies of Roboto (the Android face) have numeric names: read usWeightClass from the OS/2 table.
+  const weightOf = (file) => {
+    const b = fs.readFileSync(file);
+    for (let i = 0, n = b.readUInt16BE(4); i < n; i++) {
+      const rec = 12 + i * 16;
+      if (b.toString("latin1", rec, rec + 4) === "OS/2") return b.readUInt16BE(b.readUInt32BE(rec + 8) + 4);
+    }
+    return 400;
+  };
+  for (const p of pool.filter((p) => /CloudFonts\/Roboto\/[^/]+\.ttf$/.test(p))) WIN_FONTS[weightOf(p) >= 600 ? "roboto-700" : "roboto-400"] = p;
+  for (const [name, file] of Object.entries(WIN_FONTS)) if (file) SYSTEM_FONTS["/winfonts/" + name] = file;
+  if (opt.fonts) for (const [name, file] of Object.entries(WIN_FONTS)) console.log(name.padEnd(18), file || "— (falls back)");
+}
 const server = http.createServer((req, res) => {
   const pathname = decodeURIComponent(new URL(req.url, "http://x").pathname);
   if (pathname === "/favicon.ico") { res.writeHead(204); res.end(); return; }
@@ -43,7 +110,7 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const origin = "http://127.0.0.1:" + server.address().port;
 
-async function openPage(browser, url = "/index.html", size = { width: W, height: H }) {
+async function openPage(browser, url = PAGE, size = { width: W, height: H }) {
   const page = await browser.newPage({ viewport: size, deviceScaleFactor: dpr });
   page.on("pageerror", (e) => console.error("page error:", e.message));
   page.on("console", (m) => { if (m.type() === "error") console.error("console:", m.text(), JSON.stringify(m.location())); });
@@ -110,7 +177,7 @@ if (opt.stills) {
   blurWindows = await p.page.evaluate(() => window.MOTION_BLUR || []);
   fs.mkdirSync(path.join(here, "out/stills"), { recursive: true });
   for (const t of String(opt.stills).split(",").map(Number)) {
-    const out = path.join(here, "out/stills", lang + (aspect === "v" ? "-v" : "") + "-" + t.toFixed(2) + ".png");
+    const out = path.join(here, "out/stills", (WIN ? "win-" : "") + lang + (aspect === "v" ? "-v" : "") + "-" + t.toFixed(2) + ".png");
     fs.writeFileSync(out, await (opt.blur ? blurredFrame(p, t) : frame(p, t)));
     console.log(out);
   }
@@ -147,7 +214,7 @@ if (opt.video) {
   const queue = [];
   for (let first = 0, i = 0; first < total; first += size, i++) queue.push({ first, last: Math.min(total, first + size), file: path.join(tmp, "c" + String(i).padStart(3, "0") + ".mp4") });
   const files = queue.map((q) => q.file);
-  const pass = ["--lang", lang, "--aspect", aspect, "--dpr", String(dpr), "--fps", String(fps), "--samples", String(baseSamples), "--crf", crf, "--from", String(from)];
+  const pass = ["--lang", lang, "--aspect", aspect, "--platform", platform, "--dpr", String(dpr), "--fps", String(fps), "--samples", String(baseSamples), "--crf", crf, "--from", String(from)];
   async function worker() {
     while (queue.length) {
       const q = queue.shift();

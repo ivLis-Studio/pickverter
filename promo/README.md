@@ -6,6 +6,7 @@ A 31-second launch video rendered entirely from code — the stage, the motion a
 promo/make.sh                         # English and Korean, 16:9 and 9:16
 promo/make.sh ko                      # one language
 PROMO_ASPECTS=v promo/make.sh ko      # only the vertical cut
+PROMO_PLATFORMS=win promo/make.sh     # the Windows cut (PROMO_PLATFORMS="mac win" for both)
 ```
 
 Outputs land in `promo/out/`, all 60 fps:
@@ -42,6 +43,22 @@ How it works:
 
 Where the outputs are used: the README banners and walkthrough images live in `docs/readme/`, and the film, poster and
 social card on the website live in `website/public/assets/media/` — copy new renders there.
+
+## The Windows cut
+
+`win.html` and `src/win/` tell the same 31 seconds on Windows 11, on the same beat grid and score: File Explorer and the
+Alt key, WebP → JPG, Word → PDF, rotate, cut-out → Ctrl+V, then the share sheet sends the travel plan to an Android phone
+through Phone Link. Outputs are named `Pickverter-promo-windows-<lang>-….mp4`.
+
+- The wheel and result cards follow the Windows app (`windows/src/Pickverter/UI`: `WheelCanvas.cs`, `Cards.cs`,
+  `Theme.cs`) — rings, hub text, the ⇧ / Ctrl / Alt tabs, the #005FB8 accent, 368-wide cards in the bottom-right corner
+  whose buttons fold to icons instead of wrapping. The finale zooms out of the Windows icon (`src/win/icon.js`, the same
+  numbers as `windows/scripts/make-icons.mjs`).
+- Icons are Fluent UI System Icons (MIT), subset into `assets/fluent/` by `tools/fluent-glyphs.py` from the app's own
+  symbol map (`windows/scripts/icons.json`) plus the Explorer, share sheet and phone chrome.
+- Windows type (Segoe UI, Malgun Gothic, Segoe Sans Display) isn't redistributable: `render.mjs --platform win` reads it
+  from this Mac's Microsoft Office install and falls back to system fonts elsewhere (`--fonts` lists what it found).
+  Korean titles use Pretendard when it is installed; the phone uses Roboto.
 
 Requirements: macOS with Google Chrome, Node, Python 3, ffmpeg. SF Symbols and file icons are exported from the
 local system by `tools/export-assets.swift`; the photos were generated for this video and the cut-out was made with

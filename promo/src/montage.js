@@ -3,7 +3,7 @@
 (function () {
   const { el, sym, set, attr, lerp, clamp, prog, E, spring, polar } = PV;
   const NS = "http://www.w3.org/2000/svg";
-  const BLUE = "#0A84FF";
+  let BLUE = "#0A84FF";
   const INK = "#1D1D1F";
   let uid = 0;
 
@@ -255,8 +255,12 @@
   };
 
   // spec: { W, H, t0, step, wipe: {t0, t1, x, y}, end (words out), implode, features[] (keys above), words[], more, copied,
-  //         ring: {cx, cy, R, tile}, disc: {cx, cy, r}, text: {x, y, align, size} }
+  //         ring: {cx, cy, R, tile}, disc: {cx, cy, r}, text: {x, y, align, size},
+  //         icon(name, size, color, parent) to draw tile symbols (default: SF Symbols), tileRadius (fraction of a tile), accent }
   function Montage(parent, spec) {
+    if (spec.accent) BLUE = spec.accent;
+    const icon = spec.icon || sym;
+    const RAD = spec.tileRadius ?? 0.26;
     const keys = spec.features, N = keys.length;
     const root = el("div", { class: "abs layer mont" }, parent);
     const field = el("div", { class: "abs layer m-field" }, root);
@@ -268,11 +272,11 @@
     words.forEach((w) => set(w, { top: tx.y + tx.gap + "px", fontSize: tx.size + "px" }));
     const sel = el("div", { class: "m-sel" }, root);
     const T = spec.ring.tile;
-    set(sel, { width: T + 22 + "px", height: T + 22 + "px", borderRadius: (T + 22) * 0.27 + "px" });
+    set(sel, { width: T + 22 + "px", height: T + 22 + "px", borderRadius: (T + 22) * (RAD + 0.01) + "px" });
     const tiles = keys.map((k) => {
       const t = el("div", { class: "m-tile" }, root);
-      set(t, { width: T + "px", height: T + "px", borderRadius: T * 0.26 + "px" });
-      sym(FEATURES[k][1], T * 0.44, BLUE, t);
+      set(t, { width: T + "px", height: T + "px", borderRadius: T * RAD + "px" });
+      icon(FEATURES[k][1], T * 0.44, BLUE, t);
       return t;
     });
     const disc = el("div", { class: "m-disc" }, root);
