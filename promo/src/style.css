@@ -1,12 +1,13 @@
 @font-face { font-family: "PV SF"; src: url("/sysfonts/SFNS.ttf") format("truetype"); font-weight: 1 1000; }
 @font-face { font-family: "PV SF Mono"; src: url("/sysfonts/SFNSMono.ttf") format("truetype"); font-weight: 1 1000; }
-:root { --accent: #0A7CFF; --ink: #1D1D1F; --bg: #EDEDF0; }
-html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+:root { --accent: #0A7CFF; --ink: #1D1D1F; --bg: #EDEDF0; --W: 1920px; --H: 1080px; }
+html, body { margin: 0; width: var(--W); height: var(--H); overflow: hidden; background: var(--bg); }
 body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang SC", "PingFang TC", sans-serif; font-optical-sizing: auto;
   -webkit-font-smoothing: antialiased; color: var(--ink); font-feature-settings: "kern"; }
-#stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+#stage { position: absolute; left: 0; top: 0; width: var(--W); height: var(--H); overflow: hidden; background: var(--bg); }
 .abs { position: absolute; left: 0; top: 0; }
-.layer { width: 1920px; height: 1080px; }
+.layer { width: var(--W); height: var(--H); }
+.world { transform-origin: 0 0; }
 .sym { -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; -webkit-mask-size: contain; flex: none; }
 
 /* cursor + keycaps */
@@ -18,6 +19,7 @@ body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang S
 .keycap.big { width: 168px; height: 168px; border-radius: 30px; }
 .keycap.big .kc-glyph { font-size: 52px; right: 24px; top: 16px; }
 .keycap.big .kc-word { font-size: 26px; left: 22px; bottom: 19px; }
+.keycap.letter .kc-glyph { left: 0; right: 0; top: 0; bottom: 0; display: flex; align-items: center; justify-content: center; font-size: 40px; font-weight: 500; }
 
 /* Finder */
 .finder { background: #fff; border-radius: 18px; transform-origin: 0 0; z-index: 10;
@@ -43,6 +45,7 @@ body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang S
 .f-icon { position: relative; width: 86px; height: 86px; }
 .f-label { position: absolute; left: 0; width: 120px; top: 99px; display: flex; justify-content: center; }
 .f-label span { font-size: 12px; line-height: 17px; padding: 0 6px; border-radius: 4px; white-space: nowrap; }
+.f-marquee { position: absolute; display: none; border: 1px solid rgba(60,60,67,0.38); background: rgba(60,60,67,0.1); border-radius: 3px; z-index: 5; }
 
 /* wheel */
 .wheel { z-index: 30; }
@@ -57,6 +60,12 @@ body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang S
 .w-hubc { flex-direction: column; align-items: center; gap: 2px; text-align: center; padding: 0 9px; }
 .h-thumb { width: 44px; height: 44px; background-size: cover; background-position: center; border-radius: 7px; margin-bottom: 3px;
   box-shadow: 0 0 0 0.5px rgba(0,0,0,0.15); }
+.h-stack { position: relative; width: 44px; height: 44px; margin-bottom: 3px; flex: none; }
+.h-stack .h-back { position: absolute; left: -6px; top: 3px; width: 40px; height: 40px; border-radius: 7px; background: rgba(0,0,0,0.1); transform: rotate(-9deg); }
+.h-stack .h-thumb { position: absolute; left: 0; top: 0; margin: 0; }
+.h-thumb.icon { background-size: contain; background-repeat: no-repeat; box-shadow: none; border-radius: 0; }
+.h-badge { position: absolute; right: -9px; top: -7px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px;
+  background: var(--accent); color: #fff; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
 .h-name { font-size: 10.5px; font-weight: 500; white-space: nowrap; }
 .h-hint { font-size: 8.5px; color: #AEAEB2; white-space: nowrap; }
 .h-fmt { font-size: 18px; font-weight: 600; }
@@ -88,6 +97,7 @@ body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang S
 .c-ring { position: absolute; left: 0; top: 0; }
 .c-thumb { position: absolute; inset: 0; border-radius: 8px; background-size: cover; background-position: center; background-color: #fff;
   box-shadow: 0 0 0 0.5px rgba(0,0,0,0.15); }
+.c-thumb.fit { background-size: contain; background-repeat: no-repeat; background-color: transparent; box-shadow: none; border-radius: 0; }
 .c-text { flex: 1; min-width: 0; }
 .c-title { font-size: 15px; font-weight: 600; white-space: nowrap; }
 .c-sub { font-size: 12.5px; color: #8E8E93; margin-top: 2px; white-space: nowrap; }
@@ -111,10 +121,13 @@ body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang S
 .t-caret { display: inline-block; width: 7.5px; height: 15px; background: #8A8A8E; vertical-align: -3px; }
 
 /* overlays and titles */
-.cap { position: absolute; left: 0; width: 1920px; text-align: center; z-index: 70; }
-.cap-h { font-size: 60px; font-weight: 700; letter-spacing: -0.012em; line-height: 1.1; }
+.cap { position: absolute; left: 0; width: var(--W); text-align: center; z-index: 70; }
+.cap-h { font-size: 60px; font-weight: 700; letter-spacing: -0.012em; line-height: 1.1; text-wrap: balance; }
 .cap-s { font-size: 26px; color: #6E6E73; margin-top: 12px; letter-spacing: -0.005em; }
-.big { position: absolute; left: 0; width: 1920px; text-align: center; font-size: 124px; font-weight: 700; letter-spacing: -0.018em; line-height: 1.05; }
+.cap-h .w { display: inline-block; overflow: hidden; vertical-align: top; padding: 0 0.05em 0.12em; margin: 0 -0.05em -0.12em; }
+.cap-h .w > span { display: inline-block; }
+.big { position: absolute; left: 0; width: var(--W); text-align: center; font-size: 124px; font-weight: 700; letter-spacing: -0.018em; line-height: 1.05; }
+.big.accent { color: var(--accent); }
 .mask { overflow: hidden; display: inline-block; vertical-align: top; padding: 0 0.06em 0.12em; }
 .mask > span { display: inline-block; }
 .tile { position: absolute; border-radius: 34px; background: #fff; display: flex; align-items: center; justify-content: center;
@@ -122,9 +135,88 @@ body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang S
 .lang-name { position: absolute; left: 0; width: 1920px; text-align: center; font-size: 26px; color: #8E8E93; letter-spacing: 0.02em; }
 .value { position: absolute; width: 520px; text-align: center; }
 .value .v-t { font-size: 50px; font-weight: 700; letter-spacing: -0.012em; margin-top: 34px; }
-.name { position: absolute; left: 0; width: 1920px; text-align: center; font-size: 132px; font-weight: 700; letter-spacing: -0.02em; }
-.byline { position: absolute; left: 0; width: 1920px; text-align: center; font-size: 30px; font-weight: 500; color: #6E6E73; letter-spacing: 0.02em; }
+.name { position: absolute; left: 0; width: var(--W); text-align: center; font-size: 132px; font-weight: 700; letter-spacing: -0.02em; }
+.byline { position: absolute; left: 0; width: var(--W); text-align: center; font-size: 30px; font-weight: 500; color: #6E6E73; letter-spacing: 0.02em; }
 .byline b { font-weight: 700; color: #1D1D1F; letter-spacing: 0.08em; }
-.foot { position: absolute; left: 0; width: 1920px; text-align: center; font-size: 22px; color: #8E8E93; letter-spacing: 0.01em; }
+.foot { position: absolute; left: 0; width: var(--W); text-align: center; font-size: 22px; color: #8E8E93; letter-spacing: 0.01em; }
 .flabel { position: absolute; display: flex; align-items: center; justify-content: center; font-weight: 600; color: rgba(29,29,31,0.85); }
+
+/* cut-out, flying photo */
+.cutout { z-index: 46; filter: drop-shadow(0 22px 26px rgba(0,0,0,0.2)); }
+.cutout img { display: block; width: 100%; height: 100%; }
+.flyer { z-index: 52; background-size: cover; background-position: center; }
+
+/* a one-page travel plan (the Word file, then its PDF on the phone) */
+.docpage { position: absolute; left: 0; top: 0; width: 240px; height: 340px; background: #fff; border-radius: 5px; overflow: hidden; transform-origin: 0 0;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.14), 0 6px 18px rgba(0,0,0,0.12); color: #1D1D1F; z-index: 52; }
+.dp-photo { height: 112px; background-size: cover; background-position: center; }
+.dp-title { margin: 15px 16px 3px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.dp-sub { margin: 0 16px 10px; font-size: 11px; color: #8E8E93; font-weight: 500; }
+.dp-row { margin: 0 16px; padding: 8px 0 7px; font-size: 11.5px; border-top: 1px solid #EFEFF2; white-space: nowrap; }
+.dp-row b { color: #0A84FF; margin-right: 7px; font-weight: 700; }
+.pulses { z-index: 25; }
+
+/* phone (flat) */
+.phone { width: 300px; height: 620px; border-radius: 58px; background: #1C1C1E; z-index: 50;
+  box-shadow: inset 0 0 0 2px #3A3A3C, 0 28px 56px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.08); }
+.ph-screen { position: absolute; left: 11px; top: 11px; right: 11px; bottom: 11px; border-radius: 47px; overflow: hidden; background: #262A33; }
+.ph-wall { position: absolute; inset: 0; background: #262A33; }
+.ph-date { position: absolute; top: 70px; width: 100%; text-align: center; color: rgba(255,255,255,0.88); font-size: 17px; font-weight: 600; }
+.ph-time { position: absolute; top: 92px; width: 100%; text-align: center; color: #fff; font-size: 86px; font-weight: 700; letter-spacing: -0.02em; line-height: 1; }
+.ph-viewer { position: absolute; inset: 0; background: #000; opacity: 0; }
+.ph-island { position: absolute; left: 50%; top: 22px; width: 92px; height: 27px; margin-left: -46px; border-radius: 14px; background: #000; }
+.ph-banner { position: absolute; left: 10px; right: 10px; top: 48px; height: 66px; border-radius: 22px; background: #F2F2F4; display: flex; align-items: center;
+  gap: 10px; padding: 0 12px; box-sizing: border-box; opacity: 0; }
+.ph-bicon { width: 40px; height: 40px; border-radius: 11px; background: #0A84FF; display: flex; align-items: center; justify-content: center; flex: none; }
+.ph-btext { display: flex; flex-direction: column; font-size: 13px; color: #1D1D1F; line-height: 1.3; min-width: 0; }
+.ph-btext b { font-size: 14px; }
+.ph-btext span { color: #3C3C43; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* chat window (flat) */
+.chat { border-radius: 18px; background: #fff; overflow: hidden; z-index: 44; transform-origin: 50% 50%;
+  box-shadow: 0 0 0 0.5px rgba(0,0,0,0.16), 0 22px 56px rgba(0,0,0,0.14); }
+.ch-bar { position: relative; height: 52px; background: #F6F6F7; border-bottom: 0.5px solid rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center; }
+.ch-lights { left: 18px; top: 20px; }
+.ch-who { display: flex; align-items: center; gap: 9px; }
+.ch-avatar { width: 30px; height: 30px; border-radius: 50%; background: #FF9F0A; color: #fff; font-size: 14px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.ch-name { font-size: 16px; font-weight: 600; }
+.ch-body { position: absolute; left: 0; right: 0; top: 52px; bottom: 64px; }
+.ch-in { position: absolute; left: 22px; top: 26px; max-width: 72%; padding: 11px 17px; border-radius: 21px; background: #E9E9EB; font-size: 20px; transform-origin: 0 100%; white-space: nowrap; }
+.ch-sticker { position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center bottom; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.14)); opacity: 0; }
+.ch-sent { position: absolute; right: 28px; font-size: 13px; color: #8E8E93; opacity: 0; }
+.ch-field { position: absolute; left: 18px; right: 18px; bottom: 14px; height: 38px; border-radius: 19px; box-shadow: inset 0 0 0 1px #D1D1D6;
+  display: flex; align-items: center; padding: 0 16px; font-size: 15px; color: #AEAEB2; }
+
+/* montage */
+.mont { z-index: 80; }
+.m-field { background: #0A84FF; }
+.m-eyebrow { position: absolute; font-size: 30px; font-weight: 600; color: rgba(255,255,255,0.78); letter-spacing: 0.01em; z-index: 3; }
+.m-word { position: absolute; font-weight: 700; color: #fff; letter-spacing: -0.02em; line-height: 1.05; white-space: nowrap; z-index: 3; }
+.m-tile { position: absolute; left: 0; top: 0; background: #fff; display: flex; align-items: center; justify-content: center; z-index: 2;
+  box-shadow: 0 10px 24px rgba(0,30,80,0.16); }
+.m-sel { position: absolute; left: 0; top: 0; box-shadow: inset 0 0 0 4px #fff; z-index: 1; }
+.m-disc { position: absolute; border-radius: 50%; background: #fff; overflow: hidden; z-index: 2; box-shadow: 0 18px 40px rgba(0,30,80,0.2); }
+.m-svg { display: block; }
+.m-svg text { font-family: "PV SF", "Apple SD Gothic Neo", sans-serif; }
+.m-num { font-size: 26px; font-weight: 700; fill: #1D1D1F; }
+.m-badge { font-size: 22px; font-weight: 800; fill: #fff; letter-spacing: 0.04em; }
+.m-badge.small { font-size: 18px; }
+.m-tag { font-size: 15px; font-weight: 800; fill: #fff; letter-spacing: 0.06em; }
+.m-chip { font-size: 19px; font-weight: 600; fill: #fff; }
+.m-svg text.m-rcpt { font-family: "PV SF Mono", Menlo, monospace; fill: #3A3A3C; }
+.m-rcpt-h { fill: #3A3A3C; }
+
+/* finale */
+.fin { z-index: 90; }
+
+/* 9:16 */
+.v .big { font-size: 118px; }
+.v .cap { padding: 0 64px; box-sizing: border-box; }
+.v .cap-h { font-size: 68px; line-height: 1.14; }
+.v .cap-s { font-size: 32px; margin-top: 16px; line-height: 1.3; }
+.v .ch-in { font-size: 24px; }
+.v .m-eyebrow { font-size: 36px; }
+.v .name { font-size: 128px; }
+.v .byline { font-size: 34px; }
+.v .foot { font-size: 26px; padding: 0 70px; box-sizing: border-box; line-height: 1.5; }
 

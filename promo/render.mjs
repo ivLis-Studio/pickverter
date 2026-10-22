@@ -1,7 +1,8 @@
 // Renders the promo stage to stills or video.
-//   node render.mjs --stills 3.4,4.9 [--lang en] [--dpr 1]
-//   node render.mjs --video out/video-en.mp4 [--lang en] [--dpr 2] [--fps 60] [--workers 6] [--from 0] [--to 35]
+//   node render.mjs --stills 3.4,4.9 [--lang en] [--aspect h|v] [--dpr 1] [--blur]
+//   node render.mjs --video out/video-en.mp4 [--lang en] [--aspect h|v] [--dpr 2] [--fps 60] [--workers 6] [--from 0] [--to 30]
 //   node render.mjs --events out/events-en.json [--lang en]
+// --aspect v renders the 9:16 cut (1080×1920 CSS pixels × dpr) for Reels, Shorts and TikTok.
 import { chromium } from "playwright-core";
 import sharp from "sharp";
 import { spawn } from "node:child_process";
@@ -17,6 +18,8 @@ for (let i = 0; i < argv.length; i++) if (argv[i].startsWith("--")) opt[argv[i].
 const lang = opt.lang || "en";
 const dpr = +(opt.dpr || 1);
 const fps = +(opt.fps || 60);
+const aspect = opt.aspect === "v" ? "v" : "h";
+const W = aspect === "v" ? 1080 : 1920, H = aspect === "v" ? 1920 : 1080;
 
 // The app's own strings, so the wheel and cards read exactly like Pickverter.
 const i18n = JSON.parse(fs.readFileSync(path.join(here, "../macos/Resources/i18n.json"), "utf8"));
@@ -40,11 +43,12 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const origin = "http://127.0.0.1:" + server.address().port;
 
-async function openPage(browser, url = "/index.html", size = { width: 1920, height: 1080 }) {
+async function openPage(browser, url = "/index.html", size = { width: W, height: H }) {
   const page = await browser.newPage({ viewport: size, deviceScaleFactor: dpr });
   page.on("pageerror", (e) => console.error("page error:", e.message));
-  page.on("console", (m) => { if (m.type() === "error") console.error("console:", m.text()); });
+  page.on("console", (m) => { if (m.type() === "error") console.error("console:", m.text(), JSON.stringify(m.location())); });
   await page.addInitScript("window.LANG = " + JSON.stringify(lang) + ";");
+  await page.addInitScript("window.ASPECT = " + JSON.stringify(aspect) + ";");
   if (opt.clean) await page.addInitScript("window.CLEAN = true;");
   await page.goto(origin + url);
   await page.evaluate(() => window.ready);
@@ -54,8 +58,8 @@ async function openPage(browser, url = "/index.html", size = { width: 1920, heig
 
 async function frame({ page, cdp }, t) {
   await page.evaluate((t) => { window.renderAt(t); return new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); }, t);
-  // The clip scale sets the output resolution: 1920×1080 CSS pixels × dpr.
-  const { data } = await cdp.send("Page.captureScreenshot", { format: "png", optimizeForSpeed: true, clip: { x: 0, y: 0, width: 1920, height: 1080, scale: dpr } });
+  // The clip scale sets the output resolution: W×H CSS pixels × dpr.
+  const { data } = await cdp.send("Page.captureScreenshot", { format: "png", optimizeForSpeed: true, clip: { x: 0, y: 0, width: W, height: H, scale: dpr } });
   return Buffer.from(data, "base64");
 }
 
@@ -96,7 +100,8 @@ if (opt.shot) {
 if (opt.events) {
   const { page } = await openPage(browser);
   const events = await page.evaluate(() => window.AUDIO_EVENTS);
-  fs.writeFileSync(opt.events, JSON.stringify({ duration: await page.evaluate(() => window.DURATION), events }, null, 1));
+  const music = await page.evaluate(() => window.MUSIC || null);
+  fs.writeFileSync(opt.events, JSON.stringify({ duration: await page.evaluate(() => window.DURATION), music, events }, null, 1));
   console.log(opt.events, events.length, "events");
 }
 
@@ -105,7 +110,7 @@ if (opt.stills) {
   blurWindows = await p.page.evaluate(() => window.MOTION_BLUR || []);
   fs.mkdirSync(path.join(here, "out/stills"), { recursive: true });
   for (const t of String(opt.stills).split(",").map(Number)) {
-    const out = path.join(here, "out/stills", lang + "-" + t.toFixed(2) + ".png");
+    const out = path.join(here, "out/stills", lang + (aspect === "v" ? "-v" : "") + "-" + t.toFixed(2) + ".png");
     fs.writeFileSync(out, await (opt.blur ? blurredFrame(p, t) : frame(p, t)));
     console.log(out);
   }
@@ -142,7 +147,7 @@ if (opt.video) {
   const queue = [];
   for (let first = 0, i = 0; first < total; first += size, i++) queue.push({ first, last: Math.min(total, first + size), file: path.join(tmp, "c" + String(i).padStart(3, "0") + ".mp4") });
   const files = queue.map((q) => q.file);
-  const pass = ["--lang", lang, "--dpr", String(dpr), "--fps", String(fps), "--samples", String(baseSamples), "--crf", crf, "--from", String(from)];
+  const pass = ["--lang", lang, "--aspect", aspect, "--dpr", String(dpr), "--fps", String(fps), "--samples", String(baseSamples), "--crf", crf, "--from", String(from)];
   async function worker() {
     while (queue.length) {
       const q = queue.shift();

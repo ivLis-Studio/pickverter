@@ -21,24 +21,25 @@
       const r = s.ring || 0;
       set(ring, {
         transform: "translate(" + (s.x - 30) + "px," + (s.y - 30) + "px) scale(" + lerp(0.3, 1.25, E.outCubic(r)) + ")",
-        opacity: r > 0 && r < 1 ? (1 - r) * 0.55 : 0,
+        opacity: r > 0 && r < 1 ? (1 - r) * 0.55 * (s.opacity ?? 1) : 0,
       });
     }
     return { update };
   }
 
   // ---------------------------------------------------------------- keycap overlay
-  function Keycap(parent, glyph, word, big = false) {
-    const root = el("div", { class: "abs keycap" + (big ? " big" : "") }, parent);
+  function Keycap(parent, glyph, word, big = false, letter = false) {
+    const root = el("div", { class: "abs keycap" + (big ? " big" : "") + (letter ? " letter" : "") }, parent);
     const half = big ? 84 : 48;
     el("div", { class: "kc-glyph" }, root, glyph);
-    el("div", { class: "kc-word" }, root, word);
+    if (word) el("div", { class: "kc-word" }, root, word);
     function update(s) {
-      // s.show 0..1 (pop), s.press 0..1
+      // s.show 0..1 (pop), s.press 0..1, s.scale (optional size multiplier)
       const pop = s.show;
       const depth = big ? 1.6 : 1;
       set(root, {
-        transform: "translate(" + (s.x - half) + "px," + (s.y - half + (1 - pop) * 26 + s.press * 4 * depth) + "px) scale(" + lerp(0.7, 1, pop) + ")",
+        display: pop > 0.001 ? "block" : "none",
+        transform: "translate(" + (s.x - half) + "px," + (s.y - half + (1 - pop) * 26 + s.press * 4 * depth) + "px) scale(" + lerp(0.7, 1, pop) * (s.scale ?? 1) + ")",
         opacity: clamp(pop * 1.4),
         boxShadow: "0 " + (5 - s.press * 4) * depth + "px 0 #C8C8CE, 0 " + (14 - s.press * 8) * depth + "px " + 26 * depth + "px rgba(0,0,0," + (0.14 - s.press * 0.06) + ")",
       });
@@ -47,10 +48,11 @@
   }
 
   // ---------------------------------------------------------------- Finder window
-  const WIN = { w: 780, h: 480, side: 176, bar: 52, col: 134, row: 142, x0: 200, y0: 70 };
-  function Finder(parent, files, x, y) {
+  const WIN = { w: 780, h: 480, side: 176, bar: 52, col: 134, row: 142, x0: 200, y0: 70, cols: 4 };
+  function Finder(parent, files, x, y, opts = {}) {
+    const win = Object.assign({}, WIN, opts);
     const root = el("div", { class: "abs finder" }, parent);
-    set(root, { left: x + "px", top: y + "px", width: WIN.w + "px", height: WIN.h + "px", transform: "scale(" + K + ")", transformOrigin: "0 0" });
+    set(root, { left: x + "px", top: y + "px", width: win.w + "px", height: win.h + "px", transform: "scale(" + K + ")", transformOrigin: "0 0" });
     const side = el("div", { class: "f-side" }, root);
     const lights = el("div", { class: "f-lights" }, root);
     ["#FF5F57", "#FEBC2E", "#28C840"].forEach((c) => el("span", { style: { background: c } }, lights));
@@ -73,9 +75,9 @@
     const tiles = {};
     files.forEach((f, i) => {
       const c = f.slot ?? i;
-      const col = c % 4, row = Math.floor(c / 4);
+      const col = c % win.cols, row = Math.floor(c / win.cols);
       const tile = el("div", { class: "f-tile" }, grid);
-      set(tile, { left: WIN.x0 + col * WIN.col + "px", top: WIN.y0 + row * WIN.row + "px" });
+      set(tile, { left: win.x0 + col * win.col + "px", top: win.y0 + row * win.row + "px" });
       const box = el("div", { class: "f-thumbbox" }, tile);
       const hl = el("div", { class: "f-hl" }, box);
       let img;
@@ -88,26 +90,44 @@
       const label = el("div", { class: "f-label" }, tile, "<span>" + f.name + "</span>").firstChild;
       tiles[f.name] = { tile, box, hl, img, label, col, row, f };
     });
+    const marquee = el("div", { class: "f-marquee" }, grid);
+    // Window-local point → stage point.
+    const toStage = (lx, ly) => [x + lx * K, y + ly * K];
     // Stage-space centre of a file's thumbnail.
     function at(name) {
       const t = tiles[name];
-      return [x + (WIN.x0 + t.col * WIN.col + 60) * K, y + (WIN.y0 + t.row * WIN.row + 47) * K];
+      return toStage(win.x0 + t.col * win.col + 60, win.y0 + t.row * win.row + 47);
+    }
+    // Window-local thumbnail box of a file (for marquee hit tests).
+    function box(name) {
+      const t = tiles[name];
+      const l = win.x0 + t.col * win.col + 12, tp = win.y0 + t.row * win.row;
+      return { l, t: tp, r: l + 96, b: tp + 94 };
     }
     function update(s) {
       set(root, { opacity: s.opacity ?? 1, transform: "translate(0," + (s.dy || 0) + "px) scale(" + K * (s.scale ?? 1) + ")" });
+      const many = Array.isArray(s.selected) ? s.selected : null;
       for (const name in tiles) {
         const t = tiles[name];
-        const sel = s.selected === name ? (s.selAmt ?? 1) : 0;
+        let sel = 0;
+        if (s.sel && name in s.sel) sel = s.sel[name];
+        else if (many) sel = many.includes(name) ? 1 : 0;
+        else if (s.selected === name) sel = s.selAmt ?? 1;
         set(t.hl, { opacity: sel });
         set(t.label, { background: sel > 0.5 ? ACCENT : "transparent", color: sel > 0.5 ? "#fff" : INK });
         const appear = s.appear && name in s.appear ? s.appear[name] : 1;
-        set(t.tile, { opacity: clamp(appear * 2), transform: "scale(" + lerp(0.4, 1, appear) + ")" });
+        set(t.tile, { opacity: clamp(appear * 2), transform: "scale(" + lerp(0.4, 1, appear) + ")", display: appear > 0.001 ? "block" : "none" });
         if (t.f.photo) set(t.img, { transform: "rotate(" + ((s.rotate && s.rotate[name]) || 0) + "deg)" });
         const hidden = s.hideImg && s.hideImg[name] ? s.hideImg[name] : 0;
         if (t.f.photo) set(t.img, { opacity: 1 - hidden });
       }
+      const m = s.marquee;
+      if (m && m.o > 0.001) {
+        set(marquee, { display: "block", left: Math.min(m.x0, m.x1) + "px", top: Math.min(m.y0, m.y1) + "px",
+          width: Math.abs(m.x1 - m.x0) + "px", height: Math.abs(m.y1 - m.y0) + "px", opacity: m.o });
+      } else set(marquee, { display: "none" });
     }
-    return { root, at, update };
+    return { root, at, box, toStage, update, win };
   }
 
   // ---------------------------------------------------------------- wheel
@@ -127,7 +147,8 @@
   }
 
   // A wheel session: opens at the cursor, follows it like the app does, closes on a pick.
-  // spec: { at:[x,y], open, close, modes:[{t, ring}], choice:{t, ring}, cursor(t)->[x,y], file:{name, thumb}, preview(item, sub) }
+  // spec: { at:[x,y], open, close, modes:[{t, ring}], choice:{t, ring}, cursor(t)->[x,y], file:{name, thumb, count}, preview(item, sub),
+  //         bloom (segments fly out on open), shock (a ring flashes on open) }
   function Wheel(parent, rings, spec) {
     // Light/dark palettes follow the app's snapshot colours (Theme.swift).
     const pal = spec.dark
@@ -144,6 +165,7 @@
     const subLayer = el("g", {}, svg);
     el("circle", { cx: c, cy: c, r: G.disc, fill: pal.disc }, svg);
     el("circle", { cx: c, cy: c, r: G.disc - 0.25, fill: "none", stroke: pal.hair, "stroke-width": 0.5 }, svg);
+    const shock = spec.shock ? el("circle", { cx: c, cy: c, r: G.disc, fill: "none", stroke: ACCENT, opacity: 0 }, svg) : null;
     const labels = el("div", { class: "abs", style: { width: box + "px", height: box + "px" } }, root);
 
     const ringNodes = {};
@@ -154,12 +176,13 @@
       const n = items.length, span = 360 / n;
       const segs = items.map((item, i) => {
         const mid = -90 + span * i;
+        const sg = el("g", {}, g);
         const d = ringCore(c, c, mid - span / 2, mid + span / 2, G.inner, G.outer, 3, 8);
-        const p = el("path", { d, "stroke-linejoin": "round", "stroke-width": 16 }, g);
+        const p = el("path", { d, "stroke-linejoin": "round", "stroke-width": 16 }, sg);
         let tick = null;
         if (item.variants) {
           const [tx, ty] = polar(c, c, G.outer - 7, mid);
-          tick = el("rect", { x: tx - 5, y: ty - 1, width: 10, height: 2, rx: 1, transform: "rotate(" + (mid + 90) + " " + tx + " " + ty + ")" }, g);
+          tick = el("rect", { x: tx - 5, y: ty - 1, width: 10, height: 2, rx: 1, transform: "rotate(" + (mid + 90) + " " + tx + " " + ty + ")" }, sg);
         }
         const lr = (G.inner + G.outer) / 2 + 2;
         const [lx, ly] = polar(c, c, lr, mid);
@@ -167,7 +190,7 @@
         const w = Math.max(Math.min(arc - 12, G.outer - G.inner - 8), 40);
         const label = el("div", { class: "abs w-label" }, lab, labelHTML(item));
         set(label, { left: lx - w / 2 + "px", top: ly - 30 + "px", width: w + "px", height: "60px" });
-        return { p, tick, label, mid, item };
+        return { sg, p, tick, label, mid, item, lx, ly };
       });
       // Outer rings for slots with options.
       const subs = items.map((item, i) => {
@@ -270,6 +293,14 @@
       return { key, slot, parent, sub };
     }
 
+    function idleHTML() {
+      const count = spec.file.count || 1;
+      const thumb = '<div class="h-thumb' + (spec.file.icon ? " icon" : "") + '" style="background-image:url(' + spec.file.thumb + ')"></div>';
+      const art = count > 1 ? '<div class="h-stack"><div class="h-back"></div>' + thumb + '<div class="h-badge">' + count + "</div></div>" : thumb;
+      const title = count > 1 ? PV.tp("wheel.items", count) : spec.file.name;
+      return art + '<div class="h-name">' + title + '</div><div class="h-hint">' + T("wheel.hint.click") + "</div>";
+    }
+
     function hubContent(st) {
       const R = ringNodes[st.key];
       let keyName, html;
@@ -280,7 +311,7 @@
           '<div class="h-b">' + it.title + '</div><div class="h-s">' + spec.choiceOption + "</div>";
       } else if (st.slot == null) {
         keyName = "idle";
-        html = '<div class="h-thumb" style="background-image:url(' + spec.file.thumb + ')"></div><div class="h-name">' + spec.file.name + '</div><div class="h-hint">' + T("wheel.hint.click") + "</div>";
+        html = idleHTML();
       } else {
         const it = R.items[st.slot];
         const v = st.sub != null ? it.variants[st.sub] : null;
@@ -302,16 +333,24 @@
       for (const k in hubCache) set(hubCache[k], { display: k === keyName ? "flex" : "none" });
     }
 
+    const bloomKey = spec.bloom ? spec.modes[0].ring : null;
+
     function update(t) {
       const visible = t >= spec.open && t <= spec.close + 0.25;
       set(root, { display: visible ? "block" : "none" });
       if (!visible) return;
-      const appear = spring(t - spec.open, 0.32, 0.78);
-      const fadeIn = E.outCubic(prog(t, spec.open, spec.open + 0.16));
+      const appear = spec.bloom ? spring(t - spec.open, 0.42, 0.6) : spring(t - spec.open, 0.32, 0.78);
+      const fadeIn = E.outCubic(prog(t, spec.open, spec.open + (spec.bloom ? 0.1 : 0.16)));
       const out = prog(t, spec.close, spec.close + 0.18);
       const flash = spec.pick ? 1 + 0.025 * Math.sin(Math.PI * prog(t, spec.close - 0.02, spec.close + 0.1)) : 1;
-      const scale = (0.9 + 0.1 * appear) * (1 - 0.06 * E.inCubic(out)) * flash;
+      const scale = (spec.bloom ? 0.78 + 0.22 * appear : 0.9 + 0.1 * appear) * (1 - 0.06 * E.inCubic(out)) * flash;
       set(root, { transform: "scale(" + K * scale + ")", opacity: fadeIn * (1 - E.inQuad(out)) });
+      if (shock) {
+        const u = prog(t, spec.open + 0.02, spec.open + 0.6);
+        attr(shock, "r", lerp(G.disc + 2, G.disc + 66, E.outCubic(u)));
+        attr(shock, "stroke-width", lerp(6, 1, u));
+        attr(shock, "opacity", u > 0 && u < 1 ? (1 - u) * 0.6 : 0);
+      }
       const st = stateAt(t);
       // ring crossfade
       for (const key in ringNodes) {
@@ -330,6 +369,13 @@
         set(R.lab, { opacity: on, display: on > 0.001 ? "block" : "none" });
         if (on <= 0.001) { R.subs.forEach((s) => s && (attr(s.g, "opacity", 0), set(s.l, { display: "none" }))); continue; }
         R.segs.forEach((s, i) => {
+          if (key === bloomKey) {
+            const k = spring(t - spec.open - 0.016 * i, 0.4, 0.62);
+            const sc = lerp(0.3, 1, k);
+            attr(s.sg, "transform", "translate(" + c + " " + c + ") scale(" + sc + ") translate(" + -c + " " + -c + ")");
+            attr(s.sg, "opacity", clamp(k * 2.2));
+            set(s.label, { transform: "translate(" + (c - s.lx) * (1 - sc) + "px," + (c - s.ly) * (1 - sc) + "px) scale(" + sc + ")", opacity: clamp(k * 2.2) });
+          }
           const hl = lit(slotEvents, key + ":" + i, t, 0.12);
           const dimmed = st.key === key && st.slot === i && st.sub != null;
           const fill = mix(pal.seg, ACCENT, hl * (dimmed ? 0.22 : 1));
@@ -356,6 +402,7 @@
       }
       // hub
       hubContent(st);
+      if (spec.bloom) set(hub, { transform: "scale(" + lerp(0.55, 1, spring(t - spec.open - 0.05, 0.36, 0.6)) + ")" });
       const [px, py] = spec.cursor(t);
       const ang = (Math.atan2(py - spec.at[1], px - spec.at[0]) * 180) / Math.PI;
       const showArc = st.slot != null ? 1 : 0;
@@ -367,7 +414,8 @@
       // Like the app, the tab bar steps aside while an outer ring is open.
       let subShown = 0;
       for (const key in ringNodes) ringNodes[key].subs.forEach((s, i) => { if (s) subShown = Math.max(subShown, lit(subOpen, key + ":" + i, t, 0.15)); });
-      set(tabs, { opacity: (1 - choiceOn) * (1 - subShown) });
+      const tabsIn = spec.bloom ? E.outCubic(prog(t, spec.open + 0.12, spec.open + 0.35)) : 1;
+      set(tabs, { opacity: (1 - choiceOn) * (1 - subShown) * tabsIn });
       set(caption, { opacity: choiceOn });
       const tabOf = (ring) => (ring.startsWith("convert") ? 0 : ring === "tools" ? 1 : 2);
       let from = tabOf(spec.modes[0].ring), to = from, tm = -10;
@@ -383,10 +431,11 @@
   }
 
   // ---------------------------------------------------------------- result card
+  // spec.slide: "x" (default, from the right edge) or "y" (drops in from above); spec.origin: CSS transform-origin.
   function Card(parent, spec) {
     const W = 352;
     const root = el("div", { class: "abs card" }, parent);
-    set(root, { width: W + "px" });
+    set(root, { width: W + "px", transformOrigin: spec.origin || "100% 0" });
     const row = el("div", { class: "c-row" }, root);
     const lead = el("div", { class: "c-lead" }, row);
     const ringSvg = el("svg", { width: 44, height: 44, viewBox: "0 0 44 44", class: "c-ring" }, lead);
@@ -396,6 +445,7 @@
     const thumb = el("div", { class: "c-thumb" }, lead);
     if (spec.thumb) set(thumb, { backgroundImage: "url(" + spec.thumb + ")" });
     if (spec.thumbCheck) thumb.classList.add("check");
+    if (spec.thumbFit) thumb.classList.add("fit");
     const text_ = el("div", { class: "c-text" }, row);
     const title = el("div", { class: "c-title" }, text_);
     const sub = el("div", { class: "c-sub" }, text_);
@@ -420,11 +470,8 @@
       if (!visible) return;
       const a = spring(t - inT, 0.42, 0.8);
       const o = E.inCubic(prog(t, outT, outT + 0.35));
-      set(root, {
-        left: spec.x + "px", top: spec.y + "px",
-        transform: "translateX(" + ((1 - a) * 90 + o * 120) + "px) scale(" + K + ")",
-        opacity: clamp(a * 2) * (1 - o),
-      });
+      const move = spec.slide === "y" ? "translateY(" + (-(1 - a) * 80 - o * 70) + "px)" : "translateX(" + ((1 - a) * 90 + o * 120) + "px)";
+      set(root, { left: spec.x + "px", top: spec.y + "px", transform: move + " scale(" + K + ")", opacity: clamp(a * 2) * (1 - o) });
       const done = t >= spec.done;
       const p = clamp(prog(t, inT + 0.05, spec.done - 0.05));
       attr(prog_, "d", p > 0.002 ? arcPath(22, 22, 19, -90, -90 + 359.9 * E.outCubic(p)) : "");
@@ -440,7 +487,7 @@
     return { update };
   }
 
-  // ---------------------------------------------------------------- terminal
+  // ---------------------------------------------------------------- terminal (kept for older cuts)
   function Terminal(parent, x, y, lines) {
     const root = el("div", { class: "abs term" }, parent);
     set(root, { left: x + "px", top: y + "px" });
@@ -468,6 +515,75 @@
     return { update };
   }
 
-  PV.UI = { K, ACCENT, INK, G, Cursor, Keycap, Finder, Wheel, Card, Terminal, WIN };
-})();
+  // ---------------------------------------------------------------- iPhone (flat)
+  // Screen-space phone, 300×620. update({ x, y, show, viewer, banner }) — x/y is the centre. spec.viewerBg tints the viewer.
+  const PHONE = { w: 300, h: 620, inset: 11 };
+  function Phone(parent, spec) {
+    const root = el("div", { class: "abs phone" }, parent);
+    const screen = el("div", { class: "ph-screen" }, root);
+    const wall = el("div", { class: "ph-wall" }, screen);
+    el("div", { class: "ph-date" }, wall, spec.date || "");
+    el("div", { class: "ph-time" }, wall, "9:41");
+    const viewer = el("div", { class: "ph-viewer" }, screen);
+    if (spec.viewerBg) set(viewer, { background: spec.viewerBg });
+    const banner = el("div", { class: "ph-banner" }, screen);
+    const icon = el("div", { class: "ph-bicon" }, banner);
+    sym("dot.radiowaves.left.and.right", 17, "#fff", icon);
+    el("div", { class: "ph-btext" }, banner, "<b>AirDrop</b><span>" + spec.bannerText + "</span>");
+    el("div", { class: "ph-island" }, root);
+    function update(s) {
+      const show = s.show || 0;
+      set(root, { display: show > 0.001 ? "block" : "none", transform: "translate(" + (s.x - PHONE.w / 2) + "px," + (s.y - PHONE.h / 2) + "px) scale(" + (s.scale ?? 1) + ")" });
+      set(viewer, { opacity: s.viewer || 0 });
+      const bn = s.banner || 0;
+      set(banner, { opacity: clamp(bn * 2), transform: "translateY(" + (1 - bn) * -70 + "px) scale(" + lerp(0.9, 1, bn) + ")" });
+    }
+    // The fitted photo rectangle inside the screen (stage coordinates, for a landscape 3:2 photo).
+    function photoRect(x, y) {
+      const w = PHONE.w - PHONE.inset * 2, h = w / 1.5;
+      return { x: x - w / 2, y: y - h / 2 + 10, w, h };
+    }
+    // A document page (1 : 1.42) shown in the viewer under the banner; s is the phone's scale.
+    function pageRect(x, y, s = 1) {
+      const w = 236 * s, h = 334 * s;
+      return { x: x - w / 2, y: y - h / 2 + 30 * s, w, h };
+    }
+    return { update, photoRect, pageRect, root };
+  }
 
+  // ---------------------------------------------------------------- chat window (Messages-like, flat)
+  // update({ x, y, show, from: "x"|"y", incoming, sent }) — x/y top-left. stickerRect() is relative to the window.
+  function Chat(parent, spec) {
+    const root = el("div", { class: "abs chat" }, parent);
+    set(root, { width: spec.w + "px", height: spec.h + "px" });
+    const bar = el("div", { class: "ch-bar" }, root);
+    const lights = el("div", { class: "f-lights ch-lights" }, bar);
+    ["#FF5F57", "#FEBC2E", "#28C840"].forEach((c) => el("span", { style: { background: c } }, lights));
+    const who = el("div", { class: "ch-who" }, bar);
+    el("div", { class: "ch-avatar" }, who, spec.initial);
+    el("div", { class: "ch-name" }, who, spec.name);
+    const body = el("div", { class: "ch-body" }, root);
+    const incoming = el("div", { class: "ch-in" }, body, spec.msg);
+    const sticker = el("div", { class: "ch-sticker" }, body);
+    set(sticker, { backgroundImage: "url(" + spec.sticker + ")", width: spec.sw + "px", height: spec.sh + "px", right: "26px", top: spec.sy + "px" });
+    const sent = el("div", { class: "ch-sent" }, body, spec.sent);
+    set(sent, { top: spec.sy + spec.sh + 8 + "px" });
+    el("div", { class: "ch-field" }, root, "iMessage");
+    const BAR = 52;
+    function update(s) {
+      const show = s.show || 0;
+      const out = s.out || 0;
+      const vis = show > 0.001 && out < 0.999;
+      const dx = s.from === "y" ? 0 : (1 - show) * 140 + out * 180, dy = s.from === "y" ? (1 - show) * 160 + out * 200 : 0;
+      set(root, { display: vis ? "block" : "none", left: s.x + "px", top: s.y + "px", transform: "translate(" + dx + "px," + dy + "px) scale(" + lerp(0.96, 1, show) + ")", opacity: clamp(show * 2.5) * (1 - out) });
+      const inc = s.incoming || 0;
+      set(incoming, { opacity: clamp(inc * 2), transform: "translateY(" + (1 - inc) * 14 + "px) scale(" + lerp(0.85, 1, inc) + ")" });
+      set(sticker, { opacity: s.sticker ? 1 : 0 });
+      set(sent, { opacity: s.sent || 0 });
+    }
+    const stickerRect = () => ({ x: spec.w - 26 - spec.sw, y: BAR + spec.sy, w: spec.sw, h: spec.sh });
+    return { update, stickerRect, root };
+  }
+
+  PV.UI = { K, ACCENT, INK, G, Cursor, Keycap, Finder, Wheel, Card, Terminal, Phone, Chat, WIN, PHONE };
+})();

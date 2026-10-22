@@ -37,7 +37,7 @@
     const svg = el("svg", { viewBox: "0 0 1024 1024", width: size, height: size, class: "mark", style: { overflow: "visible" } }, parent);
     const defs = el("defs", {}, svg);
     const tileShadow = el("filter", { id: id + "-ts", x: "-20%", y: "-20%", width: "140%", height: "140%" }, defs);
-    el("feDropShadow", { dx: 0, dy: 12, stdDeviation: 14, "flood-color": "#000", "flood-opacity": 0.28 }, tileShadow);
+    const tileDrop = el("feDropShadow", { dx: 0, dy: 12, stdDeviation: 14, "flood-color": "#000", "flood-opacity": 0.28 }, tileShadow);
     const pickShadow = el("filter", { id: id + "-ps", x: "-40%", y: "-40%", width: "180%", height: "180%" }, defs);
     const pickDrop = el("feDropShadow", { dx: 0, dy: 10, stdDeviation: 14, "flood-color": "#000", "flood-opacity": 0.4 }, pickShadow);
     const discShadow = el("filter", { id: id + "-ds", x: "-30%", y: "-30%", width: "160%", height: "160%" }, defs);
@@ -69,6 +69,10 @@
     function update(p) {
       const m = clamp(p.m ?? 1);
       const g = geometry(m);
+      // p.shadow fades the tile's drop shadow (off while the finale is zoomed far into the icon).
+      const shadow = clamp(p.shadow ?? 1);
+      attr(tileDrop, "flood-opacity", 0.28 * shadow);
+      attr(tile, "filter", shadow > 0.01 ? "url(#" + id + "-ts)" : "none");
       const tileAmt = clamp(p.tile ?? m);
       const ts = lerp(0.35, 1, tileAmt);
       attr(tileG, "transform", "translate(512 512) scale(" + ts + ") translate(-512 -512)");
