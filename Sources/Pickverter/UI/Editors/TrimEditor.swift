@@ -140,13 +140,12 @@ struct TrimPlayerView: NSViewRepresentable {
                 guard let view, !Task.isCancelled else { return }
                 guard view.canBeginTrimming else { onUnsupported(); return }
                 view.window?.makeFirstResponder(view)
-                view.beginTrimming { [weak view] result in
-                    guard result == .okButton, let item = view?.player?.currentItem else { onDone(nil); return }
-                    let total = item.duration.isNumeric ? item.duration.seconds : 0
-                    let start = item.reversePlaybackEndTime.isNumeric ? item.reversePlaybackEndTime.seconds : 0
-                    let end = item.forwardPlaybackEndTime.isNumeric ? item.forwardPlaybackEndTime.seconds : total
-                    onDone((max(0, start), end > start ? end : total))
-                }
+                let result = await view.beginTrimming()
+                guard result == .okButton, let item = view.player?.currentItem else { onDone(nil); return }
+                let total = item.duration.isNumeric ? item.duration.seconds : 0
+                let start = item.reversePlaybackEndTime.isNumeric ? item.reversePlaybackEndTime.seconds : 0
+                let end = item.forwardPlaybackEndTime.isNumeric ? item.forwardPlaybackEndTime.seconds : total
+                onDone((max(0, start), end > start ? end : total))
             }
         }
 
