@@ -129,7 +129,11 @@
   // A wheel session: opens at the cursor, follows it like the app does, closes on a pick.
   // spec: { at:[x,y], open, close, modes:[{t, ring}], choice:{t, ring}, cursor(t)->[x,y], file:{name, thumb}, preview(item, sub) }
   function Wheel(parent, rings, spec) {
-    const root = el("div", { class: "abs wheel" }, parent);
+    // Light/dark palettes follow the app's snapshot colours (Theme.swift).
+    const pal = spec.dark
+      ? { disc: "#2C2C2F", seg: "#3A3A3D", hair: "rgba(255,255,255,0.14)", label: "rgba(245,245,247,0.88)", tick: "rgba(255,255,255,0.2)", ink: "#F5F5F7" }
+      : { disc: "#F2F2F4", seg: "#E7E7EA", hair: "rgba(0,0,0,0.1)", label: "rgba(29,29,31,0.85)", tick: "rgba(0,0,0,0.15)", ink: INK };
+    const root = el("div", { class: "abs wheel" + (spec.dark ? " dark" : "") }, parent);
     const box = G.box, c = box / 2;
     set(root, { width: box + "px", height: box + "px", left: spec.at[0] - c + "px", top: spec.at[1] - c + "px", transformOrigin: c + "px " + c + "px" });
     const svg = el("svg", { width: box, height: box, viewBox: "0 0 " + box + " " + box, class: "abs" }, root);
@@ -138,8 +142,8 @@
     el("feGaussianBlur", { stdDeviation: 9 }, blur);
     el("circle", { cx: c, cy: c + 6, r: G.disc, fill: "#000", opacity: 0.13, filter: "url(#wb" + spec.id + ")" }, svg);
     const subLayer = el("g", {}, svg);
-    el("circle", { cx: c, cy: c, r: G.disc, fill: "#F2F2F4" }, svg);
-    el("circle", { cx: c, cy: c, r: G.disc - 0.25, fill: "none", stroke: "rgba(0,0,0,0.1)", "stroke-width": 0.5 }, svg);
+    el("circle", { cx: c, cy: c, r: G.disc, fill: pal.disc }, svg);
+    el("circle", { cx: c, cy: c, r: G.disc - 0.25, fill: "none", stroke: pal.hair, "stroke-width": 0.5 }, svg);
     const labels = el("div", { class: "abs", style: { width: box + "px", height: box + "px" } }, root);
 
     const ringNodes = {};
@@ -174,7 +178,7 @@
         const m = item.variants.length;
         const first = mid - (SUB_SPAN * m) / 2;
         const band = ringCore(c, c, first - 1.2, first + SUB_SPAN * m + 1.2, G.subInner - 4, G.subOuter + 4, 0, 10);
-        el("path", { d: band, fill: "#F2F2F4", stroke: "#F2F2F4", "stroke-width": 20, "stroke-linejoin": "round" }, sg);
+        el("path", { d: band, fill: pal.disc, stroke: pal.disc, "stroke-width": 20, "stroke-linejoin": "round" }, sg);
         const tiles = item.variants.map((v, j) => {
           const start = first + SUB_SPAN * j;
           const d = ringCore(c, c, start, start + SUB_SPAN, G.subInner, G.subOuter, 3, 7);
@@ -272,7 +276,7 @@
       if (st.key === "choice" && st.slot != null) {
         const it = R.items[st.slot];
         keyName = "choice" + st.slot;
-        html = '<div class="sym" style="width:22px;height:20px;background:' + INK + ";-webkit-mask-image:url(assets/symbols/" + it.symbol + '.png)"></div>' +
+        html = '<div class="sym" style="width:22px;height:20px;background:' + pal.ink + ";-webkit-mask-image:url(assets/symbols/" + it.symbol + '.png)"></div>' +
           '<div class="h-b">' + it.title + '</div><div class="h-s">' + spec.choiceOption + "</div>";
       } else if (st.slot == null) {
         keyName = "idle";
@@ -285,7 +289,7 @@
           html = '<div class="h-fmt">' + it.title + '</div><div class="h-s">' + spec.preview(it) + '</div><div class="h-hint">' + T("hint.alt_clipboard") + "</div>";
         } else {
           const symName = v ? v.symbol : it.symbol;
-          html = '<div class="sym" style="width:22px;height:20px;background:' + INK + ";-webkit-mask-image:url(assets/symbols/" + symName + '.png)"></div>' +
+          html = '<div class="sym" style="width:22px;height:20px;background:' + pal.ink + ";-webkit-mask-image:url(assets/symbols/" + symName + '.png)"></div>' +
             (v ? '<div class="h-acc">' + v.title + "</div>" : '<div class="h-b">' + it.title + "</div>") +
             '<div class="h-s">' + (v ? it.title : it.detail || "") + "</div>" +
             (it.variants && !v ? '<div class="h-hint">' + PV.tp("hint.options", it.variants.length) + "</div>" : "");
@@ -328,11 +332,11 @@
         R.segs.forEach((s, i) => {
           const hl = lit(slotEvents, key + ":" + i, t, 0.12);
           const dimmed = st.key === key && st.slot === i && st.sub != null;
-          const fill = mix("#E7E7EA", ACCENT, hl * (dimmed ? 0.22 : 1));
+          const fill = mix(pal.seg, ACCENT, hl * (dimmed ? 0.22 : 1));
           attr(s.p, "fill", fill);
           attr(s.p, "stroke", fill);
-          if (s.tick) attr(s.tick, "fill", hl > 0.5 && !dimmed ? "rgba(255,255,255,0.6)" : "rgba(0,0,0,0.15)");
-          set(s.label, { color: hl > 0.5 && !dimmed ? "#fff" : "rgba(29,29,31,0.85)" });
+          if (s.tick) attr(s.tick, "fill", hl > 0.5 && !dimmed ? "rgba(255,255,255,0.6)" : pal.tick);
+          set(s.label, { color: hl > 0.5 && !dimmed ? "#fff" : pal.label });
         });
         R.subs.forEach((s, i) => {
           if (!s) return;
@@ -342,11 +346,11 @@
           set(s.l, { opacity: show, display: show > 0.001 ? "block" : "none" });
           s.tiles.forEach((tile, j) => {
             const hl = lit(subEvents, key + ":" + i + ":" + j, t, 0.1);
-            const fill = mix("#E7E7EA", ACCENT, hl);
+            const fill = mix(pal.seg, ACCENT, hl);
             attr(tile.p, "fill", fill);
             attr(tile.p, "stroke", fill);
             if (tile.o) attr(tile.o, "opacity", 1 - hl);
-            set(tile.label, { color: hl > 0.5 ? "#fff" : "rgba(29,29,31,0.85)" });
+            set(tile.label, { color: hl > 0.5 ? "#fff" : pal.label });
           });
         });
       }

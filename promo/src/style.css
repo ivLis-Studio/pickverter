@@ -72,6 +72,13 @@ body { font-family: "PV SF", "Apple SD Gothic Neo", "Hiragino Sans", "PingFang S
 .w-tab.on .t { font-weight: 600; }
 .w-choicecap { display: flex; align-items: center; justify-content: center; border-radius: 999px; background: #F2F2F4;
   box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.1), 0 4px 12px rgba(0,0,0,0.08); font-size: 12px; font-weight: 600; }
+.wheel.dark { color: #F5F5F7; }
+.wheel.dark .w-hub { background: #252527; box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.14); }
+.wheel.dark .h-hint { color: #6E6E73; }
+.wheel.dark .h-s { color: #98989D; }
+.wheel.dark .w-tabs, .wheel.dark .w-choicecap { background: #2C2C2F; box-shadow: inset 0 0 0 0.5px rgba(255,255,255,0.14), 0 4px 12px rgba(0,0,0,0.3); }
+.wheel.dark .w-pill { background: #4A4A4E; box-shadow: none; }
+.wheel.dark .w-tab .g { color: #98989D; }
 
 /* result card */
 .card { transform-origin: 100% 0; border-radius: 18px; background: #F4F4F6; padding: 14px; box-sizing: border-box; z-index: 40;

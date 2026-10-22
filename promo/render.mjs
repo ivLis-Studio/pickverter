@@ -40,12 +40,13 @@ const server = http.createServer((req, res) => {
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
 const origin = "http://127.0.0.1:" + server.address().port;
 
-async function openPage(browser) {
-  const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: dpr });
+async function openPage(browser, url = "/index.html", size = { width: 1920, height: 1080 }) {
+  const page = await browser.newPage({ viewport: size, deviceScaleFactor: dpr });
   page.on("pageerror", (e) => console.error("page error:", e.message));
   page.on("console", (m) => { if (m.type() === "error") console.error("console:", m.text()); });
   await page.addInitScript("window.LANG = " + JSON.stringify(lang) + ";");
-  await page.goto(origin + "/index.html");
+  if (opt.clean) await page.addInitScript("window.CLEAN = true;");
+  await page.goto(origin + url);
   await page.evaluate(() => window.ready);
   const cdp = await page.context().newCDPSession(page);
   return { page, cdp };
@@ -83,6 +84,14 @@ async function blurredFrame(p, t) {
 }
 
 const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--force-color-profile=srgb", "--disable-lcd-text", "--hide-scrollbars"] });
+
+// A single still of any page (README banners): --shot "banner.html?theme=dark" --out file.png --width 1600 --height 600
+if (opt.shot) {
+  const { page } = await openPage(browser, "/" + opt.shot, { width: +(opt.width || 1600), height: +(opt.height || 600) });
+  await page.waitForTimeout(100);
+  await page.screenshot({ path: opt.out, omitBackground: true });
+  console.log(opt.out);
+}
 
 if (opt.events) {
   const { page } = await openPage(browser);

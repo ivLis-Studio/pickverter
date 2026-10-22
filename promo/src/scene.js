@@ -366,6 +366,7 @@
     term.update(t, TERM);
 
     for (const c of caps) {
+      if (window.CLEAN) { set(c.node, { display: "none" }); continue; }
       const a = E.outCubic(prog(t, c.a, c.a + 0.4)), o = E.inCubic(prog(t, c.b, c.b + 0.22));
       set(c.node, { opacity: a * (1 - o), transform: "translateY(" + ((1 - a) * 18 - o * 10) + "px)", display: t >= c.a && t <= c.b + 0.25 ? "block" : "none" });
     }

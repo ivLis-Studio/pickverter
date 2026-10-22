@@ -1,33 +1,55 @@
-<p align="center"><img src="docs/icon.png" width="128" alt="Pickverter 앱 아이콘"></p>
-
-# Pickverter
-
-Finder에서 파일을 고르고 키 하나만 누르면, 커서 바로 옆에서 변환·편집·공유를 끝내는 macOS 앱입니다.
-모든 처리는 Mac 안에서만 이뤄지고 어디에도 올라가지 않아요.
-
 <p align="center">
-  <img src="docs/screenshots/wheel-tools.png" width="420" alt="회전 옵션이 펼쳐진 도구 링">
-  <img src="docs/screenshots/wheel-convert.png" width="420" alt="다크 모드의 변환 링">
+  <a href="https://ivlis-studio.github.io/pickverter/?lang=ko">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-ko-dark.png">
+      <img src="docs/readme/banner-ko-light.png" width="880" alt="Pickverter by ivLis STUDIO — 파일을 고르고 키 하나만 누르면, 커서 바로 옆에서 끝나요.">
+    </picture>
+  </a>
 </p>
 
-[English README](README.md) · [다운로드](https://github.com/ivLis-Studio/pickverter/releases/latest) · [변경 내역](CHANGELOG.md)
+<p align="center">
+  <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><img alt="최신 버전" src="https://img.shields.io/github/v/release/ivLis-Studio/pickverter?style=flat-square&label=%EC%B5%9C%EC%8B%A0&color=0A84FF"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="다운로드" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=1D1D1F"></a>
+  <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
+  <a href="LICENSE"><img alt="MIT 라이선스" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/ci.yml?branch=main&style=flat-square&label=CI"></a>
+</p>
 
-## 휠 여는 법
+<p align="center">
+  <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>다운로드</b></a> ·
+  <a href="https://ivlis-studio.github.io/pickverter/?lang=ko"><b>웹사이트</b></a> ·
+  <a href="#설치">설치</a> ·
+  <a href="CHANGELOG.md">변경 내역</a> ·
+  <a href="README.md">English</a>
+</p>
 
-| 제스처 | |
-| --- | --- |
-| Finder에서 파일 선택 → **⌥ 탭** | 선택한 파일로 휠 열기 |
-| 파일을 **⌥ 누른 채 클릭** | 그 파일로 바로 휠 열기 |
-| 파일을 끄는 중 **⇧ / ⌘ / ⌃ 탭** | 변환 / 도구 / 액션 링 → 칸 위에 놓기 |
+<!-- 영상은 GitHub 첨부 파일이라 README에서 바로 재생돼요. 원본: promo/ -->
+https://github.com/user-attachments/assets/6fce639f-3d08-496d-bed4-327f38d73594
 
-휠 안에서: 마우스 방향이나 ← → 로 칸 고르기(숫자 1–0은 바로 실행), ↑ ↓ 또는 바깥쪽으로 옮겨 세부 옵션 고르기,
-형식 이름(png, mp3…) 입력으로 이동, Tab 또는 ⇧ ⌘ ⌃ 로 링 전환, ↩︎ 실행, esc 닫기.
-**⌥ 클릭 / ⌘C** 는 이번 결과만 클립보드로, **⌘S** 는 파일로 보내요.
+<p align="center"><sub>35초 · 소리 켜고 보세요 · 모든 장면과 소리를 코드로 만들었어요 — <a href="promo/">만든 방법</a></sub></p>
 
-**나만의 휠** — 칸을 우클릭하면 숨기기, 앞뒤로 옮기기, 옵션을 메인 링에 고정하기, 클릭했을 때 실행할 옵션 정하기를 할 수 있어요.
-칸마다 마지막으로 쓴 옵션을 기억할 수도 있고, 휠 가운데에는 클릭하면 무엇이 실행되는지 항상 보여 줘요.
+## 사용법
 
-## 할 수 있는 것
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="docs/readme/step-ko-1.webp" alt="Finder에서 사진을 고르고 Option을 누르는 모습"><br><b>1 · 파일을 고르고 ⌥ 톡</b><br>Finder에서 파일을 고르고 Option을 톡 — 파일을 ⌥-클릭하거나, 드래그 중에 ⇧ ⌘ ⌃를 눌러도 돼요.</td>
+    <td width="50%" valign="top"><img src="docs/readme/step-ko-2.webp" alt="커서 위치에 열린 변환 링, PNG 칸이 선택된 모습"><br><b>2 · 커서 바로 옆에 휠이 열려요</b><br>칸을 가리키세요. 가운데에 클릭하면 무엇이 실행될지 항상 보여줘요.</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><img src="docs/readme/step-ko-3.webp" alt="회전 칸의 옵션이 바깥 링에 펼쳐진 모습"><br><b>3 · 올려 두면 옵션이 펼쳐져요</b><br>옵션이 있는 칸은 바깥 링으로 펼쳐져요 — 회전 방향, 크기, 품질까지.</td>
+    <td width="50%" valign="top"><img src="docs/readme/step-ko-4.webp" alt="모서리의 결과 카드와 원본 옆에 생긴 PNG"><br><b>4 · 그 자리에서 완료</b><br>결과는 원본 옆이나 클립보드로 가고, 카드에서 보기·열기·복사·되돌리기를 바로 할 수 있어요.</td>
+  </tr>
+</table>
+
+## 기능
+
+<table>
+  <tr>
+    <td valign="top" width="33%"><b>⇧ 변환</b><br><sub>이미지 · 동영상 · 오디오 · PDF · 문서 · EPUB · 오피스·iWork · 표 · 자막 · 압축 파일</sub></td>
+    <td valign="top" width="33%"><b>⌘ 도구</b><br><sub>배경 제거 · 얼굴·글자 가리기 · 압축 · 크기 조절 · 자르기 · OCR · 회전 · 구간 자르기 · 나누기·합치기 · PDF 페이지 · 암호 · 정보</sub></td>
+    <td valign="top" width="33%"><b>⌃ 액션</b><br><sub>AirDrop · 터미널 · 코드 편집기 · 경로 복사 · 파일 복사 · 이동 · 띄워두기 · 공유 · 체크섬</sub></td>
+  </tr>
+</table>
 
 - **변환** 이미지(JPG·PNG·HEIC·WebP·AVIF·TIFF·GIF·BMP·PDF·ICO), 동영상(MP4·MOV·WebM·MKV·GIF·MP3·M4A·WAV),
   오디오(MP3·M4A·WAV·FLAC·AIFF·OGG·Opus), PDF(PNG·JPG·TXT·MD·DOCX·RTF·HTML), 문서(PDF·DOCX·RTF·TXT·MD·HTML·ODT·**EPUB**),
@@ -38,10 +60,31 @@ Finder에서 파일을 고르고 키 하나만 누르면, 커서 바로 옆에�
   오디오 음량 맞추기·무음 자르기·모노·시각화 영상 · PDF 합치기·나누기·쪽 추출·역순·빈 쪽 지우기·암호 · 오피스/iWork 파일 속 이미지 꺼내기 · ZIP/TAR.GZ
 - **액션** AirDrop, 터미널·코드 편집기로 열기, 경로 복사(전체·~·이름·셸 따옴표), 클립보드, 최근 폴더로 이동·복사, 항상 위 미리보기, 공유, 체크섬(SHA-256·SHA-1·MD5)
 
-결과는 파일로, 클립보드로, 둘 다, 또는 매번 묻기 중에서 고를 수 있어요(설정 › 일반). 원본은 절대 덮어쓰지 않아요.
-무거운 작업은 작은 대기열에서 차례를 기다려 Mac이 느려지지 않고, 결과 알림은 작업하던 화면의 원하는 모서리에 떠요.
+**결과는 원하는 곳으로** — 파일로, 클립보드로, 둘 다, 또는 매번 묻기(설정 › 일반).
+⌥-클릭이나 ⌘C는 이번 결과만 클립보드로, ⌘S는 파일로 보내요. 원본은 절대 덮어쓰지 않아요.
 
-<p align="center"><img src="docs/screenshots/pages.png" width="640" alt="PDF 페이지 정리"></p>
+**내 맘대로** — 칸을 우클릭해 숨기거나, 옮기거나, 옵션 하나를 메인 링으로 꺼내거나, 클릭했을 때 실행할 동작을 고르세요.
+
+<p align="center">
+  <img src="docs/screenshots/wheel-tools.png" width="400" alt="회전 옵션이 펼쳐진 도구 링">
+  <img src="docs/screenshots/cards.png" width="400" alt="결과 카드">
+</p>
+
+<details>
+<summary><b>키보드</b></summary>
+
+| 동작 | |
+| --- | --- |
+| Finder에서 파일 선택 → **⌥ 톡** | 선택한 파일의 휠 |
+| 파일을 **⌥-클릭** | 그 파일의 휠 |
+| 파일을 드래그하는 동안 **⇧ / ⌘ / ⌃ 톡** | 변환 / 도구 / 액션 링 — 칸 위에 놓으면 실행 |
+| ← → · 1–0 | 휠 이동 · 번호로 칸 실행 |
+| ↑ ↓ 또는 바깥으로 이동 | 바깥 링의 옵션 |
+| `png`, `mp3`… 타이핑 | 그 형식으로 바로 이동 |
+| Tab 또는 ⇧ ⌘ ⌃ | 링 전환 |
+| ↩︎ · esc | 실행 · 닫기 |
+
+</details>
 
 ## 설치
 
@@ -98,7 +141,19 @@ Xcode 프로젝트 없이 `swiftc`로 바로 빌드해요. Command Line Tools만
 이 키로 서명한 업데이트만 설치되니 꼭 백업해 두세요. Developer ID 빌드용 선택 시크릿: `MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`,
 공증용: `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 
+## 프로젝트 구성
+
+- `Input/` 이벤트 탭(보조 키 탭, ⌥-클릭, 드래그), Finder 선택 읽기
+- `Wheel/` 휠 패널, 바깥 옵션 링, 드롭 대상, 렌더링
+- `Core/` 옵션 모델, 링별 항목, 휠 꾸미기, 작업 대기열, 현지화
+- `Engines/` 이미지(ImageIO, Vision), 미디어(ffmpeg, AVFoundation), PDF(PDFKit), 문서, EPUB, 오피스/iWork, 데이터, 압축
+- `UI/` 결과 카드, 편집 창, 설정, 메뉴 막대, 첫 화면, 업데이트 창
+- `App/` 앱 생명주기, 환경설정, 업데이터, CLI
+- `site/` 소개 사이트 [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/?lang=ko) (GitHub Pages)
+- `promo/` 코드로 렌더링하는 소개 영상 — `promo/make.sh`
+
 ## 라이선스
 
-[MIT](LICENSE)
+[MIT](LICENSE) © ivLis Studio
+
 

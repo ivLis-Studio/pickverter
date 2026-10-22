@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Pickverter banner</title>
+<link rel="stylesheet" href="src/style.css">
+<style>
+  html, body { width: 1600px; height: 600px; background: transparent; overflow: hidden; }
+  #stage { width: 1600px; height: 600px; background: transparent; }
+  .banner { position: absolute; inset: 0; border-radius: 40px; background: #F2F2F5; overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06); }
+  .dark .banner { background: #222327; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08); }
+  .lockup { position: absolute; left: 104px; top: 128px; display: flex; align-items: center; gap: 44px; }
+  .b-icon { width: 176px; height: 176px; margin: -14px; }
+  .b-name { font-size: 104px; font-weight: 700; letter-spacing: -0.025em; line-height: 1; color: #1D1D1F; }
+  .b-by { font-size: 26px; font-weight: 500; color: #6E6E73; margin-top: 14px; letter-spacing: 0.02em; }
+  .b-by b { font-weight: 700; color: #1D1D1F; letter-spacing: 0.08em; }
+  .b-tag { position: absolute; left: 108px; top: 352px; font-size: 36px; line-height: 1.32; font-weight: 600; color: #1D1D1F; letter-spacing: -0.01em; }
+  .b-meta { position: absolute; left: 108px; top: 476px; display: flex; gap: 10px; }
+  .b-chip { font-size: 19px; font-weight: 500; color: #4A4A4F; padding: 7px 14px; border-radius: 999px; background: rgba(0,0,0,0.055); }
+  .dark .b-name, .dark .b-tag, .dark .b-by b { color: #F5F5F7; }
+  .dark .b-by { color: #98989D; }
+  .dark .b-chip { color: #C7C7CC; background: rgba(255,255,255,0.08); }
+  /* Social card (1200x630): same pieces, tighter. */
+  .og body, .og #stage { width: 1200px; height: 630px; }
+  .og .banner { border-radius: 0; box-shadow: none; }
+  .og .lockup { left: 72px; top: 150px; gap: 34px; }
+  .og .b-name { font-size: 84px; }
+  .og .b-by { font-size: 22px; }
+  .og .b-tag { left: 76px; top: 352px; font-size: 32px; }
+  .og .b-meta { left: 76px; top: 470px; flex-wrap: wrap; width: 560px; }
+  .og .b-chip { font-size: 17px; }
+</style>
+</head><body>
+<div id="stage"></div>
+<script src="src/lib.js"></script>
+<script src="src/i18n-data.js"></script>
+<script src="src/icon.js"></script>
+<script src="src/ui.js"></script>
+<script src="src/banner.js"></script>
+</body></html>
+

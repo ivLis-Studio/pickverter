@@ -1,0 +1,413 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pickverter — every file, one key away</title>
+<meta name="description" content="Pick a file in Finder, tap one key, and convert, edit or share it right next to your cursor. Free, open source and 100% on your Mac.">
+<meta name="theme-color" content="#F5F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1012" media="(prefers-color-scheme: dark)">
+<link rel="icon" type="image/png" href="assets/media/favicon-64.png">
+<link rel="apple-touch-icon" href="assets/media/apple-touch-icon.png">
+<link rel="canonical" href="https://ivlis-studio.github.io/pickverter/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pickverter">
+<meta property="og:title" content="Pickverter — every file, one key away">
+<meta property="og:description" content="Convert, edit and share files right at your cursor in Finder. Free, open source, 100% local.">
+<meta property="og:url" content="https://ivlis-studio.github.io/pickverter/">
+<meta property="og:image" content="https://ivlis-studio.github.io/pickverter/assets/media/og-en.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://ivlis-studio.github.io/pickverter/assets/media/og-en.png">
+<link rel="stylesheet" href="assets/css/site.css">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pickverter","operatingSystem":"macOS 14 or later","applicationCategory":"UtilitiesApplication",
+ "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Organization","name":"ivLis Studio"},
+ "downloadUrl":"https://github.com/ivLis-Studio/pickverter/releases/latest","license":"https://opensource.org/licenses/MIT"}
+</script>
+</head>
+<body>
+<a class="skip" href="#main" data-t="skip">Skip to content</a>
+
+<header class="bar" id="bar">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Pickverter home"><img src="assets/media/icon-512.png" alt="" width="30" height="30">Pickverter</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#how" data-t="nav.how">How it works</a>
+      <a href="#rings" data-t="nav.features">Features</a>
+      <a href="#editors" data-t="nav.editors">Editors</a>
+      <a href="#install" data-t="nav.install">Install</a>
+      <a href="#faq" data-t="nav.faq">FAQ</a>
+    </nav>
+    <div class="bar-end">
+      <label class="lang"><span class="sr" data-t="lang.label">Language</span><i class="ico" data-i="globe"></i>
+        <select id="lang-select"><option value="en">English</option><option value="ko">한국어</option></select>
+      </label>
+      <a class="btn ghost small" href="https://github.com/ivLis-Studio/pickverter"><i class="ico" data-i="code"></i>GitHub</a>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+<!-- ============================================================ hero -->
+<section class="hero" id="top">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow"><i class="ico" data-i="sparkles"></i><span data-t="hero.eyebrow">Free &amp; open source for macOS</span></span>
+      <h1 data-t="hero.title">Every file.<br>One <span class="key" aria-label="Option">⌥</span> away.</h1>
+      <p class="lede" data-t="hero.lede">Pick a file in Finder, tap a key, and a wheel opens right at your cursor. Convert, edit, share — and you never leave the folder you’re in.</p>
+      <div class="ctas">
+        <a class="btn primary dl-link" href="https://github.com/ivLis-Studio/pickverter/releases/latest"><i class="ico" data-i="download"></i><span data-t="cta.download">Download for Mac</span></a>
+        <a class="btn ghost" href="#film"><i class="ico" data-i="play"></i><span data-t="cta.film">Watch the film</span></a>
+      </div>
+      <div class="fine">
+        <span><i class="ico" data-i="check"></i><span class="dl-version" data-t="fine.version">Latest release</span></span>
+        <span><i class="ico" data-i="check"></i><span data-t="fine.req">macOS 14+, Apple silicon &amp; Intel</span></span>
+        <span><i class="ico" data-i="check"></i><span data-t="fine.local">Nothing is uploaded</span></span>
+      </div>
+    </div>
+    <div class="stagebox">
+      <div class="wheel" id="wheel" tabindex="0" role="group" aria-roledescription="wheel" aria-label="Pickverter wheel demo"></div>
+      <p class="wheel-hint" id="wheel-hint" data-t="wheel.hint">Try it: point at a slot · <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>⌃</kbd> switch rings</p>
+      <p class="sr" aria-live="polite" id="wheel-live"></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ film -->
+<section class="film" id="film" aria-labelledby="film-title">
+  <div class="wrap reveal">
+    <h2 class="sr" id="film-title" data-t="film.title">The Pickverter film</h2>
+    <div class="player" id="player">
+      <video id="film-video" preload="none" playsinline poster="assets/media/poster-en.webp">
+        <source src="assets/media/film-en.mp4" type="video/mp4">
+      </video>
+      <button class="play" id="play" aria-label="Play the film"><span><i class="ico" data-i="play"></i></span></button>
+    </div>
+    <div class="player-meta">
+      <span data-t="film.meta">35 seconds · sound on · every frame and every sound rendered from code</span>
+      <a href="https://github.com/ivLis-Studio/pickverter/tree/main/promo"><span data-t="film.source">See how it was made</span><i class="ico" data-i="arrow-up-right"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ how -->
+<section class="alt" id="how" aria-labelledby="how-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker" data-t="how.kicker">How it works</span>
+      <h2 id="how-title" data-t="how.title">Three moves. No windows to dig through.</h2>
+      <p data-t="how.lede">No app to open, no dialog to fill in. Pickverter waits in the menu bar until you need it.</p>
+    </div>
+    <div class="steps">
+      <article class="step reveal">
+        <span class="n">1</span>
+        <h3 data-t="how.1.t">Pick a file</h3>
+        <p data-t="how.1.d">Select one file or fifty in Finder — photos, videos, PDFs, documents, anything.</p>
+        <div class="art" aria-hidden="true">
+          <div class="mini-finder">
+            <div class="f sel"><i style="background-image:url(assets/media/lisbon.webp)"></i><b>Lisbon.heic</b></div>
+            <div class="f"><i style="background-image:url(assets/media/shiba.webp)"></i><b>Shiba.jpg</b></div>
+            <div class="f"><i style="background-image:url(assets/media/poster-en.webp)"></i><b>Film.mov</b></div>
+          </div>
+        </div>
+      </article>
+      <article class="step reveal">
+        <span class="n">2</span>
+        <h3 data-t="how.2.t">Tap ⌥</h3>
+        <p data-t="how.2.d">Tap Option, ⌥-click a file, or tap ⇧ ⌘ ⌃ while dragging. The wheel opens at your cursor.</p>
+        <div class="art" aria-hidden="true">
+          <div class="keyrow"><div class="kcap down"><b>⌥</b><small>option</small></div><div class="kcap"><b>⌘</b><small>command</small></div></div>
+        </div>
+      </article>
+      <article class="step reveal">
+        <span class="n">3</span>
+        <h3 data-t="how.3.t">Done, right there</h3>
+        <p data-t="how.3.d">Point at a slot and click. The result lands next to the original or on the clipboard.</p>
+        <div class="art" aria-hidden="true">
+          <div class="mini-card"><i style="background-image:url(assets/media/lisbon.webp)"></i>
+            <div><b data-t="how.3.card">PNG conversion · Done</b><small>Lisbon.png · 4.2 MB</small><span class="pill"><i class="ico" data-i="folder"></i><span data-t="how.3.reveal">Show in Finder</span></span></div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ rings -->
+<section id="rings" aria-labelledby="rings-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker" data-t="rings.kicker">Three rings</span>
+      <h2 id="rings-title" data-t="rings.title">One wheel. Everything a file needs.</h2>
+      <p data-t="rings.lede">The wheel only shows what makes sense for what you picked. Hold ⇧, ⌘ or ⌃ to jump between its rings.</p>
+    </div>
+    <div class="rings reveal">
+      <div class="ring-tabs" role="tablist" aria-label="Rings">
+        <button class="ring-tab" role="tab" id="tab-convert" aria-controls="panel-convert" aria-selected="true"><span class="k">⇧</span><span><b data-t="ring.convert">Convert</b><span data-t="ring.convert.d">Into any format that makes sense</span></span></button>
+        <button class="ring-tab" role="tab" id="tab-tools" aria-controls="panel-tools" aria-selected="false" tabindex="-1"><span class="k">⌘</span><span><b data-t="ring.tools">Tools</b><span data-t="ring.tools.d">Edit without opening an app</span></span></button>
+        <button class="ring-tab" role="tab" id="tab-actions" aria-controls="panel-actions" aria-selected="false" tabindex="-1"><span class="k">⌃</span><span><b data-t="ring.actions">Actions</b><span data-t="ring.actions.d">Send it where it needs to go</span></span></button>
+      </div>
+      <div>
+        <div class="ring-panel" role="tabpanel" id="panel-convert" aria-labelledby="tab-convert">
+          <div class="groups">
+            <div class="group"><h3><i class="ico" data-i="image"></i><span data-t="g.images">Images</span></h3><div class="chips"><span class="chip">JPG</span><span class="chip">PNG</span><span class="chip">HEIC</span><span class="chip">WebP</span><span class="chip">AVIF</span><span class="chip">TIFF</span><span class="chip">GIF</span><span class="chip">BMP</span><span class="chip">PDF</span><span class="chip">ICO</span></div></div>
+            <div class="group"><h3><i class="ico" data-i="film"></i><span data-t="g.video">Video</span></h3><div class="chips"><span class="chip">MP4</span><span class="chip">MOV</span><span class="chip">WebM</span><span class="chip">MKV</span><span class="chip">GIF</span><span class="chip">MP3</span><span class="chip">M4A</span><span class="chip">WAV</span></div></div>
+            <div class="group"><h3><i class="ico" data-i="music"></i><span data-t="g.audio">Audio</span></h3><div class="chips"><span class="chip">MP3</span><span class="chip">M4A</span><span class="chip">WAV</span><span class="chip">FLAC</span><span class="chip">AIFF</span><span class="chip">OGG</span><span class="chip">Opus</span></div></div>
+            <div class="group"><h3><i class="ico" data-i="file-text"></i>PDF</h3><div class="chips"><span class="chip">PNG</span><span class="chip">JPG</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">DOCX</span><span class="chip">RTF</span><span class="chip">HTML</span></div></div>
+            <div class="group"><h3><i class="ico" data-i="files"></i><span data-t="g.docs">Documents</span></h3><div class="chips"><span class="chip">PDF</span><span class="chip">DOCX</span><span class="chip">RTF</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">HTML</span><span class="chip">ODT</span><span class="chip">EPUB</span></div></div>
+            <div class="group"><h3><i class="ico" data-i="table"></i><span data-t="g.office">Office, iWork &amp; data</span></h3><p data-t="g.office.d">Excel, Numbers, Pages, Keynote and PowerPoint · tables to CSV, TSV, JSON, Markdown, HTML · subtitles SRT, VTT · ZIP, TAR.GZ</p></div>
+          </div>
+        </div>
+        <div class="ring-panel" role="tabpanel" id="panel-tools" aria-labelledby="tab-tools" hidden>
+          <div class="groups">
+            <div class="group"><h3><i class="ico" data-i="image"></i><span data-t="g.images">Images</span></h3>
+              <ul class="tool-list">
+                <li><i class="ico" data-i="scissors"></i><span><b data-t="t.removebg">Remove background</b> <span data-t="t.removebg.d">— transparent, cropped to the subject, or on white</span></span></li>
+                <li><i class="ico" data-i="eye-off"></i><span><b data-t="t.hide">Hide</b> <span data-t="t.hide.d">— mosaic, blur or fill; finds faces and text for you</span></span></li>
+                <li><i class="ico" data-i="shrink"></i><span><b data-t="t.compress">Compress &amp; resize</b> <span data-t="t.compress.d">— smaller files, same look</span></span></li>
+                <li><i class="ico" data-i="scan-text"></i><span><b data-t="t.ocr">Extract text</b> <span data-t="t.ocr.d">— recognised and copied</span></span></li>
+                <li><i class="ico" data-i="rotate-cw"></i><span><b data-t="t.rotate">Rotate, flip, crop, collage</b></span></li>
+              </ul></div>
+            <div class="group"><h3><i class="ico" data-i="film"></i><span data-t="g.media">Video &amp; audio</span></h3>
+              <ul class="tool-list">
+                <li><i class="ico" data-i="scissors"></i><span><b data-t="t.trim">Trim, split &amp; join</b></span></li>
+                <li><i class="ico" data-i="shrink"></i><span><b data-t="t.vcompress">Compress, resolution, speed, mute</b></span></li>
+                <li><i class="ico" data-i="image"></i><span><b data-t="t.snap">Snapshot &amp; GIF</b></span></li>
+                <li><i class="ico" data-i="volume-2"></i><span><b data-t="t.audio">Loudness, silence trim, mono, visualizer video</b></span></li>
+              </ul></div>
+            <div class="group"><h3><i class="ico" data-i="file-text"></i>PDF</h3>
+              <ul class="tool-list">
+                <li><i class="ico" data-i="list-ordered"></i><span><b data-t="t.pages">Organize pages</b> <span data-t="t.pages.d">— drag, rotate, delete</span></span></li>
+                <li><i class="ico" data-i="layers"></i><span><b data-t="t.merge">Merge, split, extract a range, reverse</b></span></li>
+                <li><i class="ico" data-i="file"></i><span><b data-t="t.blank">Remove blank pages, odd/even only</b></span></li>
+                <li><i class="ico" data-i="lock"></i><span><b data-t="t.lock">Lock with a password</b></span></li>
+              </ul></div>
+            <div class="group"><h3><i class="ico" data-i="info"></i><span data-t="g.more">And more</span></h3>
+              <ul class="tool-list">
+                <li><i class="ico" data-i="info"></i><span><b data-t="t.meta">Edit or strip info</b> <span data-t="t.meta.d">— photos, PDFs, media; location only, if you like</span></span></li>
+                <li><i class="ico" data-i="book-open"></i><span><b data-t="t.epub">EPUB from documents or images</b></span></li>
+                <li><i class="ico" data-i="files"></i><span><b data-t="t.office">Pull images and media out of Office/iWork files</b></span></li>
+                <li><i class="ico" data-i="archive"></i><span><b>ZIP · TAR.GZ</b></span></li>
+              </ul></div>
+          </div>
+        </div>
+        <div class="ring-panel" role="tabpanel" id="panel-actions" aria-labelledby="tab-actions" hidden>
+          <div class="groups">
+            <div class="group"><h3><i class="ico" data-i="share"></i><span data-t="g.send">Send</span></h3>
+              <ul class="tool-list">
+                <li><i class="ico" data-i="radio"></i><span><b>AirDrop</b> <span data-t="a.airdrop.d">— to nearby Apple devices</span></span></li>
+                <li><i class="ico" data-i="share"></i><span><b data-t="a.share">Share</b> <span data-t="a.share.d">— Messages, Mail and more</span></span></li>
+                <li><i class="ico" data-i="clipboard"></i><span><b data-t="a.copy">Copy the file</b> <span data-t="a.copy.d">— paste it anywhere</span></span></li>
+              </ul></div>
+            <div class="group"><h3><i class="ico" data-i="terminal"></i><span data-t="g.dev">For developers</span></h3>
+              <ul class="tool-list">
+                <li><i class="ico" data-i="terminal"></i><span><b data-t="a.term">Open in Terminal</b> <span data-t="a.term.d">— or iTerm, Ghostty, Warp</span></span></li>
+                <li><i class="ico" data-i="code"></i><span><b data-t="a.editor">Open in your code editor</b></span></li>
+                <li><i class="ico" data-i="link"></i><span><b data-t="a.path">Copy path</b> <span data-t="a.path.d">— full, ~/, name only or shell-quoted</span></span></li>
+                <li><i class="ico" data-i="hash"></i><span><b data-t="a.hash">Checksums</b> <span>— SHA-256, SHA-1, MD5</span></span></li>
+              </ul></div>
+            <div class="group"><h3><i class="ico" data-i="folder"></i><span data-t="g.organize">Organize</span></h3>
+              <ul class="tool-list">
+                <li><i class="ico" data-i="folder-input"></i><span><b data-t="a.move">Move or copy</b> <span data-t="a.move.d">— to Desktop, Downloads or recent folders</span></span></li>
+                <li><i class="ico" data-i="pin"></i><span><b data-t="a.float">Float</b> <span data-t="a.float.d">— an always-on-top preview</span></span></li>
+              </ul></div>
+            <div class="group"><h3><i class="ico" data-i="wand-sparkles"></i><span data-t="g.yours">Make it yours</span></h3>
+              <p data-t="g.yours.d">Right-click a slot to hide it, move it, pin one of its options to the main ring or choose what a plain click runs. Slots can remember the option you used last.</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ remove bg -->
+<section class="alt" aria-labelledby="bg-title">
+  <div class="wrap compare">
+    <div class="ba reveal" id="ba" style="--x:52%">
+      <img src="assets/media/shiba-cutout.webp" alt="" width="800" height="1200" loading="lazy">
+      <img class="before" src="assets/media/shiba.webp" alt="" width="800" height="1200" loading="lazy">
+      <span class="tag l" data-t="bg.before">Before</span><span class="tag r" data-t="bg.after">After</span>
+      <div class="handle" aria-hidden="true"><span><i class="ico" data-i="arrow-right"></i></span></div>
+      <input type="range" min="0" max="100" value="52" id="ba-range" aria-label="Compare before and after">
+    </div>
+    <div class="reveal">
+      <span class="kicker" data-t="bg.kicker">Remove background</span>
+      <h2 id="bg-title" data-t="bg.title">Cut out the subject. On your Mac, in a second.</h2>
+      <p class="section-head" style="margin:0"><span style="font-size:19px;color:var(--muted)" data-t="bg.lede">Drag the slider. This cut-out was made by Pickverter itself — no uploads, no account, no waiting in a queue.</span></p>
+      <ul class="points">
+        <li><i class="ico" data-i="check"></i><span data-t="bg.p1">Transparent PNG, cropped to the subject, or on a white background</span></li>
+        <li><i class="ico" data-i="check"></i><span data-t="bg.p2">Runs with Apple’s on-device Vision — your photos never leave the Mac</span></li>
+        <li><i class="ico" data-i="check"></i><span data-t="bg.p3">Save it, or send it straight to the clipboard and paste into a slide</span></li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ destinations -->
+<section aria-labelledby="dest-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker" data-t="dest.kicker">Results where you want them</span>
+      <h2 id="dest-title" data-t="dest.title">A file, the clipboard, or both.</h2>
+      <p data-t="dest.lede">Choose once in Settings, or let the wheel ask every time. Originals are never overwritten.</p>
+    </div>
+    <div class="dests reveal" id="dests">
+      <button class="dest" data-dest="file" aria-pressed="true"><i class="ico" data-i="file"></i><b data-t="dest.file">Save File</b><span data-t="dest.file.d">Next to the original</span></button>
+      <button class="dest" data-dest="clipboard" aria-pressed="false"><i class="ico" data-i="clipboard-copy"></i><b data-t="dest.clip">Copy to Clipboard</b><span data-t="dest.clip.d">Ready to paste anywhere</span></button>
+      <button class="dest" data-dest="both" aria-pressed="false"><i class="ico" data-i="copy-plus"></i><b data-t="dest.both">File + Clipboard</b><span data-t="dest.both.d">Keep it and paste it</span></button>
+      <button class="dest" data-dest="ask" aria-pressed="false"><i class="ico" data-i="mouse-pointer-click"></i><b data-t="dest.ask">Ask Every Time</b><span data-t="dest.ask.d">The wheel asks after you pick</span></button>
+    </div>
+    <div class="dest-demo reveal" aria-live="polite">
+      <div class="card"><i style="background-image:url(assets/media/shiba-cutout.webp)"></i><div><b id="dest-title-out">Remove BG · Done</b><small id="dest-sub-out">Shiba no background.png · 1.2 MB</small></div></div>
+      <span class="over" data-t="dest.override">Just this once: <kbd>⌥</kbd>-click or <kbd>⌘C</kbd> → clipboard · <kbd>⌘S</kbd> → file</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ editors -->
+<section class="alt" id="editors" aria-labelledby="ed-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker" data-t="ed.kicker">Small, focused editors</span>
+      <h2 id="ed-title" data-t="ed.title">When it needs a human touch.</h2>
+      <p data-t="ed.lede">Some jobs need a decision. Pickverter opens a small editor for just that one step, then gets out of the way.</p>
+    </div>
+    <div class="editors">
+      <article class="ed w7 reveal"><div class="shot"><img src="assets/media/editor-crop.webp" alt="The crop editor with ratio presets" loading="lazy" width="2018" height="1476"></div>
+        <div class="body"><h3 data-t="ed.crop">Crop images and video</h3><p data-t="ed.crop.d">Free or fixed ratios — 1:1, 16:9, 9:16, 4:5 — for photos and clips alike.</p></div></article>
+      <article class="ed w5 reveal"><div class="shot tall"><img src="assets/media/editor-redact.webp" alt="The hide editor with mosaic, blur and fill" loading="lazy" width="1120" height="1568"></div>
+        <div class="body"><h3 data-t="ed.hide">Hide what shouldn’t be seen</h3><p data-t="ed.hide.d">Mosaic, blur or fill. Find Faces and Find Text mark them for you.</p></div></article>
+      <article class="ed w7 reveal"><div class="shot"><img src="assets/media/editor-pages.webp" alt="Organizing PDF pages by drag and drop" loading="lazy" width="1760" height="1280"></div>
+        <div class="body"><h3 data-t="ed.pages">Organize PDF pages</h3><p data-t="ed.pages.d">Drag to reorder, rotate, duplicate or delete, then save the whole PDF or just the selection.</p></div></article>
+      <article class="ed w5 reveal"><div class="shot"><img src="assets/media/cards.webp" alt="Result cards" loading="lazy" width="784" height="721"></div>
+        <div class="body"><h3 data-t="ed.cards">Results you can act on</h3><p data-t="ed.cards.d">Every job ends in a card: show in Finder, open, copy, or undo in one click.</p></div></article>
+      <article class="ed w6 text reveal"><i class="ico" data-i="scissors"></i><div><h3 data-t="ed.trim">Trim video and audio</h3><p data-t="ed.trim.d">QuickTime-style handles, frame-accurate or instant.</p></div></article>
+      <article class="ed w6 text reveal"><i class="ico" data-i="info"></i><div><h3 data-t="ed.meta">Edit info</h3><p data-t="ed.meta.d">Title, author, camera, location — losslessly for photos wherever possible.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ details -->
+<section aria-labelledby="det-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker" data-t="det.kicker">Built like a Mac app</span>
+      <h2 id="det-title" data-t="det.title">The details are the point.</h2>
+    </div>
+    <div class="grid-3">
+      <div class="feat reveal"><i class="ico" data-i="shield-check"></i><h3 data-t="det.1.t">100% on your Mac</h3><p data-t="det.1.d">Files never leave your computer. The only network request is the update check, and you can turn it off.</p></div>
+      <div class="feat reveal"><i class="ico" data-i="cpu"></i><h3 data-t="det.2.t">Stays out of your way</h3><p data-t="det.2.d">Heavy jobs wait in a small queue so your Mac stays responsive. The wheel even steps aside while you rename a file.</p></div>
+      <div class="feat reveal"><i class="ico" data-i="undo-2"></i><h3 data-t="det.3.t">Nothing to lose</h3><p data-t="det.3.d">Originals are never overwritten, and every result card can undo the job.</p></div>
+      <div class="feat reveal"><i class="ico" data-i="refresh-ccw"></i><h3 data-t="det.4.t">Updates itself, safely</h3><p data-t="det.4.d">New versions come from GitHub Releases and are checked — Ed25519 signature, SHA-256 and code signature — before installing.</p></div>
+      <div class="feat reveal"><i class="ico" data-i="keyboard"></i><h3 data-t="det.5.t">Keyboard all the way</h3><p data-t="det.5.d">Arrow keys, number keys, type a format name to jump, Return to run. VoiceOver announces every slot.</p></div>
+      <div class="feat reveal"><i class="ico" data-i="code"></i><h3 data-t="det.6.t">Free and open source</h3><p data-t="det.6.d">MIT licensed. Read the code, file an issue, or send a translation fix on GitHub.</p></div>
+    </div>
+    <table class="kbd-table reveal">
+      <thead><tr><th data-t="kb.gesture">Gesture</th><th data-t="kb.does">What it does</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>⌥</kbd></td><td data-t="kb.1">With files selected in Finder: open the wheel for them</td></tr>
+        <tr><td><kbd>⌥</kbd> + click</td><td data-t="kb.2">Open the wheel for the file you clicked</td></tr>
+        <tr><td><kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>⌃</kbd></td><td data-t="kb.3">While dragging files: open the Convert, Tools or Actions ring — drop on a slot</td></tr>
+        <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>1</kbd>–<kbd>0</kbd></td><td data-t="kb.4">Move around the wheel, or run a slot by number</td></tr>
+        <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td data-t="kb.5">Step through a slot’s options on the outer ring</td></tr>
+        <tr><td><kbd>png</kbd> <kbd>mp3</kbd>…</td><td data-t="kb.6">Type a format name to jump straight to it</td></tr>
+        <tr><td><kbd>⌥</kbd>-click · <kbd>⌘C</kbd> · <kbd>⌘S</kbd></td><td data-t="kb.7">Send this one result to the clipboard or to a file</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ languages -->
+<section class="alt" aria-labelledby="lang-title">
+  <div class="wrap">
+    <div class="section-head center reveal">
+      <span class="kicker" data-t="lang.kicker">10 languages</span>
+      <h2 id="lang-title" data-t="lang.title">Speaks your language.</h2>
+      <p data-t="lang.lede">Switch in Settings at any time. Tap a language to see the wheel’s own words.</p>
+    </div>
+    <div class="langs reveal" id="langs"></div>
+    <div class="lang-show reveal" id="lang-show" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ============================================================ install -->
+<section id="install" aria-labelledby="inst-title">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="kicker" data-t="inst.kicker">Install</span>
+      <h2 id="inst-title" data-t="inst.title">Up and running in a minute.</h2>
+    </div>
+    <div class="install">
+      <ol class="reveal">
+        <li><div><b data-t="inst.1.t">Download and drag to Applications</b><span data-t="inst.1.d">Open the DMG and drag Pickverter into the Applications folder.</span></div></li>
+        <li><div><b data-t="inst.2.t">Open it once with “Open Anyway”</b><span data-t="inst.2.d">The app isn’t notarized yet, so macOS asks once: System Settings › Privacy &amp; Security › Open Anyway. Or right-click the app › Open.</span></div></li>
+        <li><div><b data-t="inst.3.t">Allow what the welcome window asks for</b><span data-t="inst.3.d">Accessibility to notice the key tap, Finder control to read your selection, and file access so no prompt interrupts a job.</span></div></li>
+        <li><div><b data-t="inst.4.t">Optional: more formats with ffmpeg</b><span data-t="inst.4.d">Unlocks more video and audio formats. The welcome window has a button for it, or use Homebrew.</span></div></li>
+      </ol>
+      <aside class="dl-card reveal" aria-label="Download">
+        <div class="top"><img src="assets/media/icon-512.png" alt="" width="76" height="76"><div><h3>Pickverter</h3><div class="ver dl-version-long" data-t="dl.latest">Latest release on GitHub</div></div></div>
+        <a class="btn primary dl-link" href="https://github.com/ivLis-Studio/pickverter/releases/latest"><i class="ico" data-i="download"></i><span data-t="cta.download">Download for Mac</span></a>
+        <dl>
+          <dt data-t="dl.req">Requires</dt><dd data-t="dl.req.v">macOS 14 Sonoma or later</dd>
+          <dt data-t="dl.chip">Chips</dt><dd data-t="dl.chip.v">Apple silicon and Intel (universal)</dd>
+          <dt data-t="dl.price">Price</dt><dd data-t="dl.price.v">Free · MIT license</dd>
+          <dt data-t="dl.verify">Verify</dt><dd><a class="dl-sums" href="https://github.com/ivLis-Studio/pickverter/releases/latest" data-t="dl.verify.v">SHA-256 checksums</a></dd>
+        </dl>
+        <div class="brew"><code id="brew-cmd">brew install ffmpeg</code><button type="button" id="copy-brew"><i class="ico" data-i="clipboard"></i><span data-t="copy">Copy</span></button></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ faq -->
+<section class="alt" id="faq" aria-labelledby="faq-title">
+  <div class="wrap">
+    <div class="section-head center reveal"><span class="kicker">FAQ</span><h2 id="faq-title" data-t="faq.title">Good questions.</h2></div>
+    <div class="faq reveal">
+      <details><summary data-t="faq.1.q">Is it really free?</summary><p data-t="faq.1.a">Yes. Pickverter is free and open source under the MIT license — no account, no subscription, no ads.</p></details>
+      <details><summary data-t="faq.2.q">Are my files uploaded anywhere?</summary><p data-t="faq.2.a">No. Every conversion and edit runs on your Mac with Apple’s frameworks and, if you install it, ffmpeg. The only network request checks GitHub for updates, and you can turn it off.</p></details>
+      <details><summary data-t="faq.3.q">Why does it need Accessibility and Finder access?</summary><p data-t="faq.3.a">Accessibility lets Pickverter notice the ⌥ tap and drags anywhere on screen. Finder control lets it read which files you selected. File access lets it read and write files in Desktop, Documents and Downloads without a prompt in the middle of a job.</p></details>
+      <details><summary data-t="faq.4.q">Why does macOS ask for permissions again after an update?</summary><p data-t="faq.4.a">Releases are currently signed ad hoc (there’s no Apple Developer ID yet), so macOS treats each new version as a new app. Pickverter clears the stale entries and reopens the welcome window so you can switch them back on.</p></details>
+      <details><summary data-t="faq.5.q">Do I need ffmpeg?</summary><p data-t="faq.5.a">No — images, PDFs, documents and many audio and video jobs work out of the box with Apple’s frameworks. ffmpeg adds formats like WebM, MKV, FLAC, OGG and Opus, plus extra video tools. Run <code>brew install ffmpeg</code> or use the button in the welcome window.</p></details>
+      <details><summary data-t="faq.6.q">Which Macs are supported?</summary><p data-t="faq.6.a">Any Mac with macOS 14 Sonoma or later — Apple silicon and Intel, from one universal download.</p></details>
+      <details><summary data-t="faq.7.q">How do I uninstall it?</summary><p data-t="faq.7.a">Quit Pickverter from the menu bar and move it from Applications to the Trash. You can also remove it from the Accessibility and Full Disk Access lists in System Settings.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ final -->
+<section class="final" aria-labelledby="final-title">
+  <div class="wrap reveal">
+    <img src="assets/media/icon-512.png" alt="" width="132" height="132">
+    <h2 id="final-title">Pickverter</h2>
+    <p class="by">by <b>ivLis STUDIO</b></p>
+    <div class="ctas">
+      <a class="btn primary dl-link" href="https://github.com/ivLis-Studio/pickverter/releases/latest"><i class="ico" data-i="download"></i><span data-t="cta.download">Download for Mac</span></a>
+      <a class="btn ghost" href="https://github.com/ivLis-Studio/pickverter"><i class="ico" data-i="code"></i><span data-t="cta.source">View source</span></a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 ivLis Studio · <span data-t="foot.mit">MIT License</span></span>
+    <nav aria-label="Footer">
+      <a href="https://github.com/ivLis-Studio/pickverter">GitHub</a>
+      <a href="https://github.com/ivLis-Studio/pickverter/releases" data-t="foot.releases">Releases</a>
+      <a href="https://github.com/ivLis-Studio/pickverter/blob/main/CHANGELOG.md" data-t="foot.changelog">Changelog</a>
+      <a href="https://github.com/ivLis-Studio/pickverter/issues" data-t="foot.issues">Report an issue</a>
+    </nav>
+    <span style="width:100%;font-size:13px;color:var(--faint)" data-t="foot.credits">Icons by Lucide (ISC). Photos in the demo were generated for it. macOS and Finder are trademarks of Apple Inc.</span>
+  </div>
+</footer>
+
+<script src="assets/js/icons.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/wheel.js"></script>
+<script src="assets/js/site.js"></script>
+</body>
+</html>
+

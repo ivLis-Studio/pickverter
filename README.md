@@ -1,32 +1,55 @@
-<p align="center"><img src="docs/icon.png" width="128" alt="Pickverter app icon"></p>
-
-# Pickverter
-
-Pick a file in Finder, tap one key, and finish right next to your cursor — convert, edit, share.
-Everything runs on your Mac; nothing is uploaded.
-
 <p align="center">
-  <img src="docs/screenshots/wheel-tools.png" width="420" alt="The tools ring with the rotate options fanned out">
-  <img src="docs/screenshots/wheel-convert.png" width="420" alt="The convert ring in dark mode">
+  <a href="https://ivlis-studio.github.io/pickverter/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="docs/readme/banner-en-dark.png">
+      <img src="docs/readme/banner-en-light.png" width="880" alt="Pickverter by ivLis STUDIO — pick a file, tap one key, and finish right at your cursor.">
+    </picture>
+  </a>
 </p>
 
-[한국어 README](README.ko.md) · [Download](https://github.com/ivLis-Studio/pickverter/releases/latest) · [Changelog](CHANGELOG.md)
+<p align="center">
+  <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ivLis-Studio/pickverter?style=flat-square&label=release&color=0A84FF"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=downloads&color=1D1D1F"></a>
+  <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/ci.yml?branch=main&style=flat-square&label=CI"></a>
+</p>
 
-## Open the wheel
+<p align="center">
+  <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>Download</b></a> ·
+  <a href="https://ivlis-studio.github.io/pickverter/"><b>Website</b></a> ·
+  <a href="#install">Install</a> ·
+  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="README.ko.md">한국어</a>
+</p>
 
-| Gesture | |
-| --- | --- |
-| Select files in Finder → **tap ⌥** | wheel for the selection |
-| **⌥-click** a file | wheel for that file |
-| While dragging files, **tap ⇧ / ⌘ / ⌃** | Convert / Tools / Actions ring — drop on a slot |
+<!-- The film is a GitHub attachment, so it plays inline here. Source: promo/ -->
+https://github.com/user-attachments/assets/feb93e2b-2654-4059-9b74-615e5dddc990
 
-Inside the wheel: point or use ← → (1–0 runs a slot), ↑ ↓ or move outward for a slot's options, type a format name (png, mp3…) to jump,
-Tab or ⇧ ⌘ ⌃ to switch rings, ↩︎ runs, esc closes. **⌥-click / ⌘C** sends this one result to the clipboard, **⌘S** to a file.
+<p align="center"><sub>35 seconds · sound on · every frame and every sound rendered from code — <a href="promo/">see how</a></sub></p>
 
-**Make it yours** — right-click a slot to hide it, move it earlier or later, pin one of its options to the main ring, or choose
-what a plain click runs. Every slot can also remember the option you used last; the center of the wheel always shows what a click will do.
+## How it works
 
-## What it does
+<table>
+  <tr>
+    <td width="50%" valign="top"><img src="docs/readme/step-en-1.webp" alt="A photo selected in Finder while Option is tapped"><br><b>1 · Pick a file, tap ⌥</b><br>Select files in Finder and tap Option — or ⌥-click a file, or tap ⇧ ⌘ ⌃ while dragging.</td>
+    <td width="50%" valign="top"><img src="docs/readme/step-en-2.webp" alt="The convert ring open at the cursor with PNG highlighted"><br><b>2 · The wheel opens at your cursor</b><br>Point at a slot. The center always shows what a click will do.</td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top"><img src="docs/readme/step-en-3.webp" alt="The rotate slot with its options fanned out on the outer ring"><br><b>3 · Hover to choose how</b><br>Slots with options fan them out — rotate direction, size, quality…</td>
+    <td width="50%" valign="top"><img src="docs/readme/step-en-4.webp" alt="A result card in the corner and the new PNG next to the original"><br><b>4 · Done, right there</b><br>The result lands next to the original or on the clipboard, with a card to show, open, copy or undo.</td>
+  </tr>
+</table>
+
+## Features
+
+<table>
+  <tr>
+    <td valign="top" width="33%"><b>⇧ Convert</b><br><sub>Images · video · audio · PDF · documents · EPUB · Office &amp; iWork · tables · subtitles · archives</sub></td>
+    <td valign="top" width="33%"><b>⌘ Tools</b><br><sub>Remove background · hide faces &amp; text · compress · resize · crop · OCR · rotate · trim · split &amp; join · PDF pages · lock · info</sub></td>
+    <td valign="top" width="33%"><b>⌃ Actions</b><br><sub>AirDrop · Terminal · code editor · copy path · copy file · move · float · share · checksums</sub></td>
+  </tr>
+</table>
 
 - **Convert** images (JPG, PNG, HEIC, WebP, AVIF, TIFF, GIF, BMP, PDF, ICO), video (MP4, MOV, WebM, MKV, GIF, MP3, M4A, WAV),
   audio (MP3, M4A, WAV, FLAC, AIFF, OGG, Opus), PDF (PNG, JPG, TXT, MD, DOCX, RTF, HTML), documents (PDF, DOCX, RTF, TXT, MD, HTML, ODT, **EPUB**),
@@ -39,10 +62,31 @@ what a plain click runs. Every slot can also remember the option you used last; 
 - **Actions** AirDrop, open in Terminal or your code editor, copy path (full, ~, name, shell-quoted), copy, move/copy to recent folders,
   float as an always-on-top preview, share, checksums (SHA-256, SHA-1, MD5)
 
-Results go to a file, the clipboard, both, or the wheel asks every time (Settings › General). Originals are never overwritten.
-Heavy jobs wait in a small queue so your Mac stays responsive; result cards appear in the corner you choose, on the screen you were working on.
+**Results where you want them** — a file, the clipboard, both, or the wheel asks every time (Settings › General).
+⌥-click / ⌘C sends one result to the clipboard, ⌘S to a file. Originals are never overwritten.
 
-<p align="center"><img src="docs/screenshots/pages.png" width="640" alt="Organizing PDF pages"></p>
+**Make it yours** — right-click a slot to hide it, move it, pin one of its options to the main ring, or choose what a plain click runs.
+
+<p align="center">
+  <img src="docs/screenshots/wheel-tools.png" width="400" alt="The tools ring with the rotate options fanned out">
+  <img src="docs/screenshots/cards.png" width="400" alt="Result cards">
+</p>
+
+<details>
+<summary><b>Keyboard</b></summary>
+
+| Gesture | |
+| --- | --- |
+| Select files in Finder → **tap ⌥** | wheel for the selection |
+| **⌥-click** a file | wheel for that file |
+| While dragging files, **tap ⇧ / ⌘ / ⌃** | Convert / Tools / Actions ring — drop on a slot |
+| ← → · 1–0 | move around the wheel · run a slot by number |
+| ↑ ↓ or move outward | a slot's options on the outer ring |
+| type `png`, `mp3`… | jump to a format |
+| Tab or ⇧ ⌘ ⌃ | switch rings |
+| ↩︎ · esc | run · close |
+
+</details>
 
 ## Install
 
@@ -108,6 +152,9 @@ and for notarization `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 
 ## Project layout
 
+- `site/` the website at [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/) (GitHub Pages)
+- `promo/` the launch film, rendered from code — `promo/make.sh`
+
 - `Input/` event tap (modifier taps, ⌥-click, drags), Finder selection
 - `Wheel/` the wheel panel, outer option ring, drop target, rendering
 - `Core/` option model, catalog per ring, wheel customization, work queue, localization
@@ -117,5 +164,6 @@ and for notarization `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) © ivLis Studio
+
 
