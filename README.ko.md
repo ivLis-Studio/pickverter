@@ -12,21 +12,21 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="다운로드" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT 라이선스" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
-  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/ci.yml?branch=main&style=flat-square&label=CI"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=CI"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>다운로드</b></a> ·
   <a href="https://ivlis-studio.github.io/pickverter/?lang=ko"><b>웹사이트</b></a> ·
   <a href="#설치">설치</a> ·
-  <a href="CHANGELOG.md">변경 내역</a> ·
+  <a href="macos/CHANGELOG.md">변경 내역</a> ·
   <a href="README.md">English</a>
 </p>
 
 <!-- 영상은 GitHub 첨부 파일이라 README에서 바로 재생돼요. 원본: promo/ -->
 https://github.com/user-attachments/assets/6fce639f-3d08-496d-bed4-327f38d73594
 
-<p align="center"><sub>35초 · 소리 켜고 보세요 · 모든 장면과 소리를 코드로 만들었어요 — <a href="promo/">만든 방법</a></sub></p>
+<p align="center"><sub>35초 · 소리를 켜고 보세요</sub></p>
 
 ## 사용법
 
@@ -113,35 +113,47 @@ Pickverter가 예전 항목을 정리하고 첫 화면을 다시 열어 바로 �
 ## 언어
 
 English · 한국어 · 日本語 · 简体中文 · 繁體中文 · Español · Français · Deutsch · Русский · Português (Brasil).
-설정 › 일반에서 언제든 바꿀 수 있어요. 문구는 모두 `Resources/i18n.json` 한 파일에 있어요. 번역 수정 환영합니다.
+설정 › 일반에서 언제든 바꿀 수 있어요. 문구는 모두 `macos/Resources/i18n.json` 한 파일에 있어요. 번역 수정 환영합니다.
 
 ## 직접 빌드하기
 
+Mac 앱은 `macos/` 폴더에 있어요.
+
 ```sh
+cd macos
 scripts/build-app.sh            # release 빌드 → build/Pickverter.app
 scripts/build-app.sh debug --run
 scripts/test.sh                 # 번역 검사, 휠 자체 테스트, 샘플 파일로 엔진 약 60가지 실행
 ```
 
 Xcode 프로젝트 없이 `swiftc`로 바로 빌드해요. Command Line Tools만 있으면 SwiftUI 매크로가 필요 없는 SDK를 자동으로 골라요.
+Xcode나 SwiftPM을 쓴다면 `macos/Package.swift`를 여세요.
 
 로컬 빌드는 애드혹 서명이라, 다시 빌드한 뒤에는 손쉬운 사용 목록에서 Pickverter를 지우고 다시 추가해야 할 수 있어요.
 고정 인증서가 있다면 `PICKVERTER_SIGN_IDENTITY`로 서명하세요.
 
-개발용 명령: `build/Pickverter.app/Contents/MacOS/Pickverter cli …` — `list`, `run <option-id> <파일>`, `snapshot`, `editor-snapshot`,
-`selftest`, `fixtures`, `inspect`. 편집 창의 답은 환경 변수로 넣을 수 있어서(`PICKVERTER_EDITOR_CROP='{"rect":…}'`) 테스트는 창 없이 돌아가요.
+개발용 명령(`macos/`에서 실행): `build/Pickverter.app/Contents/MacOS/Pickverter cli …` — `list`, `run <option-id> <파일>`, `snapshot`,
+`editor-snapshot`, `selftest`, `fixtures`, `inspect`. 편집 창의 답은 환경 변수로 넣을 수 있어서(`PICKVERTER_EDITOR_CROP='{"rect":…}'`) 테스트는 창 없이 돌아가요.
 
 ## 릴리스하기
 
-1. `CHANGELOG.md`에 `## [x.y.z]` 섹션을 추가하세요. 릴리스 노트와 업데이트 창의 내용이 돼요.
-2. 태그를 푸시하세요: `git tag vx.y.z && git push origin vx.y.z`. **Release** 워크플로가 테스트 → 유니버설 빌드 → DMG·ZIP·서명된 `update.json` 생성 → GitHub 릴리스 게시까지 해요.
-   (로컬에서는 `scripts/release.sh x.y.z --publish`)
+1. `macos/CHANGELOG.md`에 `## [x.y.z]` 섹션을 추가하세요. 릴리스 노트와 업데이트 창의 내용이 돼요.
+2. 태그를 푸시하세요: `git tag vx.y.z && git push origin vx.y.z`. **macOS Release** 워크플로가 테스트 → 유니버설 빌드 → DMG·ZIP·서명된 `update.json` 생성 → GitHub 릴리스 게시까지 해요.
+   (로컬에서는 `macos/scripts/release.sh x.y.z --publish`)
 
-업데이트 서명 키는 저장소 시크릿 `PICKVERTER_UPDATE_KEY`이고, 공개 키는 `Resources/Info.plist`의 `PVUpdatePublicKey`예요.
+업데이트 서명 키는 저장소 시크릿 `PICKVERTER_UPDATE_KEY`이고, 공개 키는 `macos/Resources/Info.plist`의 `PVUpdatePublicKey`예요.
 이 키로 서명한 업데이트만 설치되니 꼭 백업해 두세요. Developer ID 빌드용 선택 시크릿: `MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`,
 공증용: `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 
-## 프로젝트 구성
+## 저장소 구성
+
+- [`macos/`](macos) — Mac 앱: Swift 소스, 리소스, 빌드·테스트·릴리스 스크립트, 변경 내역
+- [`windows/`](windows) — Windows 앱 (준비 중)
+- [`website/`](website) — 소개 사이트 [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/?lang=ko). GitHub Pages가 `website/public/`을 게시해요
+- [`promo/`](promo) — 소개 영상과 README 이미지
+- [`docs/`](docs) — 이 README에 쓰는 이미지
+
+`macos/Sources/Pickverter/` 안에는:
 
 - `Input/` 이벤트 탭(보조 키 탭, ⌥-클릭, 드래그), Finder 선택 읽기
 - `Wheel/` 휠 패널, 바깥 옵션 링, 드롭 대상, 렌더링
@@ -149,11 +161,7 @@ Xcode 프로젝트 없이 `swiftc`로 바로 빌드해요. Command Line Tools만
 - `Engines/` 이미지(ImageIO, Vision), 미디어(ffmpeg, AVFoundation), PDF(PDFKit), 문서, EPUB, 오피스/iWork, 데이터, 압축
 - `UI/` 결과 카드, 편집 창, 설정, 메뉴 막대, 첫 화면, 업데이트 창
 - `App/` 앱 생명주기, 환경설정, 업데이터, CLI
-- `site/` 소개 사이트 [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/?lang=ko) (GitHub Pages)
-- `promo/` 코드로 렌더링하는 소개 영상 — `promo/make.sh`
 
 ## 라이선스
 
 [MIT](LICENSE) © ivLis Studio
-
-

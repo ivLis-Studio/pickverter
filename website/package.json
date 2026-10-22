@@ -1,0 +1,12 @@
+{
+  "name": "pickverter-website",
+  "private": true,
+  "description": "Tools for the Pickverter website. The site in public/ has no build step.",
+  "scripts": {
+    "serve": "python3 -m http.server 8765 --bind 127.0.0.1 --directory public",
+    "test": "node tools/smoke-test.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.64.1"
+  }
+}

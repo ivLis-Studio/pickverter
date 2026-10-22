@@ -12,21 +12,21 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=downloads&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
-  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/ci.yml?branch=main&style=flat-square&label=CI"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=CI"></a>
 </p>
 
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>Download</b></a> ·
   <a href="https://ivlis-studio.github.io/pickverter/"><b>Website</b></a> ·
   <a href="#install">Install</a> ·
-  <a href="CHANGELOG.md">Changelog</a> ·
+  <a href="macos/CHANGELOG.md">Changelog</a> ·
   <a href="README.ko.md">한국어</a>
 </p>
 
 <!-- The film is a GitHub attachment, so it plays inline here. Source: promo/ -->
 https://github.com/user-attachments/assets/feb93e2b-2654-4059-9b74-615e5dddc990
 
-<p align="center"><sub>35 seconds · sound on · every frame and every sound rendered from code — <a href="promo/">see how</a></sub></p>
+<p align="center"><sub>35 seconds · turn the sound on</sub></p>
 
 ## How it works
 
@@ -118,42 +118,50 @@ Files never leave your Mac. The only network request is the update check to gith
 ## Languages
 
 English · 한국어 · 日本語 · 简体中文 · 繁體中文 · Español · Français · Deutsch · Русский · Português (Brasil).
-Switch any time in Settings › General. All strings live in `Resources/i18n.json`; corrections are welcome.
+Switch any time in Settings › General. All strings live in `macos/Resources/i18n.json`; corrections are welcome.
 
 ## Build from source
 
+The Mac app lives in `macos/`:
+
 ```sh
+cd macos
 scripts/build-app.sh            # release build → build/Pickverter.app
 scripts/build-app.sh debug --run
 scripts/test.sh                 # i18n check, wheel self-test, ~60 engine cases on generated fixtures
 ```
 
 The build calls `swiftc` directly (no Xcode project needed). With only the Command Line Tools installed it picks an SDK that works without
-SwiftUI macros. `Package.swift` is there for Xcode/SwiftPM users.
+SwiftUI macros. `macos/Package.swift` is there for Xcode/SwiftPM users.
 
 Locally built apps are signed ad hoc, so after a rebuild you may need to remove Pickverter from the Accessibility list and add it again.
 Set `PICKVERTER_SIGN_IDENTITY` to sign with a stable certificate.
 
-Developer commands: `build/Pickverter.app/Contents/MacOS/Pickverter cli …` — `list`, `run <option-id> <files>`, `snapshot`, `editor-snapshot`,
-`selftest`, `fixtures`, `inspect`. Editors can be answered from the environment (`PICKVERTER_EDITOR_CROP='{"rect":…}'`),
+Developer commands (from `macos/`): `build/Pickverter.app/Contents/MacOS/Pickverter cli …` — `list`, `run <option-id> <files>`, `snapshot`,
+`editor-snapshot`, `selftest`, `fixtures`, `inspect`. Editors can be answered from the environment (`PICKVERTER_EDITOR_CROP='{"rect":…}'`),
 which is how the tests run them without windows. `PICKVERTER_LANG=ja` picks a language, `PICKVERTER_DEBUG=1` logs gestures.
 
 ## Releasing
 
-1. Add a `## [x.y.z]` section to `CHANGELOG.md` — it becomes the release notes and the text in the update window.
-2. Tag and push: `git tag vx.y.z && git push origin vx.y.z`. The **Release** workflow tests, builds a universal app,
+1. Add a `## [x.y.z]` section to `macos/CHANGELOG.md` — it becomes the release notes and the text in the update window.
+2. Tag and push: `git tag vx.y.z && git push origin vx.y.z`. The **macOS Release** workflow tests, builds a universal app,
    creates the DMG, the ZIP and the signed `update.json`, and publishes the GitHub release.
-   (Locally: `scripts/release.sh x.y.z --publish`.)
+   (Locally: `macos/scripts/release.sh x.y.z --publish`.)
 
 The update signing key is the `PICKVERTER_UPDATE_KEY` repository secret (its public half is `PVUpdatePublicKey` in
-`Resources/Info.plist`). Keep a backup: installed copies only accept updates signed with it.
+`macos/Resources/Info.plist`). Keep a backup: installed copies only accept updates signed with it.
 Optional secrets for a Developer ID build: `MACOS_CERT_P12`, `MACOS_CERT_PASSWORD`, `MACOS_SIGN_IDENTITY`,
 and for notarization `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 
-## Project layout
+## Repository layout
 
-- `site/` the website at [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/) (GitHub Pages)
-- `promo/` the launch film, rendered from code — `promo/make.sh`
+- [`macos/`](macos) — the Mac app: Swift sources, resources, build/test/release scripts and the changelog
+- [`windows/`](windows) — the Windows app (in progress)
+- [`website/`](website) — [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/); GitHub Pages publishes `website/public/`
+- [`promo/`](promo) — the launch film and the README artwork
+- [`docs/`](docs) — images used in this README
+
+Inside `macos/Sources/Pickverter/`:
 
 - `Input/` event tap (modifier taps, ⌥-click, drags), Finder selection
 - `Wheel/` the wheel panel, outer option ring, drop target, rendering
@@ -165,5 +173,3 @@ and for notarization `APPLE_ID`, `APPLE_TEAM_ID`, `APPLE_APP_PASSWORD`.
 ## License
 
 [MIT](LICENSE) © ivLis Studio
-
-

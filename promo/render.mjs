@@ -19,7 +19,7 @@ const dpr = +(opt.dpr || 1);
 const fps = +(opt.fps || 60);
 
 // The app's own strings, so the wheel and cards read exactly like Pickverter.
-const i18n = JSON.parse(fs.readFileSync(path.join(here, "../Resources/i18n.json"), "utf8"));
+const i18n = JSON.parse(fs.readFileSync(path.join(here, "../macos/Resources/i18n.json"), "utf8"));
 const i18nJS = "window.I18N = " + JSON.stringify(i18n) + ";\n";
 const i18nFile = path.join(here, "src/i18n-data.js");
 // Chunk processes start together: only write when it changed, so no page ever reads a half-written file.

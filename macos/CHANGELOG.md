@@ -6,9 +6,7 @@ The section for a version becomes the release notes shown in the in-app updater.
 ## [Unreleased]
 
 - **New icon** — the app icon, menu bar glyph and in-app mark now share one design: the wheel with its picked slot and the pointer that picked it.
-- **Promo video** — `promo/` renders the launch video (4K, sound included) from code; see `promo/README.md`.
-- **Website** — [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/) in English and Korean, with a live wheel you can try, the film, editors and install guide. Published from `site/` by GitHub Pages.
-- **README** — banner (light and dark), badges, the film playing inline and a four-step walkthrough.
+- **Website** — Pickverter now has a home at [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/): try the wheel right in your browser, watch the film and find install help, in English and Korean.
 
 ## [0.1.1] - 2026-10-22
 

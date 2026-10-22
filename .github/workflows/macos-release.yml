@@ -1,4 +1,4 @@
-name: Release
+name: macOS Release
 
 on:
   push:
@@ -11,6 +11,10 @@ on:
 
 permissions:
   contents: write
+
+defaults:
+  run:
+    working-directory: macos
 
 jobs:
   release:
@@ -75,6 +79,6 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: pickverter-${{ steps.version.outputs.version }}
-          path: dist/
+          path: macos/dist/
           if-no-files-found: ignore
 

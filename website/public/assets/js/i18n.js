@@ -1,5 +1,5 @@
 // Site copy. English lives in index.html; other languages override by data-t key.
-// APP holds the app's own strings (Resources/i18n.json) for the wheel demo and the language showcase.
+// APP holds the app's own strings (macos/Resources/i18n.json) for the wheel demo and the language showcase.
 window.SITE_I18N = {
  "ko": {
   "skip": "본문으로 건너뛰기",
@@ -20,8 +20,7 @@ window.SITE_I18N = {
   "fine.local": "어디에도 업로드하지 않아요",
   "wheel.hint": "직접 해 보세요: 칸에 커서를 올리고 · <kbd>⇧</kbd> <kbd>⌘</kbd> <kbd>⌃</kbd>로 링 전환",
   "film.title": "Pickverter 소개 영상",
-  "film.meta": "35초 · 소리 켜고 보세요 · 모든 장면과 소리를 코드로 만들었어요",
-  "film.source": "어떻게 만들었는지 보기",
+ "film.meta": "35초 · 소리를 켜고 보세요",
   "how.kicker": "사용법",
   "how.title": "세 번이면 끝. 창을 뒤질 필요가 없어요.",
   "how.lede": "앱을 열 필요도, 대화상자를 채울 필요도 없어요. Pickverter는 메뉴 막대에서 기다리다가 필요할 때만 나타나요.",
