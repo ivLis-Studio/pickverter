@@ -92,6 +92,7 @@ if [ "$PUBLISH" = "1" ]; then
   PRERELEASE=()
   [[ "$VERSION" == *-* ]] && PRERELEASE=(--prerelease)
   gh release create "$TAG" "$DMG" "$ZIP" "$OUT/update.json" "$OUT/SHA256SUMS.txt" \
-    --repo "$REPO" --title "Pickverter $VERSION" --notes-file "$BODY" "${DRAFT[@]}" "${PRERELEASE[@]}"
+    --repo "$REPO" --title "Pickverter $VERSION" --notes-file "$BODY" \
+    ${DRAFT[@]+"${DRAFT[@]}"} ${PRERELEASE[@]+"${PRERELEASE[@]}"}
   echo "✓ published $TAG"
 fi
