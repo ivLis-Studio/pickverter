@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/ivLis-Studio/pickverter?style=flat-square&label=release&color=0A84FF"></a>
-  <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=downloads&color=1D1D1F"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=downloads&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/ci.yml?branch=main&style=flat-square&label=CI"></a>

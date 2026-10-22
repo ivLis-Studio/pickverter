@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><img alt="최신 버전" src="https://img.shields.io/github/v/release/ivLis-Studio/pickverter?style=flat-square&label=%EC%B5%9C%EC%8B%A0&color=0A84FF"></a>
-  <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="다운로드" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=1D1D1F"></a>
+  <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="다운로드" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <a href="LICENSE"><img alt="MIT 라이선스" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/ci.yml?branch=main&style=flat-square&label=CI"></a>
