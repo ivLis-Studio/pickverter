@@ -3,6 +3,11 @@
 All notable changes to Pickverter. Versions follow [Semantic Versioning](https://semver.org).
 The section for a version becomes the release notes shown in the in-app updater.
 
+## [Unreleased]
+
+- **New icon** — the app icon, menu bar glyph and in-app mark now share one design: the wheel with its picked slot and the pointer that picked it.
+- **Promo video** — `promo/` renders the launch video (4K, sound included) from code; see `promo/README.md`.
+
 ## [0.1.1] - 2026-10-22
 
 - **File access up front** — the welcome window and Settings › Integrations now offer Full Disk Access (recommended) or just your Desktop, Documents, Downloads and iCloud Drive, so macOS no longer interrupts a conversion to ask. Existing users see this step once.

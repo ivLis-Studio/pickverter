@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="Pickverter app icon"></p>
+
 # Pickverter
 
 Pick a file in Finder, tap one key, and finish right next to your cursor — convert, edit, share.

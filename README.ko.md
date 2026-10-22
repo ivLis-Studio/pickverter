@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/icon.png" width="128" alt="Pickverter 앱 아이콘"></p>
+
 # Pickverter
 
 Finder에서 파일을 고르고 키 하나만 누르면, 커서 바로 옆에서 변환·편집·공유를 끝내는 macOS 앱입니다.

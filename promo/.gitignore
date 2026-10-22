@@ -1,0 +1,8 @@
+node_modules/
+.venv/
+out/
+src/i18n-data.js
+# Exported from macOS on each machine (Apple's symbols and file icons aren't redistributed).
+assets/symbols/
+assets/icons/
+
