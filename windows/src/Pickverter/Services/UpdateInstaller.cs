@@ -39,7 +39,8 @@ internal sealed class UpdateInstaller : IUpdateInstaller
 
     public void InstallAndRelaunch(string stagedExecutable)
     {
-        var info = new ProcessStartInfo(stagedExecutable) { UseShellExecute = false };
+        // Started from its own folder: a process whose current directory is inside the install folder keeps it from moving.
+        var info = new ProcessStartInfo(stagedExecutable) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(stagedExecutable)! };
         info.ArgumentList.Add("--apply-update");
         info.ArgumentList.Add(InstallFolder);
         info.ArgumentList.Add(Environment.ProcessId.ToString(CultureInfo.InvariantCulture));

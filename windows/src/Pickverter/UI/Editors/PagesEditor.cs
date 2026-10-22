@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Pickverter.Services;
 
 namespace Pickverter.UI.Editors;
 
@@ -66,11 +67,12 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
     {
         for (var file = 0; file < files.Count; file++)
         {
+            var path = files[file];
             var count = await Task.Run(() =>
             {
                 try
                 {
-                    return PdfEngine.PageCount(files[file]);
+                    return PdfEngine.PageCount(path);
                 }
                 catch (Exception)
                 {
@@ -83,26 +85,48 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
         var scratch = FileSystem.TempFolder("pages");
         try
         {
-            foreach (var page in pages.ToList())
+            // One open document per file: reading it again for every page is slow with long PDFs.
+            for (var file = 0; file < files.Count && !closed; file++)
             {
-                if (closed) return;
-                var png = Path.Combine(scratch, $"{page.File}-{page.Index}.png");
+                var wanted = pages.Where(page => page.File == file).Select(page => page.Index).Distinct().ToList();
+                if (wanted.Count == 0) continue;
+                PdfSession session;
                 try
                 {
-                    await Platform.Pdf.RenderPageAsync(files[page.File], page.Index, 36, png, CancellationToken.None);
-                    thumbnails[(page.File, page.Index)] = Previews.Decode(await File.ReadAllBytesAsync(png));
-                    Refresh(page);
+                    session = await PdfSession.OpenAsync(files[file]);
                 }
                 catch (Exception error)
                 {
                     LastError = error.GetType().Name + ": " + error.Message;
-                    Debug.Log("page thumbnail: " + error.Message);
+                    Debug.Log("page thumbnails: " + error.Message);
+                    continue;
+                }
+                await using (session)
+                {
+                    foreach (var index in wanted)
+                    {
+                        if (closed) return;
+                        var png = Path.Combine(scratch, $"{file}-{index}.png");
+                        try
+                        {
+                            await session.RenderAsync(index, 36, png, CancellationToken.None);
+                            thumbnails[(file, index)] = Previews.Decode(await File.ReadAllBytesAsync(png));
+                            foreach (var page in pages.Where(page => page.File == file && page.Index == index).ToList()) Refresh(page);
+                        }
+                        catch (Exception error)
+                        {
+                            LastError = error.GetType().Name + ": " + error.Message;
+                            Debug.Log("page thumbnail: " + error.Message);
+                        }
+                    }
                 }
             }
         }
         finally
         {
             FileSystem.TryDelete(scratch);
+            // Windows can't close a PDF document; collecting now releases them instead of whenever memory runs low.
+            GC.Collect();
         }
     }
 

@@ -30,8 +30,13 @@ $FileVersion = ($Version -split '-')[0] + "." + ($Build % 65535)
 $NewLine = [Environment]::NewLine
 
 $iscc = (Get-Command iscc -ErrorAction SilentlyContinue)?.Source
-if (-not $iscc) { $iscc = Join-Path ([Environment]::GetFolderPath("ProgramFilesX86")) "Inno Setup 6\ISCC.exe" }
-if (-not $SkipInstaller -and -not (Test-Path $iscc)) { throw "Inno Setup 6 (ISCC.exe) not found" }
+if (-not $iscc) {
+    $folders = @([Environment]::GetFolderPath("ProgramFilesX86"), [Environment]::GetFolderPath("ProgramFiles"),
+        (Join-Path $env:LOCALAPPDATA "Programs")) | Where-Object { $_ }
+    $iscc = Get-ChildItem -Path ($folders | ForEach-Object { Join-Path $_ "Inno Setup *\ISCC.exe" }) -ErrorAction SilentlyContinue |
+        Sort-Object FullName -Descending | Select-Object -First 1 -ExpandProperty FullName
+}
+if (-not $SkipInstaller -and -not $iscc) { throw "Inno Setup (ISCC.exe) not found: winget install JRSoftware.InnoSetup" }
 
 $zips = [ordered]@{}
 foreach ($arch in $Architectures) {
@@ -71,7 +76,10 @@ foreach ($arch in $zips.Keys) {
 }
 & $cli @arguments | Out-Host
 if ($LASTEXITCODE) { throw "update-manifest failed" }
-& $cli cli update-verify (Join-Path $Out "update-windows.json") @($zips.Values) | Out-Host
+# A release must be signed with the key installed copies trust; a dry run may use any key.
+$verify = @("cli", "update-verify", (Join-Path $Out "update-windows.json")) + @($zips.Values)
+if ($Publish) { $verify += "--trusted" }
+& $cli @verify | Out-Host
 if ($LASTEXITCODE) { throw "update-verify failed" }
 
 $assets = @(Get-ChildItem $Out -File | Where-Object { $_.Name -match '\.(zip|exe)$' })

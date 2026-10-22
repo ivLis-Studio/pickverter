@@ -21,14 +21,16 @@ internal static class CommandLine
           cli fixtures <folder>                     sample files for every engine
           cli selftest [folder]                     exercises the Windows services and engines
           cli glyphs                                every symbol used by the wheel has an icon
-          cli snapshot <folder> [--lang en,ko|all] [--theme light,dark]
+          cli snapshot <folder> [--lang en,ko|all] [--theme light,dark] [--only wheels,cards,…]
           cli screenshot <folder>                   real windows on the desktop (shadows, transparency)
+          cli e2e <folder>                          File Explorer, Alt, the wheel and keys on a real desktop
           cli inspect                               File Explorer selection and window under the pointer
           cli update-keygen <private-key-file>
           cli update-pubkey [private-key-file]
           cli update-manifest --version V --zip-x64 Z --url-x64 U [--zip-arm64 Z --url-arm64 U]
                               [--notes file] [--notes-url U] [--build B] [--min-os 10.0.19041]
-          cli update-verify <manifest> <zip-x64> [zip-arm64]
+          cli update-verify <manifest> <zip-x64> [zip-arm64] [--trusted]
+                              --trusted: also fail unless the app's built-in key accepts the signatures
           cli update-check
         """;
 
@@ -135,7 +137,14 @@ internal static class CommandLine
         Platform.Media = new WinMedia();
         Platform.Codecs = new WinCodecs();
         Platform.Clipboard = new WinClipboard();
-        return body();
+        try
+        {
+            return body();
+        }
+        finally
+        {
+            NativeObjects.ReleaseUnused();
+        }
     }
 
     /// Everything, with a WPF application running the dispatcher (snapshots, self test, screenshots).
@@ -169,6 +178,7 @@ internal static class CommandLine
             }
         });
         var result = app.Run();
+        NativeObjects.ReleaseUnused();
         Console.WriteLine($"▸ exit {code} (application {result})");
         if (code < 0) code = 70;
         Console.Out.Flush();
@@ -358,11 +368,15 @@ internal static class CommandLine
         var json = JsonSerializer.Serialize(manifest, UpdateManifest.Json);
         if (options.TryGetValue("out", out var target)) File.WriteAllText(target, json + "\n", new UTF8Encoding(false));
         else Console.WriteLine(json);
+        if (!Convert.FromBase64String(UpdateSigning.PublicKey(key)).AsSpan().SequenceEqual(Updater.Shared.PublicKey))
+            Console.Error.WriteLine("warning: this key does not match PickverterUpdateKey in the app; installed copies will refuse this update");
         return 0;
     }
 
     private static int UpdateVerify(string[] args)
     {
+        var trustedOnly = args.Contains("--trusted");
+        args = args.Where(arg => !arg.StartsWith("--", StringComparison.Ordinal)).ToArray();
         if (args.Length < 2)
         {
             Console.WriteLine(Usage);
@@ -370,9 +384,16 @@ internal static class CommandLine
         }
         var manifest = JsonSerializer.Deserialize<UpdateManifest>(File.ReadAllText(args[0]), UpdateManifest.Json)
             ?? throw new InvalidOperationException("empty manifest");
-        var key = Updater.Shared.PublicKey;
+        var trusted = Updater.Shared.PublicKey;
+        var key = trusted;
         if (Environment.GetEnvironmentVariable("PICKVERTER_UPDATE_KEY") is { Length: > 0 } privateKey)
             key = Convert.FromBase64String(UpdateSigning.PublicKey(privateKey));
+        var keyIsTrusted = key.AsSpan().SequenceEqual(trusted);
+        if (!keyIsTrusted)
+        {
+            Console.Error.WriteLine("warning: PICKVERTER_UPDATE_KEY is not the key the app trusts; checking against it instead");
+            if (trustedOnly) return 1;
+        }
         var failures = 0;
         foreach (var zip in args[1..])
         {
