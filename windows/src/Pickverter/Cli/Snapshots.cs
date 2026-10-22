@@ -45,6 +45,7 @@ internal static class Snapshots
             }
         }
         InputMonitor.Shared.Stop();
+        Console.WriteLine("▸ snapshots done");
         return 0;
     }
 
@@ -201,6 +202,7 @@ internal static class Snapshots
         await Take(new TrimEditor(file("tone.wav"), 4, false), Path.Combine(output, "editor-trim.png"), 720, 360);
         var pages = new PagesEditor([file("report.pdf")]);
         await Task.Delay(3000);
+        if (pages.ThumbnailCount == 0) Console.WriteLine("  page thumbnails: none · " + (pages.LastError ?? "no error"));
         await Take(pages, Path.Combine(output, "editor-pages.png"), 1000, 720);
         var snapshot = await MetadataKit.Read(photo);
         await Take(new MetadataEditor(photo, snapshot), Path.Combine(output, "editor-metadata.png"), 600, 640);

@@ -169,8 +169,9 @@ internal static class CommandLine
             }
         });
         var result = app.Run();
-        if (code != 0) Console.Error.WriteLine($"exit code {code} (application {result})");
+        Console.WriteLine($"▸ exit {code} (application {result})");
         if (code < 0) code = 70;
+        Console.Out.Flush();
         return code;
     }
 

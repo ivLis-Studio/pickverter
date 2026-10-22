@@ -53,8 +53,11 @@ jobs:
           exit $LASTEXITCODE
 
       - name: Snapshots
+        env:
+          PICKVERTER_DEBUG: "1"
         run: |
-          & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli snapshot "$env:RUNNER_TEMP\snapshots" --lang en,ko,ja,zh-Hans,de,ru --theme light,dark | Out-Host
+          & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli snapshot "$env:RUNNER_TEMP\snapshots" --lang en,ko,ja,zh-Hans,de,ru --theme light,dark 2>&1 | Out-Host
+          "snapshot exit code: {0} (0x{0:X8})" -f $LASTEXITCODE | Out-Host
           exit $LASTEXITCODE
 
       - name: Screenshots

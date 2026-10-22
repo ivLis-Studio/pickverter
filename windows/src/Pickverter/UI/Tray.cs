@@ -197,14 +197,20 @@ internal sealed class TrayFlyout : Window
         };
         Theme.Changed += Rebuild;
         Loc.Changed += Rebuild;
-        Preferences.Shared.PropertyChanged += (_, _) =>
+        Preferences.Shared.PropertyChanged += OnChanged;
+        Updater.Shared.PropertyChanged += OnChanged;
+        Closed += (_, _) =>
         {
-            if (IsVisible) Rebuild();
+            Theme.Changed -= Rebuild;
+            Loc.Changed -= Rebuild;
+            Preferences.Shared.PropertyChanged -= OnChanged;
+            Updater.Shared.PropertyChanged -= OnChanged;
         };
-        Updater.Shared.PropertyChanged += (_, _) =>
-        {
-            if (IsVisible) Rebuild();
-        };
+    }
+
+    private void OnChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
+    {
+        if (IsVisible) Rebuild();
     }
 
     public void Rebuild()
@@ -275,7 +281,8 @@ internal sealed class TrayFlyout : Window
         header.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
         header.Children.Add(new Image { Source = BrandArt.Glyph(), Width = 30, Height = 30, Margin = new Thickness(0, 0, 10, 0) });
         var status = !InputMonitor.Shared.IsRunning ? L("menu.status.hook") : prefs.Enabled ? L("menu.status.ready") : L("menu.status.paused");
-        var title = Ui.Column(1, Ui.Text("Pickverter", 14, FontWeights.SemiBold), Ui.Text(status, 12, brush: Theme.TextSecondary));
+        var title = Ui.Column(1, Ui.Text("Pickverter", 14, FontWeights.SemiBold), Ui.Text(status, 12, brush: Theme.TextSecondary, wrap: true));
+        title.Margin = new Thickness(0, 0, 10, 0);
         Grid.SetColumn(title, 1);
         header.Children.Add(title);
         var toggle = Ui.Toggle(prefs.Enabled, value => prefs.Enabled = value, L("set.enable"));

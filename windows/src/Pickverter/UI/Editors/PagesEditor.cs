@@ -31,6 +31,10 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
     private readonly bool slides;
     private bool closed;
 
+    /// Snapshots and diagnostics.
+    internal int ThumbnailCount => thumbnails.Count;
+    internal string? LastError { get; private set; }
+
     public PagesEditor(IReadOnlyList<string> files)
     {
         this.files = files;
@@ -91,6 +95,7 @@ internal sealed class PagesEditor : EditorWindow<PdfArrangement>
                 }
                 catch (Exception error)
                 {
+                    LastError = error.GetType().Name + ": " + error.Message;
                     Debug.Log("page thumbnail: " + error.Message);
                 }
             }
