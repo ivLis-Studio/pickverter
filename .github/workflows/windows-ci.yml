@@ -64,6 +64,47 @@ jobs:
           & $exe cli snapshot "$env:RUNNER_TEMP\sections\all-no-hooks" 2>&1 | Out-Null
           "{0,-11} exit 0x{1:X8}" -f "no hooks", $LASTEXITCODE | Out-Host
 
+      - name: Exit probes
+        continue-on-error: true
+        run: |
+          $exe = (Resolve-Path "src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe").Path
+          $failing = @()
+          foreach ($probe in "none", "pdf-1", "pdf-3", "pdf-3-pool", "count-ui", "count-pool", "decode", "editor") {
+            & $exe cli probe $probe 2>&1 | Out-Null
+            $code = $LASTEXITCODE
+            "{0,-11} exit 0x{1:X8}" -f $probe, $code | Out-Host
+            if ($code -ne 0) { $failing += $probe }
+          }
+          $env:PICKVERTER_NO_RELEASE = "1"
+          foreach ($probe in "pdf-3", "editor") {
+            & $exe cli probe $probe 2>&1 | Out-Null
+            "{0,-11} exit 0x{1:X8} without releasing first" -f $probe, $LASTEXITCODE | Out-Host
+          }
+          Remove-Item Env:PICKVERTER_NO_RELEASE
+          $cdb = @("${env:ProgramFiles(x86)}\Windows Kits\10\Debuggers\x64\cdb.exe", "$env:ProgramFiles\Windows Kits\10\Debuggers\x64\cdb.exe") |
+            Where-Object { Test-Path $_ } | Select-Object -First 1
+          if (-not $cdb) {
+            "cdb not found"
+            Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10" -ErrorAction SilentlyContinue | Out-Host
+            exit 0
+          }
+          $target = if ($failing.Count) { $failing[0] } else { "editor" }
+          $commands = Join-Path $env:RUNNER_TEMP "cdb-commands.txt"
+          @(
+            ".symfix+ $env:RUNNER_TEMP\symbols",
+            'sxd -c2 ".echo ==== second chance av; kn 60; q" av',
+            'sxe -c ".echo ==== first chance c000000d; kn 60; .echo ==== threads; ~*kn 25; gn" -c2 ".echo ==== second chance c000000d; kn 60; q" c000000d',
+            'bu /1 ntdll!RtlExitUserProcess ".echo ==== RtlExitUserProcess; r rcx; kn 30; .echo ==== modules; lm; gc"',
+            'bu ntdll!NtTerminateProcess ".echo ==== NtTerminateProcess; r rcx, rdx; kn 50; gc"',
+            "g",
+            "q"
+          ) | Set-Content $commands -Encoding ascii
+          $log = Join-Path $env:RUNNER_TEMP "cdb.log"
+          "▸ cdb $target"
+          $process = Start-Process $cdb -ArgumentList @("-G", "-cf", "`"$commands`"", "`"$exe`"", "cli", "probe", $target) -NoNewWindow -PassThru -RedirectStandardOutput $log
+          if (-not $process.WaitForExit(300000)) { $process.Kill(); "cdb timed out" }
+          Get-Content $log | Select-String -NotMatch '^(ModLoad|\*\*\* WARNING)' | Select-Object -Last 400 | Out-Host
+
       - name: Snapshots
         env:
           PICKVERTER_DEBUG: "1"
@@ -73,18 +114,21 @@ jobs:
           exit $LASTEXITCODE
 
       - name: Screenshots
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: |
           & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli screenshot "$env:RUNNER_TEMP\snapshots\screens" | Out-Host
           exit $LASTEXITCODE
 
       - name: End to end (File Explorer, hooks, wheel, keys)
+        if: ${{ !cancelled() }}
         continue-on-error: true
         run: |
           & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli e2e "$env:RUNNER_TEMP\snapshots\e2e" | Out-Host
           exit $LASTEXITCODE
 
       - name: Package (x64)
+        if: ${{ !cancelled() }}
         env:
           PICKVERTER_UPDATE_KEY: ${{ secrets.PICKVERTER_UPDATE_KEY }}
         run: |

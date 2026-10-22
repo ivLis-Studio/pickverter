@@ -25,6 +25,7 @@ internal static class CommandLine
           cli screenshot <folder>                   real windows on the desktop (shadows, transparency)
           cli e2e <folder>                          File Explorer, Alt, the wheel and keys on a real desktop
           cli inspect                               File Explorer selection and window under the pointer
+          cli probe <name>                          one small thing, then exit (diagnoses problems at exit)
           cli update-keygen <private-key-file>
           cli update-pubkey [private-key-file]
           cli update-manifest --version V --zip-x64 Z --url-x64 U [--zip-arm64 Z --url-arm64 U]
@@ -79,6 +80,9 @@ internal static class CommandLine
                     return WithApp(() => EndToEnd.Run(rest[0]));
                 case "inspect":
                     return WithApp(Inspect);
+                case "probe":
+                    if (rest.Length == 0) break;
+                    return WithApp(() => Probes.Run(rest[0]));
                 case "update-keygen":
                     if (rest.Length == 0) break;
                     return UpdateKeygen(rest[0]);
@@ -178,7 +182,7 @@ internal static class CommandLine
             }
         });
         var result = app.Run();
-        NativeObjects.ReleaseUnused();
+        if (Environment.GetEnvironmentVariable("PICKVERTER_NO_RELEASE") is not { Length: > 0 }) NativeObjects.ReleaseUnused();
         Console.WriteLine($"▸ exit {code} (application {result})");
         if (code < 0) code = 70;
         Console.Out.Flush();
