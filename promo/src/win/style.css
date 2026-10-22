@@ -55,6 +55,7 @@ body { font-family: var(--ui); -webkit-font-smoothing: antialiased; color: var(-
   display: flex; align-items: center; padding: 0 12px; box-sizing: border-box; gap: 2px; font-size: 12.5px; }
 .x-btn { height: 32px; min-width: 36px; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 0 8px; box-sizing: border-box; border-radius: 4px; }
 .x-sep { width: 1px; height: 22px; background: #E0E0E0; margin: 0 6px; }
+.x-details { margin-left: auto; }
 .x-side { position: absolute; left: 0; top: 135px; bottom: 26px; width: 196px; background: #fff; border-right: 1px solid #EDEDED; padding: 8px 6px 0; box-sizing: border-box; }
 .x-item { display: flex; align-items: center; gap: 10px; height: 29px; padding: 0 10px; border-radius: 4px; font-size: 12.5px; white-space: nowrap; }
 .x-item.on { background: #E1ECF7; }

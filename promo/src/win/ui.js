@@ -98,13 +98,15 @@
     el("div", { class: "x-btn" }, cmd, gl("f.view", 17, "#3B3B3B") + "<span>" + C.view + "</span>" + gl("f.chevron.down", 10, "#6B6B6B"));
     el("div", { class: "x-sep" }, cmd);
     el("div", { class: "x-btn" }, cmd, gl("f.more", 17, "#3B3B3B"));
+    el("div", { class: "x-btn x-details" }, cmd, gl("f.details", 16, "#3B3B3B") + "<span>" + C.details + "</span>");
     const side = el("div", { class: "x-side" }, root);
-    const nav = [["fill.home", "#1F8AD2", C.home], ["fill.gallery", "#1F8AD2", C.gallery], null, ["fill.desktop", "#1F8AD2", C.desktop, true],
-      ["fill.download", "#2E9E59", C.downloads], ["fill.document", "#5C7591", C.documents], ["fill.image", "#1F8AD2", C.pictures],
-      ["fill.music", "#E3732F", C.music], ["fill.video", "#8661C5", C.videos], null, ["f.pc", "#3A6EA5", C.pc]];
+    // Quick access folders carry a pin, like File Explorer's navigation pane.
+    const nav = [["fill.home", "#1F8AD2", C.home], ["fill.gallery", "#1F8AD2", C.gallery], null, ["fill.desktop", "#1F8AD2", C.desktop, true, true],
+      ["fill.download", "#2E9E59", C.downloads, false, true], ["fill.document", "#5C7591", C.documents, false, true], ["fill.image", "#1F8AD2", C.pictures, false, true],
+      ["fill.music", "#E3732F", C.music, false, true], ["fill.video", "#8661C5", C.videos, false, true], null, ["f.pc", "#3A6EA5", C.pc]];
     for (const n of nav) {
       if (!n) { el("div", { class: "x-div" }, side); continue; }
-      el("div", { class: "x-item" + (n[3] ? " on" : "") }, side, gl(n[0], 16, n[1]) + "<span>" + n[2] + "</span>");
+      el("div", { class: "x-item" + (n[3] ? " on" : "") }, side, gl(n[0], 16, n[1]) + "<span>" + n[2] + "</span>" + (n[4] ? gl("f.pin", 12, "#8A8A8A", "margin-left:auto") : ""));
     }
     const grid = el("div", { class: "x-grid" }, root);
     const tiles = {};
@@ -261,14 +263,32 @@
     const hubCache = {};
 
     const tabs = el("div", { class: "abs w-tabs" }, root);
-    const tabW = G.tabW * 3 + G.tabSp * 2 + G.tabPad * 2, tabH = G.tabH + G.tabPad * 2;
-    set(tabs, { left: c - tabW / 2 + "px", top: c + G.disc + G.tabGap + "px", width: tabW + "px", height: tabH + "px" });
+    const tabH = G.tabH + G.tabPad * 2;
     const pill = el("div", { class: "w-pill" }, tabs);
-    const modes = [["convert", T("key.shift.short")], ["tools", T("key.ctrl")], ["actions", T("key.alt")]];
-    const tabLabels = modes.map(([m, key], i) => {
-      const tl = el("div", { class: "w-tab" }, tabs, '<span class="g">' + key + "</span><span class='t'>" + T("mode." + m) + "</span>");
-      set(tl, { left: G.tabPad + i * (G.tabW + G.tabSp) + "px" });
-      return tl;
+    const modes = [["convert", T("key.shift")], ["tools", T("key.ctrl")], ["actions", T("key.alt")]];
+    const tabLabels = modes.map(([m, key]) => el("div", { class: "w-tab" }, tabs, '<span class="g">' + key + "</span><span class='t'>" + T("mode." + m) + "</span>"));
+    // WheelCanvas.TabWidthFor: each tab fits its key and ring name in the current language (96–136).
+    function layoutTabs() {
+      const w = G.tabW, barW = w * 3 + G.tabSp * 2 + G.tabPad * 2;
+      set(tabs, { left: c - barW / 2 + "px", top: c + G.disc + G.tabGap + "px", width: barW + "px", height: tabH + "px" });
+      set(pill, { width: w + "px" });
+      tabLabels.forEach((tl, i) => set(tl, { left: G.tabPad + i * (w + G.tabSp) + "px", width: w + "px" }));
+    }
+    layoutTabs();
+    (PV.afterFonts = PV.afterFonts || []).push(() => {
+      if (!G.measured) {
+        const ctx = document.createElement("canvas").getContext("2d");
+        let widest = 0;
+        for (const [m, key] of modes) {
+          ctx.font = "500 10.5px 'PV Segoe', 'PV Malgun', sans-serif";
+          const k = ctx.measureText(key).width;
+          ctx.font = "600 12px 'PV Segoe', 'PV Malgun', sans-serif";
+          widest = Math.max(widest, k + 5 + ctx.measureText(T("mode." + m)).width + 24);
+        }
+        G.tabW = Math.min(136, Math.max(96, Math.ceil(widest)));
+        G.measured = true;
+      }
+      layoutTabs();
     });
     const keys = [T("key.enter"), T("key.ctrl") + "+C", T("key.ctrl") + "+S", T("key.esc")].join(" · ");
     const caption = el("div", { class: "abs w-choicecap" }, root, T("dest.title") + "<span>" + keys + "</span>");
