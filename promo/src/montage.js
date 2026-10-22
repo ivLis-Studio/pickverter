@@ -1,5 +1,6 @@
-// Feature montage on the accent blue: eight tools pop onto a ring (one every two beats) around a live vignette.
-// Vignettes are drawn in a 400×400 box (centre 200,200) and clipped to the white disc.
+// Feature montage on the accent blue: one page every two beats, each a kind of file (video, audio, PDF, documents,
+// photos, files). A tool pops onto the ring around a live vignette, its name rolls in, and chips list more of what the app
+// does with that kind of file. Vignettes are drawn in a 400×400 box (centre 200,200) and clipped to the white disc.
 (function () {
   const { el, sym, set, attr, lerp, clamp, prog, E, spring, polar } = PV;
   const NS = "http://www.w3.org/2000/svg";
@@ -26,14 +27,25 @@
   const pop = (sec, at) => Math.max(0.001, spring(sec - at, 0.3, 0.55));
 
   // 1. Trim: QuickTime-style yellow handles close in, then the playhead runs.
-  function vTrim(g, defs) {
+  // (Audio trims the same way over a waveform.)
+  function vTrim(g, defs, L, audio) {
     const x0 = 52, x1 = 348, y0 = 160, h = 80;
     S("rect", { x: x0 - 7, y: y0 - 7, width: x1 - x0 + 14, height: h + 14, rx: 15, fill: INK }, g);
     const frames = S("g", { "clip-path": clipRect(defs, x0, y0, x1 - x0, h, 9).url }, g);
     const fw = (x1 - x0) / 5;
-    ["beach", "lisbon", "latte", "beach", "lisbon"].forEach((s, i) =>
-      S("image", { href: "assets/" + s + ".jpg", x: x0 + i * fw, y: y0, width: fw + 0.5, height: h, preserveAspectRatio: "xMidYMid slice" }, frames));
-    for (let i = 1; i < 5; i++) S("rect", { x: x0 + i * fw - 1, y: y0, width: 2, height: h, fill: INK, opacity: 0.55 }, frames);
+    if (audio) {
+      S("rect", { x: x0, y: y0, width: x1 - x0, height: h, fill: "#2C2C2E" }, frames);
+      const n = 44, bw = (x1 - x0) / n;
+      for (let i = 0; i < n; i++) {
+        const a = 0.22 + 0.78 * Math.abs(Math.sin(i * 0.61 + 0.4) * Math.cos(i * 0.23 + 1.1));
+        const hh = Math.max(5, a * (h - 18));
+        S("rect", { x: x0 + i * bw + bw * 0.22, y: y0 + h / 2 - hh / 2, width: bw * 0.56, height: hh, rx: bw * 0.28, fill: BLUE }, frames);
+      }
+    } else {
+      ["beach", "lisbon", "latte", "beach", "lisbon"].forEach((s, i) =>
+        S("image", { href: "assets/" + s + ".jpg", x: x0 + i * fw, y: y0, width: fw + 0.5, height: h, preserveAspectRatio: "xMidYMid slice" }, frames));
+      for (let i = 1; i < 5; i++) S("rect", { x: x0 + i * fw - 1, y: y0, width: 2, height: h, fill: INK, opacity: 0.55 }, frames);
+    }
     const dimL = S("rect", { x: x0, y: y0, width: 0, height: h, fill: "#000", opacity: 0.58 }, frames);
     const dimR = S("rect", { x: x1, y: y0, width: 0, height: h, fill: "#000", opacity: 0.58 }, frames);
     const frame = S("rect", { y: y0 - 3, height: h + 6, rx: 9, fill: "none", stroke: "#FFD60A", "stroke-width": 7 }, g);
@@ -47,18 +59,28 @@
     });
     const head = S("rect", { y: y0 - 16, width: 6, height: h + 32, rx: 3, fill: "#fff", stroke: INK, "stroke-width": 1.5 }, g);
     const label = S("text", { x: 200, y: y0 + h + 70, "text-anchor": "middle", class: "m-num" }, g);
-    return (u) => {
+    let badge = null;
+    if (audio) {
+      badge = S("g", {}, g);
+      S("rect", { x: -40, y: -20, width: 80, height: 40, rx: 20, fill: INK }, badge);
+      S("text", { x: 0, y: 8, "text-anchor": "middle", class: "m-badge small" }, badge).textContent = "MP3";
+      attr(label, "x", 160);
+    }
+    return (u, sec) => {
       const a = E.outExpo(prog(u, 0.06, 0.42)), c = E.outExpo(prog(u, 0.12, 0.48));
-      const L = lerp(x0, 118, a), R = lerp(x1, 290, c);
+      const L = lerp(x0, audio ? 96 : 118, a), R = lerp(x1, audio ? 262 : 290, c);
       attr(dimL, "width", L - x0); attr(dimR, "x", R); attr(dimR, "width", x1 - R);
       attr(frame, "x", L); attr(frame, "width", R - L);
       attr(handles[0], "transform", "translate(" + L + " 0)");
       attr(handles[1], "transform", "translate(" + R + " 0)");
       attr(head, "x", lerp(L + 14, R - 14, E.inOutSine(prog(u, 0.45, 1))) - 3);
       attr(head, "opacity", clamp(prog(u, 0.4, 0.5)));
-      label.textContent = "0:" + String(Math.round(lerp(42, 17, (a + c) / 2))).padStart(2, "0");
+      label.textContent = audio ? Math.floor(lerp(214, 128, (a + c) / 2) / 60) + ":" + String(Math.round(lerp(214, 128, (a + c) / 2)) % 60).padStart(2, "0")
+        : "0:" + String(Math.round(lerp(42, 17, (a + c) / 2))).padStart(2, "0");
+      if (badge) attr(badge, "transform", "translate(262 " + (y0 + h + 61) + ") scale(" + pop(sec, 0.3) + ")");
     };
   }
+  const vAudioTrim = (g, defs, L) => vTrim(g, defs, L, true);
 
   // 2. Shrink: the size rolls down, the photo squeezes, a green arrow lands.
   function vCompress(g, defs) {
@@ -248,13 +270,50 @@
     };
   }
 
+  // 10. Documents: Word, Excel and PowerPoint fan out and each one turns into a PDF.
+  function vDocs(g, defs) {
+    const kinds = [["DOCX", "#2B579A", -1], ["PPTX", "#C43E1C", 1], ["XLSX", "#217346", 0]];
+    const cards = kinds.map(([label, color, k]) => {
+      const cg = S("g", {}, g);
+      S("rect", { x: -54, y: -70, width: 108, height: 140, rx: 11, fill: "#fff", stroke: "#D1D1D6", "stroke-width": 2 }, cg);
+      if (label === "XLSX") {
+        for (let r = 0; r < 4; r++) for (let q = 0; q < 3; q++) S("rect", { x: -38 + q * 26, y: -26 + r * 19, width: 22, height: 14, rx: 3, fill: r === 0 ? "#D5E8DC" : "#EEF0F2" }, cg);
+      } else if (label === "PPTX") {
+        S("rect", { x: -38, y: -26, width: 76, height: 46, rx: 5, fill: "#F7E3DC" }, cg);
+        S("rect", { x: -38, y: 30, width: 50, height: 7, rx: 3.5, fill: "#E5E5EA" }, cg);
+      } else {
+        for (let i = 0; i < 4; i++) S("rect", { x: -38, y: -26 + i * 17, width: i === 3 ? 42 : 76, height: 7, rx: 3.5, fill: "#E5E5EA" }, cg);
+      }
+      const tag = S("g", {}, cg);
+      const bg = S("path", { d: "M-54 -40 V-59 A11 11 0 0 1 -43 -70 H43 A11 11 0 0 1 54 -59 V-40 Z", fill: color }, tag);
+      const tx = S("text", { x: 0, y: -49, "text-anchor": "middle", class: "m-tag" }, tag);
+      tx.textContent = label;
+      return { cg, k, tag, bg, tx, label, color };
+    });
+    const check = S("g", {}, g);
+    S("circle", { cx: 0, cy: 0, r: 25, fill: BLUE }, check);
+    S("path", { d: "M-10 1 L-3 8 L11 -7", fill: "none", stroke: "#fff", "stroke-width": 4.5, "stroke-linecap": "round", "stroke-linejoin": "round" }, check);
+    return (u, sec) => {
+      const spread = E.outCubic(prog(u, 0.02, 0.32));
+      cards.forEach((c, i) => {
+        attr(c.cg, "transform", "translate(" + (200 + c.k * 84 * spread) + " " + (196 + Math.abs(c.k) * 12 * spread) + ") rotate(" + c.k * 10 * spread + ")");
+        const f = prog(u, 0.3 + i * 0.1, 0.4 + i * 0.1);
+        const pdf = f >= 0.5;
+        attr(c.bg, "fill", pdf ? "#FF3B30" : c.color);
+        if (c.tx.textContent !== (pdf ? "PDF" : c.label)) c.tx.textContent = pdf ? "PDF" : c.label;
+        attr(c.tag, "transform", "translate(0 -55) scale(1 " + Math.max(0.02, Math.abs(1 - 2 * f)) + ") translate(0 55)");
+      });
+      attr(check, "transform", "translate(296 104) scale(" + pop(sec, 0.62) + ")");
+    };
+  }
+
   const FEATURES = {
     trim: [vTrim, "timeline.selection"], shrink: [vCompress, "arrow.down.right.and.arrow.up.left"], gif: [vGif, "photo.on.rectangle"],
     faces: [vFaces, "person.crop.square"], merge: [vMerge, "doc.on.doc"], ocr: [vOcr, "text.viewfinder"], audio: [vAudio, "waveform"],
-    resize: [vResize, "arrow.down.forward.and.arrow.up.backward"], lock: [vLock, "lock"],
+    resize: [vResize, "arrow.down.forward.and.arrow.up.backward"], lock: [vLock, "lock"], audiotrim: [vAudioTrim, "waveform"], docs: [vDocs, "doc.richtext"],
   };
 
-  // spec: { W, H, t0, step, wipe: {t0, t1, x, y}, end (words out), implode, features[] (keys above), words[], more, copied,
+  // spec: { W, H, t0, step, wipe: {t0, t1, x, y}, end (words out), implode, features[] (keys above), words[], chips[][], more, copied,
   //         ring: {cx, cy, R, tile}, disc: {cx, cy, r}, text: {x, y, align, size},
   //         icon(name, size, color, parent) to draw tile symbols (default: SF Symbols), tileRadius (fraction of a tile), accent }
   function Montage(parent, spec) {
@@ -270,6 +329,14 @@
     for (const n of [eyebrow, ...words]) set(n, { textAlign: tx.align, left: (tx.align === "left" ? tx.x : 0) + "px", width: (tx.align === "left" ? spec.W - tx.x : spec.W) + "px" });
     set(eyebrow, { top: tx.y + "px" });
     words.forEach((w) => set(w, { top: tx.y + tx.gap + "px", fontSize: tx.size + "px" }));
+    // Chips: more tools for the same kind of file, under the big word.
+    const chipTop = tx.y + tx.gap + tx.size * 1.16 + (tx.chipGap ?? 20);
+    const chipRows = (spec.chips || []).map((list) => {
+      const row = el("div", { class: "m-feats" }, root);
+      set(row, { top: chipTop + "px", left: (tx.align === "left" ? tx.x : (spec.W - tx.chipW) / 2) + "px", width: tx.chipW + "px",
+        justifyContent: tx.align === "left" ? "flex-start" : "center" });
+      return { row, chips: list.map((label) => el("div", { class: "m-feat" }, row, label)) };
+    });
     const sel = el("div", { class: "m-sel" }, root);
     const T = spec.ring.tile;
     set(sel, { width: T + 22 + "px", height: T + 22 + "px", borderRadius: (T + 22) * (RAD + 0.01) + "px" });
@@ -311,6 +378,17 @@
         const b = i < N - 1 ? E.outExpo(prog(t, tn, tn + 0.32)) : E.inCubic(prog(t, tn, tn + 0.22));
         set(wd, { display: live && t >= ti - 0.01 && t <= tn + 0.33 ? "block" : "none" });
         set(wd.firstChild.firstChild, { transform: "translateY(" + ((1 - a) * 110 - b * 110) + "%)" });
+      });
+      chipRows.forEach((cr, i) => {
+        const ti = tAt(i) + 0.1, tn = i < N - 1 ? tAt(i + 1) : spec.end;
+        const on = live && t >= ti - 0.01 && t <= tn + 0.3;
+        set(cr.row, { display: on ? "flex" : "none" });
+        if (!on) return;
+        cr.chips.forEach((chip, k) => {
+          const a = spring(t - ti - 0.055 * k, 0.32, 0.72);
+          const o = E.inCubic(prog(t, tn - 0.04 + 0.02 * k, tn + 0.14 + 0.02 * k));
+          set(chip, { opacity: clamp(a * 2) * (1 - o), transform: "translateY(" + ((1 - a) * 22 - o * 16) + "px) scale(" + lerp(0.86, 1, Math.min(1, a)) + ")" });
+        });
       });
       // tiles on the ring
       const { cx, cy, R } = spec.ring;

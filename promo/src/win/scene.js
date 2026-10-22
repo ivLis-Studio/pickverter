@@ -1,8 +1,8 @@
-// Pickverter promo, Windows cut — 31 s at 128 BPM, 16:9 (1920×1080) or 9:16 (1080×1920, ?aspect=v).
+// Pickverter promo, Windows cut — 35 s at 128 BPM, 16:9 (1920×1080) or 9:16 (1080×1920, ?aspect=v).
 // Same beat grid, score and story as the Mac cut (src/scene.js), on Windows 11: File Explorer, Alt, the Windows wheel,
 // result cards in the bottom-right corner, and the share sheet sending a PDF to an Android phone through Phone Link.
-//   bar 0 hook · 1–2 WebP → JPG · 3–4 Word → PDF · 5–6 rotate · 7–8 cut-out → chat · 9–10¼ share to the phone
-//   10½–13 montage (six tools, two beats each) · 14–15 icon, name · 16 last hit
+//   bar 0 hook · 1–3 WebP → JPG · 3–5 Word → PDF · 5–7 rotate · 7–9¾ cut-out → chat · 9¾–12¼ share to the phone
+//   12½–15 montage (six kinds of files, two beats each) · 16–17 icon, name · 18 last hit
 (function () {
   const { el, set, attr, lerp, clamp, prog, E, spring, kf, polar } = PV;
   const params = new URLSearchParams(location.search);
@@ -15,7 +15,7 @@
   docEl.classList.toggle("v", V);
   const BPM = 128, BT = 60 / BPM;
   const b = (n) => n * BT;
-  const DURATION = b(66);
+  const DURATION = b(74);
 
   // ------------------------------------------------------------------ copy
   const I18N = window.I18N || { languages: ["en"], strings: {} };
@@ -29,7 +29,10 @@
       c4h: "Cut it out. Paste it anywhere.", c4s: "Save a file or just copy it, right there.",
       c5h: "Straight to your phone.", c5s: "Share, move and open, right from File Explorer.",
       more: "And so much more",
-      words: ["Trim video", "Merge PDFs", "Blur faces", "Lock PDFs", "Shrink files", "Grab text"],
+      words: ["Trim video", "Trim MP3s", "Merge PDFs", "Office to PDF", "Blur faces", "Shrink files"],
+      chips: [["Make GIFs", "Extract audio", "Compress video", "Change speed"], ["Convert audio", "Match loudness", "Trim silence", "Split tracks"],
+        ["Split pages", "Add a password", "Reorder pages", "PDF to images"], ["Excel to CSV", "PDF to Word", "Markdown & HTML", "Make EPUBs"],
+        ["Remove backgrounds", "Resize", "HEIC to JPG", "Collages"], ["Zip", "Grab text", "Copy paths", "Strip location"]],
       copied: "Copied", chatName: "Mina", chatInitial: "M", chatStatus: "Active now", chatMsg: "Send me a pic of Momo!", chatField: "Type a message", sent: "Sent",
       x: { desktop: "Desktop", search: "Search Desktop", new: "New", sort: "Sort", view: "View", home: "Home", gallery: "Gallery", downloads: "Downloads",
         documents: "Documents", pictures: "Pictures", music: "Music", videos: "Videos", pc: "This PC" },
@@ -48,7 +51,10 @@
       c4h: "배경은 지우고, 바로 붙여넣기.", c4s: "파일로 저장할지 복사할지, 그 자리에서.",
       c5h: "휴대폰으로 바로 보내기.", c5s: "공유·이동·열기까지 파일 탐색기에서 바로.",
       more: "그리고 더 많이",
-      words: ["동영상 자르기", "PDF 합치기", "얼굴 가리기", "PDF 암호 걸기", "용량 줄이기", "글자 추출"],
+      words: ["동영상 자르기", "MP3 자르기", "PDF 합치기", "문서를 PDF로", "얼굴 가리기", "용량 줄이기"],
+      chips: [["GIF 만들기", "소리 추출", "동영상 압축", "속도 조절"], ["오디오 변환", "음량 맞추기", "무음 자르기", "구간 나누기"],
+        ["페이지 나누기", "암호 걸기", "페이지 정리", "PDF → 이미지"], ["Excel → CSV", "PDF → Word", "Markdown·HTML", "EPUB 만들기"],
+        ["배경 제거", "크기 조절", "HEIC → JPG", "콜라주"], ["ZIP 압축", "글자 추출", "경로 복사", "위치 정보 지우기"]],
       copied: "복사됨", chatName: "민아", chatInitial: "민", chatStatus: "활동 중", chatMsg: "모모 사진 보내줘!", chatField: "메시지 입력", sent: "전송됨",
       x: { desktop: "바탕 화면", search: "바탕 화면 검색", new: "새로 만들기", sort: "정렬", view: "보기", home: "홈", gallery: "갤러리", downloads: "다운로드",
         documents: "문서", pictures: "사진", music: "음악", videos: "동영상", pc: "내 PC" },
@@ -201,28 +207,28 @@
   shot(b(3.35), frame(C42, A, Z), E.outExpo);
   shot(b(4.0), frame(C42, A, Z));
   shot(b(4.6), frame(C42, A, Z * 1.06), E.outCubic);
-  shot(b(6.0), frame(C42, A, Z * 1.07));
-  shot(b(7.0), frame(res1, res1A, zr1), E.inOutCubic);
-  shot(b(11.0), frame(res1, res1A, zr1 * 1.04), E.linear);
-  shot(b(11.75), frame(CD, AD, Z * 1.04), E.inOutExpo);
-  shot(b(14.5), frame(CD, AD, Z * 1.09), E.linear);
-  shot(b(15.5), frame(res2, res2A, zr2), E.inOutCubic);
-  shot(b(19.25), frame(res2, res2A, zr2 * 1.04), E.linear);
-  shot(b(20.0), frame(CM, AM, momo), E.inOutExpo);
-  shot(b(24.0), frame(CM, AM, momo * 1.04), E.linear);
-  shot(b(27.6), frame(CM, [AM[0], AM[1] + 20], momo * 1.1), E.inOutSine);
-  shot(b(28.25), frame(CM, AM, momo), E.outCubic);
-  shot(b(30.75), frame(CM, AM, momo * 1.02), E.linear);
-  shot(b(31.75), frame(CM, V ? [540, 990] : [700, 580], V ? 1.1 : 1.0), E.inOutCubic);
-  shot(b(35.0), frame(CM, V ? [540, 1000] : [690, 590], V ? 1.13 : 1.02), E.linear);
-  shot(b(35.6), frame(CP, AP, ZP), E.inOutExpo);
-  shot(b(37.25), frame(CP, AP, ZP * 1.03), E.linear);
-  shot(b(38.25), frame(CP, V ? [540, 1100] : [880, 660], ZP * 1.05), E.inOutCubic);
-  shot(b(39.25), frame(CP, V ? [400, 1000] : [720, 640], V ? 1.1 : 0.96), E.inOutCubic);
-  shot(b(42.0), frame(CP, V ? [390, 990] : [700, 640], V ? 1.15 : 1.0), E.linear);
-  punch(b(4.0), 0.05); punch(b(14.5), 0.035); punch(b(24.0), 0.04); punch(b(31.0), 0.035); punch(b(37.25), 0.03); punch(b(38.25), 0.035);
-  blur(b(2.5), b(3.4), 10); blur(b(3.95), b(4.45), 8); blur(b(10.95), b(11.85), 12); blur(b(14.45), b(15.6), 6);
-  blur(b(19.2), b(20.05), 12); blur(b(23.95), b(24.5), 6); blur(b(30.9), b(31.8), 6); blur(b(34.95), b(35.65), 12); blur(b(38.2), b(39.3), 6);
+  shot(b(7.0), frame(C42, A, Z * 1.09), E.linear);
+  shot(b(8.0), frame(res1, res1A, zr1), E.inOutCubic);
+  shot(b(12.5), frame(res1, res1A, zr1 * 1.05), E.linear);
+  shot(b(13.25), frame(CD, AD, Z * 1.04), E.inOutExpo);
+  shot(b(17.0), frame(CD, AD, Z * 1.1), E.linear);
+  shot(b(18.0), frame(res2, res2A, zr2), E.inOutCubic);
+  shot(b(21.25), frame(res2, res2A, zr2 * 1.04), E.linear);
+  shot(b(22.0), frame(CM, AM, momo), E.inOutExpo);
+  shot(b(27.25), frame(CM, AM, momo * 1.05), E.linear);
+  shot(b(29.35), frame(CM, [AM[0], AM[1] + 20], momo * 1.1), E.inOutSine);
+  shot(b(30.0), frame(CM, AM, momo), E.outCubic);
+  shot(b(34.5), frame(CM, AM, momo * 1.03), E.linear);
+  shot(b(35.5), frame(CM, V ? [540, 990] : [700, 580], V ? 1.1 : 1.0), E.inOutCubic);
+  shot(b(39.0), frame(CM, V ? [540, 1000] : [690, 590], V ? 1.13 : 1.02), E.linear);
+  shot(b(39.75), frame(CP, AP, ZP), E.inOutExpo);
+  shot(b(43.0), frame(CP, AP, ZP * 1.04), E.linear);
+  shot(b(45.25), frame(CP, V ? [540, 1100] : [880, 660], ZP * 1.06), E.inOutCubic);
+  shot(b(46.25), frame(CP, V ? [400, 1000] : [720, 640], V ? 1.1 : 0.96), E.inOutCubic);
+  shot(b(50.0), frame(CP, V ? [390, 990] : [700, 640], V ? 1.15 : 1.0), E.linear);
+  punch(b(4.0), 0.05); punch(b(17.0), 0.035); punch(b(27.25), 0.04); punch(b(34.75), 0.035); punch(b(43.0), 0.03); punch(b(45.25), 0.035);
+  blur(b(2.5), b(3.4), 10); blur(b(3.95), b(4.45), 8); blur(b(12.45), b(13.35), 12); blur(b(16.95), b(18.1), 6);
+  blur(b(21.2), b(22.05), 12); blur(b(27.2), b(27.75), 6); blur(b(34.65), b(35.55), 6); blur(b(38.95), b(39.8), 12); blur(b(45.2), b(46.3), 6);
 
   // ------------------------------------------------------------------ cursor path (world)
   const moves = [];
@@ -255,40 +261,40 @@
   to(b(2.85), b(3.0), M0, 0.0, E.outCubic);
   to(b(3.0), b(3.42), M1, 0.0, E.inOutSine);
   to(b(3.46), b(3.86), C42, 0.1);
-  to(b(4.95), b(5.15), slot(C42, 9, 0), 0.0, E.outCubic);
-  click(b(6.0));
-  to(b(6.15), b(6.9), [C42[0] - 70, C42[1] + 128], 0.12);
+  to(b(5.0), b(5.6), slot(C42, 9, 0), 0.06);
+  click(b(7.0));
+  to(b(7.15), b(7.9), [C42[0] - 70, C42[1] + 128], 0.12);
   // 2 · Word → PDF
-  to(b(11.0), b(11.72), [CD[0] + 6, CD[1] + 8], 0.1, E.inOutExpo);
-  click(b(12.0));
-  to(b(13.75), b(13.95), slot(CD, 7, 0), 0.0, E.outCubic);
-  click(b(14.5));
-  to(b(14.65), b(15.4), [CD[0] - 150, CD[1] + 96], 0.12);
+  to(b(12.5), b(13.22), [CD[0] + 6, CD[1] + 8], 0.1, E.inOutExpo);
+  click(b(13.5));
+  to(b(15.15), b(15.75), slot(CD, 7, 0), 0.06);
+  click(b(17.0));
+  to(b(17.15), b(17.9), [CD[0] - 150, CD[1] + 96], 0.12);
   // 3 · rotate: hover Rotate, its options fan out, glide to Right 90°
-  to(b(19.25), b(19.95), [CM[0] + 6, CM[1] + 8], 0.1, E.inOutExpo);
-  click(b(20.0));
-  to(b(21.9), b(22.1), slot(CM, 9, 6), 0.0, E.outCubic);
-  to(b(22.45), b(22.7), polar(CM[0], CM[1], SUB_R * K, 150), 0.0);
-  arc(b(22.85), b(23.45), CM, SUB_R, 150, 86);
-  click(b(24.0));
-  to(b(24.2), b(24.9), [CM[0] + 120, CM[1] + 150], 0.12);
+  to(b(21.25), b(21.95), [CM[0] + 6, CM[1] + 8], 0.1, E.inOutExpo);
+  click(b(22.25));
+  to(b(24.1), b(24.7), slot(CM, 9, 6), 0.06);
+  to(b(25.1), b(25.5), polar(CM[0], CM[1], SUB_R * K, 150), 0.0);
+  arc(b(25.7), b(26.5), CM, SUB_R, 150, 86);
+  click(b(27.25));
+  to(b(27.45), b(28.15), [CM[0] + 120, CM[1] + 150], 0.12);
   // 4 · remove background → clipboard
-  to(b(27.45), b(27.9), CM, 0.1);
-  to(b(28.85), b(29.05), slot(CM, 9, 3), 0.0, E.outCubic);
-  click(b(29.5));
-  arc(b(29.7), b(30.0), CM, 106, 30, -82);
-  arc(b(30.12), b(30.42), CM, 106, -82, 26);
-  click(b(30.75));
-  to(b(30.95), b(31.6), [CM[0] + 150, CM[1] + 190], 0.12);
+  to(b(29.0), b(29.45), CM, 0.1);
+  to(b(30.85), b(31.45), slot(CM, 9, 3), 0.06);
+  click(b(32.5));
+  arc(b(32.75), b(33.25), CM, 106, 30, -82);
+  arc(b(33.5), b(34.0), CM, 106, -82, 26);
+  click(b(34.5));
+  to(b(34.7), b(35.35), [CM[0] + 150, CM[1] + 190], 0.12);
   // 5 · Share → Phone Link
   const PL = sheetPt(sheet.tileCenter(1));
-  to(b(35.0), b(35.62), [CP[0] + 6, CP[1] + 8], 0.1, E.inOutExpo);
-  click(b(35.75));
-  to(b(36.6), b(36.85), slot(CP, 7, 0), 0.0, E.outCubic);
-  click(b(37.25));
-  to(b(37.55), b(37.95), [PL[0] + 4, PL[1] + 6], 0.1);
-  click(b(38.25));
-  to(b(38.4), b(38.95), [PL[0] + 60, PL[1] + 130], 0.12);
+  to(b(39.0), b(39.72), [CP[0] + 6, CP[1] + 8], 0.1, E.inOutExpo);
+  click(b(40.0));
+  to(b(41.75), b(42.35), slot(CP, 7, 0), 0.06);
+  click(b(43.0));
+  to(b(43.6), b(44.2), [PL[0] + 4, PL[1] + 6], 0.1);
+  click(b(45.25));
+  to(b(45.4), b(45.95), [PL[0] + 60, PL[1] + 130], 0.12);
 
   const WEBPS = ["tram.webp", "beach.webp", "latte.webp"];
   function marqueeAt(t) {
@@ -303,13 +309,13 @@
       const a = toLocal(M0), p = toLocal(cursorAt(Math.min(t, b(3.42))));
       const l = Math.min(a[0], p[0]), r = Math.max(a[0], p[0]), tp = Math.min(a[1], p[1]), bt = Math.max(a[1], p[1]);
       for (const n of WEBPS) { const bx = explorer.box(n); sel[n] = bx.l < r && bx.r > l && bx.t < bt && bx.b > tp ? 1 : 0; }
-    } else if (t >= b(12.0) && t < b(20.0)) sel["Travel Plan.docx"] = 1;
-    else if (t >= b(20.0) && t < b(35.75)) sel["Momo.jpg"] = 1;
-    else if (t >= b(35.75)) sel["Travel Plan.pdf"] = 1;
+    } else if (t >= b(13.5) && t < b(22.25)) sel["Travel Plan.docx"] = 1;
+    else if (t >= b(22.25) && t < b(40.0)) sel["Momo.jpg"] = 1;
+    else if (t >= b(40.0)) sel["Travel Plan.pdf"] = 1;
     return sel;
   }
   function statusAt(t, sel) {
-    const n = 6 + (t >= b(6.25) ? 1 : 0) + (t >= b(6.5) ? 1 : 0) + (t >= b(6.75) ? 1 : 0) + (t >= b(14.75) ? 1 : 0);
+    const n = 6 + (t >= b(7.25) ? 1 : 0) + (t >= b(7.5) ? 1 : 0) + (t >= b(7.75) ? 1 : 0) + (t >= b(17.25) ? 1 : 0);
     const picked = Object.keys(sel).filter((k) => sel[k] > 0.5);
     const sizes = { "Travel Plan.docx": "46.2 KB", "Momo.jpg": "2.31 MB", "Travel Plan.pdf": "182 KB" };
     let s = "";
@@ -322,37 +328,37 @@
   const files3 = { name: "", thumb: "assets/lisbon.jpg", count: 3 };
   const momoFile = { name: "Momo.jpg", thumb: "assets/shiba.jpg" };
   const wheels = [
-    UI.Wheel(world, RINGS, { id: 1, at: C42, open: b(4.0), close: b(6.0), pick: true, bloom: true, shock: true, modes: [{ t: b(4.0), ring: "convertWebp" }], cursor: cursorAt,
+    UI.Wheel(world, RINGS, { id: 1, at: C42, open: b(4.0), close: b(7.0), pick: true, bloom: true, shock: true, modes: [{ t: b(4.0), ring: "convertWebp" }], cursor: cursorAt,
       file: files3, preview: (it) => PV.tp("wheel.files_to", 3, it.title) }),
-    UI.Wheel(world, RINGS, { id: 2, at: CD, open: b(12.75), close: b(14.5), pick: true, modes: [{ t: b(12.75), ring: "convertDocx" }], cursor: cursorAt,
+    UI.Wheel(world, RINGS, { id: 2, at: CD, open: b(14.25), close: b(17.0), pick: true, modes: [{ t: b(14.25), ring: "convertDocx" }], cursor: cursorAt,
       file: { name: "Travel Plan.docx", icon: "docx" }, preview: (it) => "Travel Plan." + it.title.toLowerCase() }),
-    UI.Wheel(world, RINGS, { id: 3, at: CM, open: b(20.75), close: b(24.0), pick: true, modes: [{ t: b(20.75), ring: "convertJpg" }, { t: b(21.0), ring: "tools" }], cursor: cursorAt,
+    UI.Wheel(world, RINGS, { id: 3, at: CM, open: b(23.0), close: b(27.25), pick: true, modes: [{ t: b(23.0), ring: "convertJpg" }, { t: b(23.25), ring: "tools" }], cursor: cursorAt,
       file: momoFile, preview: (it) => "Momo." + it.title.toLowerCase() }),
-    UI.Wheel(world, RINGS, { id: 4, at: CM, open: b(28.25), close: b(30.75), pick: true, modes: [{ t: b(28.25), ring: "convertJpg" }, { t: b(28.5), ring: "tools" }], choice: { t: b(29.5), ring: "choice" },
+    UI.Wheel(world, RINGS, { id: 4, at: CM, open: b(30.0), close: b(34.5), pick: true, modes: [{ t: b(30.0), ring: "convertJpg" }, { t: b(30.25), ring: "tools" }], choice: { t: b(32.5), ring: "choice" },
       choiceOption: T("tool.removebg"), cursor: cursorAt, file: momoFile, preview: (it) => "Momo." + it.title.toLowerCase() }),
-    UI.Wheel(world, RINGS, { id: 5, at: CP, open: b(36.25), close: b(37.25), pick: true, modes: [{ t: b(36.25), ring: "convertPdf" }, { t: b(36.5), ring: "actions" }], cursor: cursorAt,
+    UI.Wheel(world, RINGS, { id: 5, at: CP, open: b(40.75), close: b(43.0), pick: true, modes: [{ t: b(40.75), ring: "convertPdf" }, { t: b(41.25), ring: "actions" }], cursor: cursorAt,
       file: { name: "Travel Plan.pdf", icon: "pdf" }, preview: (it) => "Travel Plan." + it.title.toLowerCase() }),
   ];
   for (const w of wheels) w.ticks.forEach((t) => sfx("tick", t));
   sfx("bloom", b(4.0));
-  [b(12.75), b(20.75), b(28.25), b(36.25)].forEach((t) => sfx("open", t));
-  [b(6.0), b(14.5), b(24.0), b(30.75), b(37.25)].forEach((t) => sfx("close", t));
-  [b(21.0), b(28.5), b(36.5)].forEach((t) => sfx("swap", t));
-  sfx("choice", b(29.5));
+  [b(14.25), b(23.0), b(30.0), b(40.75)].forEach((t) => sfx("open", t));
+  [b(7.0), b(17.0), b(27.25), b(34.5), b(43.0)].forEach((t) => sfx("close", t));
+  [b(23.25), b(30.25), b(41.25)].forEach((t) => sfx("swap", t));
+  sfx("choice", b(32.5));
 
   // The share sheet (world space) and its two beats: hover Phone Link, click.
-  const SHEET_IN = b(37.3), SHEET_OUT = b(38.5);
-  sfx("card", SHEET_IN); sfx("pop", SHEET_IN + 0.04, { i: 1 }); sfx("tick", b(37.9));
+  const SHEET_IN = b(43.1), SHEET_OUT = b(45.5), PL_HOVER = b(44.1), PL_CLICK = b(45.25);
+  sfx("card", SHEET_IN); sfx("pop", SHEET_IN + 0.04, { i: 1 }); sfx("tick", PL_HOVER + 0.05);
   const cursor = UI.Cursor(world);
 
   // ------------------------------------------------------------------ overlays
   const KEY = { alt: [T("key.alt")], ctrl: [T("key.ctrl")], v: ["V", true] };
   const keyGroups = [
-    { keys: [["alt", b(12.3), b(12.5)]], hide: b(13.2) },
-    { keys: [["alt", b(20.3), b(20.5)], ["ctrl", b(20.6), b(21.0)]], hide: b(21.6) },
-    { keys: [["alt", b(27.8), b(28.0)], ["ctrl", b(28.1), b(28.5)]], hide: b(29.1) },
-    { keys: [["ctrl", b(32.7), b(33.0)], ["v", b(32.75), b(33.0)]], hide: b(33.6) },
-    { keys: [["alt", b(35.85), b(36.0)], ["alt", b(36.2), b(36.45)]], hide: b(37.0) },
+    { keys: [["alt", b(13.8), b(14.0)]], hide: b(14.9) },
+    { keys: [["alt", b(22.55), b(22.75)], ["ctrl", b(22.85), b(23.25)]], hide: b(24.0) },
+    { keys: [["alt", b(29.55), b(29.75)], ["ctrl", b(29.85), b(30.25)]], hide: b(31.0) },
+    { keys: [["ctrl", b(36.45), b(36.75)], ["v", b(36.5), b(36.75)]], hide: b(37.35) },
+    { keys: [["alt", b(40.3), b(40.5)], ["alt", b(40.85), b(41.1)]], hide: b(41.85) },
   ];
   const keycaps = [];
   for (const g of keyGroups) {
@@ -368,36 +374,36 @@
   const fileButtons = [btn("card.reveal", "folder"), btn("card.open", "arrow.up.forward.app"), btn("card.copy", "doc.on.clipboard"), btn("card.undo", "arrow.uturn.backward")];
   const cardBase = { x: cardAt.x, bottom: cardAt.bottom, top: cardAt.top, origin: cardAt.origin };
   const cards = [
-    UI.Card(over, Object.assign({}, cardBase, { in: b(6.25), done: b(7.25), out: b(10.5), symbol: "photo", thumb: "assets/lisbon.jpg",
+    UI.Card(over, Object.assign({}, cardBase, { in: b(7.25), done: b(8.25), out: b(12.0), symbol: "photo", thumb: "assets/lisbon.jpg",
       runTitle: T("job.running", T("job.convert_label", "JPG")), runSub: PV.tp("wheel.items", 3),
       doneTitle: T("job.done", T("job.convert_label", "JPG")), doneSub: PV.tp("job.files_created", 3) + " · 1.2 MB", buttons: fileButtons })),
-    UI.Card(over, Object.assign({}, cardBase, { in: b(14.75), done: b(15.5), out: b(18.6), symbol: "doc.richtext", icon: "pdf",
+    UI.Card(over, Object.assign({}, cardBase, { in: b(17.25), done: b(18.0), out: b(21.0), symbol: "doc.richtext", icon: "pdf",
       runTitle: T("job.running", T("job.convert_label", "PDF")), runSub: "Travel Plan.docx",
       doneTitle: T("job.done", T("job.convert_label", "PDF")), doneSub: "Travel Plan.pdf · 182 KB", buttons: fileButtons })),
-    UI.Card(over, Object.assign({}, cardBase, { in: b(31.0), done: b(31.5), out: b(34.2), symbol: "scissors", thumb: "assets/shiba-cutout.png",
+    UI.Card(over, Object.assign({}, cardBase, { in: b(34.75), done: b(35.25), out: b(38.25), symbol: "scissors", thumb: "assets/shiba-cutout.png",
       runTitle: T("job.running", T("tool.removebg")), runSub: "Momo.jpg",
       doneTitle: T("job.done", T("tool.removebg")), doneSub: T("job.in_clipboard"),
       buttons: [btn("card.save", "square.and.arrow.down"), btn("card.open", "arrow.up.forward.app")] })),
   ];
-  sfx("card", b(6.25)); sfx("done", b(7.25)); sfx("card", b(14.75)); sfx("done", b(15.5)); sfx("card", b(31.0)); sfx("done", b(31.5));
-  [b(6.25), b(6.5), b(6.75), b(14.75)].forEach((t, i) => sfx("pop", t, { i }));
-  sfx("swish", b(24.02)); sfx("lift", b(31.0));
-  sfx("rise", b(2.5)); sfx("whip", b(11.0)); sfx("whip", b(19.25)); sfx("whip", b(35.0));
+  sfx("card", b(7.25)); sfx("done", b(8.25)); sfx("card", b(17.25)); sfx("done", b(18.0)); sfx("card", b(34.75)); sfx("done", b(35.25));
+  [b(7.25), b(7.5), b(7.75), b(17.25)].forEach((t, i) => sfx("pop", t, { i }));
+  sfx("swish", b(27.27)); sfx("lift", b(34.75));
+  sfx("rise", b(2.5)); sfx("whip", b(12.5)); sfx("whip", b(21.25)); sfx("whip", b(39.0));
 
   // Cut-out: lifts off the photo, floats, then lands in the chat as a sticker.
   const cut = el("div", { class: "abs cutout" }, over);
   el("img", { src: "assets/shiba-cutout.png" }, cut);
   const chat = UI.Chat(over, { w: LY.chat.w, h: LY.chat.h, sw: LY.chat.sw, sh: LY.chat.sh, sy: LY.chat.sy,
     name: C.chatName, initial: C.chatInitial, status: C.chatStatus, msg: C.chatMsg, field: C.chatField, sticker: "assets/shiba-cutout.png", sent: C.sent });
-  sfx("slide", b(32.0)); sfx("message", b(32.35)); sfx("paste", b(33.0)); sfx("land", b(33.5)); sfx("sent", b(33.75)); sfx("slide_out", b(34.75));
-  blur(b(32.95), b(33.6), 8);
+  sfx("slide", b(35.75)); sfx("message", b(36.1)); sfx("paste", b(36.75)); sfx("land", b(37.25)); sfx("sent", b(37.5)); sfx("slide_out", b(38.75));
+  blur(b(36.7), b(37.35), 8);
 
   // Android phone + the PDF page that flies to it out of the share sheet.
   const phone = UI.Phone(over, Object.assign({ thumb: "assets/lisbon.jpg" }, C.phone));
   const page = el("div", { class: "docpage" }, over,
     '<div class="dp-photo" style="background-image:url(assets/lisbon.jpg)"></div><div class="dp-title">' + C.docTitle + '</div><div class="dp-sub">' + C.docSub + "</div>" +
     C.docRows.map(([d, s]) => '<div class="dp-row"><b>' + d + "</b>" + s + "</div>").join(""));
-  const PHONE_IN = b(38.25), FLY = [b(38.5), b(39.25)], NOTE = b(39.5);
+  const PHONE_IN = PL_CLICK, FLY = [b(45.5), b(46.25)], NOTE = b(46.5);
   sfx("phone_in", PHONE_IN); sfx("fly", FLY[0]); sfx("receive", NOTE);
   blur(FLY[0] - 0.05, FLY[1] + 0.1, 8);
 
@@ -414,7 +420,7 @@
     set(node, { top: LY.capY + "px" });
     return { node, words, sEl };
   }
-  const caps = [["c1", b(4.0), b(10.75)], ["c2", b(12.0), b(18.75)], ["c3", b(20.0), b(27.25)], ["c4", b(28.0), b(34.5)], ["c5", b(35.75), b(40.6)]]
+  const caps = [["c1", b(4.0), b(12.25)], ["c2", b(13.5), b(21.0)], ["c3", b(22.25), b(29.0)], ["c4", b(30.0), b(38.5)], ["c5", b(40.0), b(48.6)]]
     .map(([k, a, z]) => Object.assign(Caption(C[k + "h"], C[k + "s"]), { a, z }));
 
   // ------------------------------------------------------------------ hook
@@ -426,25 +432,25 @@
 
   // ------------------------------------------------------------------ montage
   const PH = LY.phone;
-  const FEATURES = ["trim", "merge", "faces", "lock", "shrink", "ocr"];
-  const M0T = b(42), MSTEP = b(2), MN = FEATURES.length;
+  const FEATURES = ["trim", "audiotrim", "merge", "docs", "faces", "shrink"];
+  const M0T = b(50), MSTEP = b(2), MN = FEATURES.length;
   const montage = PV.Montage(montL, {
-    W, H, t0: M0T, step: MSTEP, wipe: { t0: b(41.0), t1: b(42.0), x: PH[0], y: PH[1] }, end: b(54.3), implode: b(54.5),
-    features: FEATURES, words: C.words, more: C.more, copied: C.copied,
-    ring: V ? { cx: 540, cy: 1060, R: 372, tile: 164 } : { cx: 1320, cy: 560, R: 330, tile: 148 },
-    disc: V ? { cx: 540, cy: 1060, r: 222 } : { cx: 1320, cy: 560, r: 204 },
-    text: V ? { x: 0, y: 246, gap: 54, align: "center", size: 116 } : { x: 150, y: 404, gap: 50, align: "left", size: 104 },
+    W, H, t0: M0T, step: MSTEP, wipe: { t0: b(49.0), t1: b(50.0), x: PH[0], y: PH[1] }, end: b(62.3), implode: b(62.5),
+    features: FEATURES, words: C.words, chips: C.chips, more: C.more, copied: C.copied,
+    ring: V ? { cx: 540, cy: 1096, R: 358, tile: 158 } : { cx: 1320, cy: 560, R: 330, tile: 148 },
+    disc: V ? { cx: 540, cy: 1096, r: 214 } : { cx: 1320, cy: 560, r: 204 },
+    text: V ? { x: 0, y: 236, gap: 54, align: "center", size: 116, chipW: 960, chipGap: 22 } : { x: 150, y: 372, gap: 50, align: "left", size: 104, chipW: 740, chipGap: 22 },
     icon: (name, size, color, parent) => UI.glyphNode(name, size, color, parent), tileRadius: 0.2,
   });
-  sfx("wipe", b(41.0));
+  sfx("wipe", b(49.0));
   for (let i = 0; i < MN; i++) {
     sfx("tile", M0T + i * MSTEP, { i });
     sfx("v_" + FEATURES[i], M0T + i * MSTEP + 0.12, { i });
     blur(M0T + i * MSTEP - 0.02, M0T + i * MSTEP + 0.3, 6);
   }
-  sfx("implode", b(54.5));
-  blur(b(54.45), b(55.4), 10);
-  blur(b(40.95), b(42.05), 6);
+  sfx("implode", b(62.5));
+  blur(b(62.45), b(63.4), 10);
+  blur(b(48.95), b(50.05), 6);
 
   // ------------------------------------------------------------------ finale
   const finSvg = el("svg", { class: "abs fin-svg", width: W, height: H, viewBox: "0 0 " + W + " " + H }, fin);
@@ -453,26 +459,26 @@
   const name = el("div", { class: "name" }, fin, '<span class="mask"><span>Pickverter</span></span>');
   const byline = el("div", { class: "byline" }, fin, "by <b>ivLis STUDIO</b>");
   const foot = el("div", { class: "foot" }, fin, C.foot);
-  const FIN0 = b(56), FP = [650, 347], Z0 = 70;
-  sfx("zoomout", FIN0); sfx("impact", FIN0); sfx("click", b(57.5), { icon: true }); sfx("shing", b(57.55)); sfx("name", b(57.75)); sfx("chime", b(58.25));
-  blur(FIN0 - 0.02, FIN0 + 0.2, 40); blur(FIN0 + 0.2, FIN0 + 0.75, 16); blur(b(56.9), b(57.6), 6); blur(b(57.7), b(58.4), 6);
+  const FIN0 = b(64), FP = [650, 347], Z0 = 70;
+  sfx("zoomout", FIN0); sfx("impact", FIN0); sfx("click", b(65.5), { icon: true }); sfx("shing", b(65.55)); sfx("name", b(65.75)); sfx("chime", b(66.25));
+  blur(FIN0 - 0.02, FIN0 + 0.2, 40); blur(FIN0 + 0.2, FIN0 + 0.75, 16); blur(b(64.9), b(65.6), 6); blur(b(65.7), b(66.4), 6);
 
   window.MOTION_BLUR = BLUR;
-  window.MUSIC = { bpm: BPM, beats: 66 };
+  window.MUSIC = { bpm: BPM, beats: 74, shift: 2 };
 
   // ------------------------------------------------------------------ render
   function renderAt(t) {
     const cam = camAt(t);
-    const worldOn = t >= b(2.4) && t < b(42.2);
+    const worldOn = t >= b(2.4) && t < b(50.2);
     set(world, { display: worldOn ? "block" : "none", transform: "translate(" + W / 2 + "px," + H / 2 + "px) scale(" + cam.z + ") translate(" + -cam.x + "px," + -cam.y + "px)" });
     set(over, { display: worldOn ? "block" : "none" });
 
     const sel = selAt(t);
     explorer.update({
       sel, marquee: marqueeAt(t), status: statusAt(t, sel),
-      appear: { "tram.jpg": spring(t - b(6.25), 0.42, 0.6), "beach.jpg": spring(t - b(6.5), 0.42, 0.6), "latte.jpg": spring(t - b(6.75), 0.42, 0.6),
-        "Travel Plan.pdf": spring(t - b(14.75), 0.42, 0.6) },
-      rotate: { "Momo.jpg": -90 + 90 * spring(t - b(24.02), 0.5, 0.62) },
+      appear: { "tram.jpg": spring(t - b(7.25), 0.42, 0.6), "beach.jpg": spring(t - b(7.5), 0.42, 0.6), "latte.jpg": spring(t - b(7.75), 0.42, 0.6),
+        "Travel Plan.pdf": spring(t - b(17.25), 0.42, 0.6) },
+      rotate: { "Momo.jpg": -90 + 90 * spring(t - b(27.27), 0.5, 0.62) },
     });
 
     const [cx, cy] = cursorAt(t);
@@ -482,7 +488,7 @@
       if (t >= c && t < c + 0.45) ring = prog(t, c, c + 0.45);
     }
     const dragging = t >= b(3.0) && t < b(3.42) ? 0.6 : 0;
-    const cOp = E.outCubic(prog(t, b(2.8), b(2.95))) * (1 - prog(t, b(38.55), b(38.9)));
+    const cOp = E.outCubic(prog(t, b(2.8), b(2.95))) * (1 - prog(t, b(45.55), b(45.9)));
     cursor.update({ x: cx, y: cy, press: Math.max(press, dragging), ring, opacity: cOp });
 
     for (const w of wheels) w.update(t);
@@ -491,8 +497,8 @@
     {
       const show = t >= SHEET_IN ? spring(t - SHEET_IN, 0.34, 0.8) : 0;
       const out = E.inCubic(prog(t, SHEET_OUT, SHEET_OUT + 0.3));
-      const hover = E.outQuad(prog(t, b(37.85), b(37.95)));
-      const pr = prog(t, b(38.25) - 0.05, b(38.25)) * (1 - prog(t, b(38.25) + 0.05, b(38.25) + 0.2));
+      const hover = E.outQuad(prog(t, PL_HOVER, PL_HOVER + 0.05));
+      const pr = prog(t, PL_CLICK - 0.05, PL_CLICK) * (1 - prog(t, PL_CLICK + 0.05, PL_CLICK + 0.2));
       sheet.update({ x: sheetAt[0], y: sheetAt[1], show, out, hover: { 1: hover }, press: { 1: pr } });
     }
 
@@ -511,16 +517,16 @@
 
     // cut-out
     {
-      const a = spring(t - b(31.0), 0.55, 0.74);
-      const f = E.inOutCubic(prog(t, b(33.0), b(33.5)));
-      const vis = t >= b(31.0) && t < b(33.5);
+      const a = spring(t - b(34.75), 0.55, 0.74);
+      const f = E.inOutCubic(prog(t, b(36.75), b(37.25)));
+      const vis = t >= b(34.75) && t < b(37.25);
       set(cut, { display: vis ? "block" : "none" });
       if (vis) {
         const [px, py, z] = toScreen(CM, t);
         const ph = 87 * K * z, pw = 58 * K * z;
         const [hx, hy, hh] = LY.hero;
         const hw = (hh * 1066) / 1600;
-        const bob = Math.sin((t - b(31)) * 2.6) * 7 * clamp(a);
+        const bob = Math.sin((t - b(34.75)) * 2.6) * 7 * clamp(a);
         let x = lerp(px - pw / 2, hx - hw / 2, a), y = lerp(py - ph / 2, hy - hh / 2, a) - bob, w = lerp(pw, hw, a), h = lerp(ph, hh, a);
         if (f > 0) {
           const s = chat.stickerRect();
@@ -532,10 +538,10 @@
     }
 
     {
-      const show = spring(t - b(32.0), 0.45, 0.8);
-      const out = E.inCubic(prog(t, b(34.75), b(35.1)));
-      chat.update({ x: LY.chat.x, y: LY.chat.y, from: V ? "y" : "x", show: t >= b(32.0) ? show : 0, out,
-        incoming: spring(t - b(32.35), 0.35, 0.62), sticker: t >= b(33.5), sent: E.outCubic(prog(t, b(33.75), b(34.0))) });
+      const show = spring(t - b(35.75), 0.45, 0.8);
+      const out = E.inCubic(prog(t, b(38.75), b(39.1)));
+      chat.update({ x: LY.chat.x, y: LY.chat.y, from: V ? "y" : "x", show: t >= b(35.75) ? show : 0, out,
+        incoming: spring(t - b(36.1), 0.35, 0.62), sticker: t >= b(37.25), sent: E.outCubic(prog(t, b(37.5), b(37.75))) });
     }
 
     // phone + the flying PDF page
@@ -546,7 +552,7 @@
       const ps_ = LY.phoneScale;
       phone.update({ x: pxy[0], y: pxy[1], scale: ps_, show: s > 0.001 ? 1 : 0, viewer: E.outCubic(prog(t, FLY[1] - 0.15, FLY[1] + 0.1)), note: t >= NOTE ? spring(t - NOTE, 0.4, 0.72) : 0 });
       const f = E.inOutCubic(prog(t, FLY[0], FLY[1]));
-      set(page, { display: t >= FLY[0] && t < b(42.2) ? "block" : "none" });
+      set(page, { display: t >= FLY[0] && t < b(50.2) ? "block" : "none" });
       if (t >= FLY[0]) {
         const [sx, sy, z] = toScreen(sheetPt([36, 36]), t);
         const w0 = 30 * K * z;
@@ -605,19 +611,19 @@
         const pf = [I.x + ((FP[0] - 512) * I.s) / 1024, I.y + ((FP[1] - 512) * I.s) / 1024];
         const ps = [lerp(W / 2, pf[0], e), lerp(H / 2, pf[1], e)];
         attr(finSvg, "viewBox", FP[0] - ps[0] / s + " " + (FP[1] - ps[1] / s) + " " + W / s + " " + H / s);
-        const curIn = E.outCubic(prog(t, b(56.85), b(57.4)));
-        const press = prog(t, b(57.42), b(57.5)) * (1 - prog(t, b(57.6), b(57.85)));
-        const popAmt = t >= b(57.5) ? spring(t - b(57.5), 0.36, 0.5) : 0;
+        const curIn = E.outCubic(prog(t, b(64.85), b(65.4)));
+        const press = prog(t, b(65.42), b(65.5)) * (1 - prog(t, b(65.6), b(65.85)));
+        const popAmt = t >= b(65.5) ? spring(t - b(65.5), 0.36, 0.5) : 0;
         mark.update({ pop: popAmt, cursor: curIn, press, shadow: clamp(prog(e, 0.8, 1)) });
-        const n = E.outExpo(prog(t, b(57.75), b(57.75) + 0.6));
-        set(name, { top: LY.nameY + "px", display: t >= b(57.7) ? "block" : "none", letterSpacing: lerp(0.05, -0.02, E.outCubic(prog(t, b(57.75), b(57.75) + 0.8))) + "em" });
+        const n = E.outExpo(prog(t, b(65.75), b(65.75) + 0.6));
+        set(name, { top: LY.nameY + "px", display: t >= b(65.7) ? "block" : "none", letterSpacing: lerp(0.05, -0.02, E.outCubic(prog(t, b(65.75), b(65.75) + 0.8))) + "em" });
         set(name.firstChild.firstChild, { transform: "translateY(" + (1 - n) * 105 + "%)" });
-        const by = E.outCubic(prog(t, b(58.25), b(58.25) + 0.5));
+        const by = E.outCubic(prog(t, b(66.25), b(66.25) + 0.5));
         set(byline, { top: LY.byY + "px", opacity: by, transform: "translateY(" + (1 - by) * 14 + "px)" });
-        const ft = E.outCubic(prog(t, b(58.75), b(58.75) + 0.5));
+        const ft = E.outCubic(prog(t, b(66.75), b(66.75) + 0.5));
         set(foot, { top: LY.footY + "px", opacity: ft });
-        const push = 1 + 0.03 * E.inOutSine(prog(t, b(58), b(66)));
-        const nudge = t >= b(64) ? 1 + 0.022 * Math.sin(Math.PI * prog(t, b(64), b(64) + 0.3)) : 1;
+        const push = 1 + 0.03 * E.inOutSine(prog(t, b(66), b(74)));
+        const nudge = t >= b(72) ? 1 + 0.022 * Math.sin(Math.PI * prog(t, b(72), b(72) + 0.3)) : 1;
         set(fin, { transform: "scale(" + push * nudge + ")", transformOrigin: W / 2 + "px " + (LY.icon.y + LY.icon.s * 0.45) + "px" });
       }
     }

@@ -1,6 +1,6 @@
 # Pickverter promo video
 
-A 31-second launch video rendered entirely from code — the stage, the motion and the sound — in 16:9 and 9:16.
+A 35-second launch video rendered entirely from code — the stage, the motion and the sound — in 16:9 and 9:16.
 
 ```bash
 promo/make.sh                         # English and Korean, 16:9 and 9:16
@@ -15,18 +15,20 @@ Outputs land in `promo/out/`, all 60 fps:
 - `Pickverter-promo-<lang>-vertical-4k.mp4` (2160×3840) and `-vertical.mp4` (1080×1920) for Reels, Shorts and TikTok.
   The vertical cut keeps captions and keys inside the platforms' safe area (nothing important in the bottom 400 px).
 
-The edit runs on one beat grid (128 BPM, `window.MUSIC`) so energy only climbs until the icon:
+The edit runs on one beat grid (128 BPM, `window.MUSIC`) so energy only climbs until the icon. The wheel gets time to be
+read — about 1.3–2 s from opening to the pick, with unhurried pointer moves — and `MUSIC.shift` gives the score two more
+bars of demo before the montage. Result-card chimes sit under the music.
 
 | Bars | Scene |
 | --- | --- |
 | 0 | Hook — "Every file. One key away." and the ⌥ key |
-| 1–2 | Three iPhone photos → JPG at once (marquee, the wheel blooms open) |
-| 3–4 | Word → PDF |
-| 5–6 | Rotate: hover a tool and its options fan out |
-| 7–8 | Remove the background → clipboard → paste into a chat |
-| 9–10½ | AirDrop the PDF to an iPhone |
-| 10½–13 | Montage on blue: trim video, merge PDFs, blur faces, lock PDFs, shrink files, grab text |
-| 14–16 | Fly out of the picked slot into the app icon, name, "by ivLis STUDIO", last hit |
+| 1–3 | Three iPhone photos → JPG at once (marquee, the wheel blooms open) |
+| 3–5 | Word → PDF |
+| 5–7 | Rotate: hover a tool and its options fan out |
+| 7–10 | Remove the background → clipboard → paste into a chat |
+| 10–12½ | AirDrop the PDF to an iPhone |
+| 12½–15 | Montage on blue, one kind of file every two beats — video, audio, PDF, documents, photos, files: a live tool in the disc, its name, and four more tools as chips |
+| 16–18 | Fly out of the picked slot into the app icon, name, "by ivLis STUDIO", last hit |
 
 How it works:
 

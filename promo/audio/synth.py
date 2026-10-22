@@ -485,12 +485,13 @@ CHORDS = {
 LOOP = ["D", "E", "C#m", "F#m"]
 
 
-def chord_at(bar, step):
+def chord_at(bar, step, shift=0):
+    # shift: extra demo bars before the montage (window.MUSIC.shift); the loop runs longer, the rest moves later.
     if bar <= 0:
         return "E"
-    if bar <= 12:
+    if bar <= 12 + shift:
         return LOOP[(bar - 1) % 4]
-    if bar in (13, 15):
+    if bar in (13 + shift, 15 + shift):
         return "D" if step < 8 else "E"
     return "A"
 
@@ -505,18 +506,24 @@ LEAD = [
     (15, 0, 78, 3), (15, 3, 76, 3), (15, 6, 74, 2), (15, 8, 76, 3), (15, 11, 80, 3), (15, 14, 83, 2),
     (16, 0, 81, 12),
 ]
+
+
 # mallet answers during the demos (bar, step, midi): a little call at the end of every second bar
-# (not in bar 10, where the lead's pickup into the montage takes over)
-ANSWERS = []
-for bar in range(2, 10, 2):
-    c = CHORDS[chord_at(bar, 12)][0]
-    ANSWERS += [(bar, 10, c[3] + 12), (bar, 12, c[2] + 12), (bar, 14, c[1] + 12)]
+# (not in the bar where the lead's pickup into the montage takes over)
+def answers(shift=0):
+    out = []
+    for bar in range(2, 10 + shift, 2):
+        c = CHORDS[chord_at(bar, 12, shift)][0]
+        out += [(bar, 10, c[3] + 12), (bar, 12, c[2] + 12), (bar, 14, c[1] + 12)]
+    return out
+
 
 STAB_STEPS = {0: 1.0, 3: 0.78, 6: 0.9, 10: 0.84, 12: 0.72}
 
 
 def build(events, duration, music):
     bpm = music.get("bpm", 128)
+    shift = int(music.get("shift", 0))
     beat = 60 / bpm
     bar_len = 4 * beat
     s16 = beat / 4
@@ -526,7 +533,8 @@ def build(events, duration, music):
     duck_src = Bus(total)  # pumped by the kick: chords, pad, bass
     kicks = []
 
-    M0, BUILD, FIN, END = at(10, 8), at(13, 8), at(14), at(16)
+    M0, BUILD, FIN, END = at(10 + shift, 8), at(13 + shift, 8), at(14 + shift), at(16 + shift)
+    BARS = 16 + shift
 
     def section(t):
         if t < at(1):
@@ -544,15 +552,15 @@ def build(events, duration, music):
         return "end"
 
     # ---------------- drums, bass, stabs on a 16th grid
-    for bar in range(0, 16):
+    for bar in range(0, BARS):
         for step in range(16):
             t = at(bar, step)
             sec = section(t)
-            ch = chord_at(bar, step)
+            ch = chord_at(bar, step, shift)
             notes, root = CHORDS[ch]
             beat_step = step % 4
             # kick
-            four = sec in ("A", "A2", "M", "F") or (sec == "intro") or (sec == "build" and t < at(13, 12))
+            four = sec in ("A", "A2", "M", "F") or (sec == "intro") or (sec == "build" and t < at(13 + shift, 12))
             if beat_step == 0 and four:
                 v = 0.95 if sec != "intro" else 0.85
                 music_bus.add(kick(v), t, 1.0)
@@ -606,10 +614,10 @@ def build(events, duration, music):
                     delay.add(s, t, 0.12)
 
     # pads: soft bed per bar (fuller in the montage and finale)
-    for bar in range(0, 16):
+    for bar in range(0, BARS):
         sec = section(at(bar))
         for half in (0, 8):
-            ch = chord_at(bar, half)
+            ch = chord_at(bar, half, shift)
             notes, _ = CHORDS[ch]
             dur = 2 * beat + 0.15
             v = {"intro": 0.5, "A": 0.45, "A2": 0.55, "M": 0.8, "build": 0.8, "F": 0.85}.get(sec, 0)
@@ -618,7 +626,7 @@ def build(events, duration, music):
                 duck_src.add(p, at(bar, half), 1.0)
 
     # mallet answers during the demos
-    for bar, step, m in ANSWERS:
+    for bar, step, m in answers(shift):
         s = mallet(m, 0.9)
         music_bus.add(s, at(bar, step), 0.9, pan=0.25 if step != 12 else -0.25)
         delay.add(pan2(s, 0), at(bar, step), 0.35)
@@ -626,7 +634,7 @@ def build(events, duration, music):
 
     # lead
     for bar, step, m, length in LEAD:
-        t = at(bar, step)
+        t = at(bar + shift, step)
         s = lead_note(m, length * s16, 1.0 if bar < 16 else 1.1)
         music_bus.add(s, t, 1.0, pan=0.0)
         delay.add(pan2(s, 0), t, 0.42)
@@ -634,19 +642,24 @@ def build(events, duration, music):
 
     # crashes, risers, fills, impacts
     music_bus.add(crash(0.85), 0.0, 1.0)
-    for t, v in ((at(1), 1.0), (at(5), 0.6), (M0, 1.0), (at(11), 0.55), (FIN, 1.15)):
+    for t, v in ((at(1), 1.0), (at(5), 0.6), (M0, 1.0), (at(11 + shift), 0.55), (FIN, 1.15)):
         music_bus.add(crash(v), t, 1.0)
+    if shift >= 2:
+        music_bus.add(crash(0.5), at(9), 1.0)
     music_bus.add(rev_crash(1.0), at(1) - 1.0, 0.8)
     music_bus.add(rev_crash(0.9), M0 - 0.9, 0.8)
     music_bus.add(rev_crash(1.4), FIN - 1.4, 1.0)
     music_bus.add(pan2(sfx_riser(at(1) - at(0, 6), 6000), 0), at(0, 6), 0.75)
-    music_bus.add(pan2(sfx_riser(M0 - at(9, 8), 7000), 0), at(9, 8), 0.8)
-    music_bus.add(pan2(sfx_riser(FIN - at(12), 9000), 0), at(12), 1.0)
+    music_bus.add(pan2(sfx_riser(M0 - at(9 + shift, 8), 7000), 0), at(9 + shift, 8), 0.8)
+    music_bus.add(pan2(sfx_riser(FIN - at(12 + shift), 9000), 0), at(12 + shift), 1.0)
     # snare fills
     for i in range(4):
         music_bus.add(snare(0.35 + 0.15 * i), at(0, 12 + i), 1.0)
     for i in range(4):
         music_bus.add(snare(0.3 + 0.12 * i), at(4, 12 + i), 0.9)
+    if shift >= 2:
+        for i in range(4):
+            music_bus.add(snare(0.3 + 0.12 * i), at(8, 12 + i), 0.85)
     for i in range(8):
         music_bus.add(snare(0.3 + 0.08 * i), M0 - 8 * s16 + i * s16, 1.0)
     t, gap = BUILD, s16 * 2
@@ -658,7 +671,7 @@ def build(events, duration, music):
         t += gap
         gap = max(s16 / 2, gap * 0.9)
     for i in range(4):
-        music_bus.add(snare(0.4 + 0.1 * i), at(15, 12 + i), 0.9)
+        music_bus.add(snare(0.4 + 0.1 * i), at(15 + shift, 12 + i), 0.9)
     # landing on the icon and the last hit
     music_bus.add(pan2(sfx_impact(1.0), 0), FIN, 0.9)
     music_bus.add(pan2(sfx_downlifter(1.6), 0), FIN + 0.05, 0.7)
@@ -717,11 +730,12 @@ def build(events, duration, music):
         elif name == "choice":
             sfx.add(sfx_pop(600, 900, 0.07, 0.16), t, 1.0)
         elif name == "card":
-            sfx.add(pan2(sfx_whoosh(0.32, 900, 3400, 0.14), 0.5), t - 0.04, 1.0)
+            # result cards slide in softly; their "done" chime sits under the music, not on top of it
+            sfx.add(pan2(sfx_whoosh(0.32, 900, 3400, 0.14), 0.5), t - 0.04, 0.55)
         elif name == "done":
             d = sfx_done()
-            sfx.add(d, t, 0.7, pan=0.4)
-            sfx_verb.add(d, t, 0.3)
+            sfx.add(d, t, 0.3, pan=0.4)
+            sfx_verb.add(d, t, 0.14)
         elif name == "pop":
             sfx.add(sfx_pop(520 * 2 ** (i * 3 / 12), 1050 * 2 ** (i * 3 / 12), 0.08, 0.2), t, 1.0, pan=-0.2 + 0.2 * i)
         elif name == "swish":
@@ -750,8 +764,8 @@ def build(events, duration, music):
             sfx.add(sfx_whoosh(0.5, 600, 4600, 0.18, 1.2), t, 1.0, pan=0.3)
         elif name == "receive":
             c = sfx_chime((88, 93, 97))
-            sfx.add(c, t, 0.45, pan=0.35)
-            sfx_verb.add(c, t, 0.4)
+            sfx.add(c, t, 0.26, pan=0.35)
+            sfx_verb.add(c, t, 0.22)
         elif name == "message":
             sfx.add(sfx_pop(700, 1150, 0.09, 0.15), t, 1.0, pan=0.3)
         elif name == "paste":
@@ -769,6 +783,12 @@ def build(events, duration, music):
         elif name == "v_trim":
             sfx.add(sfx_tick(-0.5), t + 0.08, 0.9)
             sfx.add(sfx_tick(-0.45), t + 0.16, 0.9)
+        elif name == "v_audiotrim":
+            sfx.add(sfx_tick(-0.3), t + 0.08, 0.9)
+            sfx.add(sfx_tick(-0.25), t + 0.16, 0.9)
+        elif name == "v_docs":
+            for k in range(3):
+                sfx.add(sfx_pop(560 * 2 ** (k * 4 / 12), 980 * 2 ** (k * 4 / 12), 0.07, 0.13), t + 0.2 + 0.09 * k, 1.0, pan=-0.2 + 0.2 * k)
         elif name == "v_merge":
             sfx.add(sfx_whoosh(0.3, 600, 2200, 0.1), t + 0.05, 1.0)
         elif name == "v_faces":

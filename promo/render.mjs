@@ -154,7 +154,7 @@ async function blurredFrame(p, t) {
   return sharp(out, { raw: { width: info.width, height: info.height, channels: info.channels } }).png({ compressionLevel: 1 }).toBuffer();
 }
 
-const browser = await chromium.launch({ channel: "chrome", headless: true, args: ["--force-color-profile=srgb", "--disable-lcd-text", "--hide-scrollbars"] });
+const browser = await chromium.launch({ channel: "chrome", headless: true, timeout: 60000, args: ["--force-color-profile=srgb", "--disable-lcd-text", "--hide-scrollbars"] });
 
 // A single still of any page (README banners): --shot "banner.html?theme=dark" --out file.png --width 1600 --height 600
 if (opt.shot) {
@@ -218,15 +218,28 @@ if (opt.video) {
   async function worker() {
     while (queue.length) {
       const q = queue.shift();
-      await new Promise((resolve, reject) => {
-        const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--chunk", q.file, "--first", String(q.first), "--last", String(q.last), ...pass], { stdio: ["ignore", "pipe", "inherit"] });
-        child.stdout.on("data", (d) => {
-          done += 30 * (String(d).match(/\+30/g) || []).length;
-          const el = (Date.now() - started) / 1000;
-          process.stdout.write("frames ~" + done + "/" + total + "  " + (done / el).toFixed(1) + " fps  eta " + Math.round(((total - done) * el) / Math.max(1, done)) + "s\n");
-        });
-        child.on("close", (code) => (code === 0 ? resolve() : reject(new Error("chunk failed " + q.file))));
-      });
+      // A chunk can fail for reasons outside the stage (a browser that doesn't start under load): retry it.
+      for (let attempt = 1; ; attempt++) {
+        let counted = 0;
+        try {
+          await new Promise((resolve, reject) => {
+            const child = spawn(process.execPath, [fileURLToPath(import.meta.url), "--chunk", q.file, "--first", String(q.first), "--last", String(q.last), ...pass], { stdio: ["ignore", "pipe", "inherit"] });
+            child.stdout.on("data", (d) => {
+              const n = 30 * (String(d).match(/\+30/g) || []).length;
+              counted += n;
+              done += n;
+              const el = (Date.now() - started) / 1000;
+              process.stdout.write("frames ~" + done + "/" + total + "  " + (done / el).toFixed(1) + " fps  eta " + Math.round(((total - done) * el) / Math.max(1, done)) + "s\n");
+            });
+            child.on("close", (code) => (code === 0 ? resolve() : reject(new Error("chunk failed " + q.file))));
+          });
+          break;
+        } catch (error) {
+          done -= counted;
+          if (attempt >= 3) throw error;
+          console.error("retrying " + path.basename(q.file) + " (" + error.message + ")");
+        }
+      }
     }
   }
   await Promise.all(Array.from({ length: workers }, worker));
