@@ -12,7 +12,7 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=downloads&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <img alt="Windows 10+" src="https://img.shields.io/badge/Windows-10%2B-1D1D1F?style=flat-square&logo=windows&logoColor=white">
-  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License: CC BY-NC-ND 4.0" src="https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-1D1D1F?style=flat-square"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="macOS CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=macOS%20CI"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
@@ -27,7 +27,7 @@
 </p>
 
 <!-- The film is a GitHub attachment, so it plays inline here. Source: promo/ -->
-https://github.com/user-attachments/assets/feb93e2b-2654-4059-9b74-615e5dddc990
+https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 
 <p align="center"><sub>35 seconds · turn the sound on</sub></p>
 
@@ -217,4 +217,5 @@ Inside `macos/Sources/Pickverter/`:
 
 ## License
 
-[MIT](LICENSE) © ivLis Studio
+[CC BY-NC-ND 4.0](LICENSE) © ivLis Studio — share it unchanged, for non-commercial purposes, with credit.
+Releases before 0.2.0 were published under the MIT License. Third-party components keep their own licenses.

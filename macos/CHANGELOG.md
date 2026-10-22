@@ -3,10 +3,12 @@
 All notable changes to Pickverter. Versions follow [Semantic Versioning](https://semver.org).
 The section for a version becomes the release notes shown in the in-app updater.
 
-## [Unreleased]
+## [0.2.0] - 2026-10-23
 
+- **Pickverter for Windows** — the same wheel now runs on Windows 10 and 11: tap Alt in File Explorer. The installer is on this release page, next to the Mac download.
 - **New icon** — the app icon, menu bar glyph and in-app mark now share one design: the wheel with its picked slot and the pointer that picked it.
-- **Website** — Pickverter now has a home at [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/): try the wheel right in your browser, watch the film and find install help, in English and Korean.
+- **Website** — Pickverter now has a home at [ivlis-studio.github.io/pickverter](https://ivlis-studio.github.io/pickverter/): try the wheel right in your browser, watch the film and find install help for Mac and Windows, in English and Korean.
+- **License** — from this version Pickverter is licensed under [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/): free to share unchanged, non-commercially, with credit. Earlier versions were released under the MIT License.
 
 ## [0.1.1] - 2026-10-22
 

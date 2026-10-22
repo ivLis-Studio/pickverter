@@ -3,7 +3,7 @@
 Notable changes to Pickverter for Windows. Versions follow [Semantic Versioning](https://semver.org) and match the Mac app.
 The section for a version becomes the Windows part of the GitHub release and the notes in the in-app updater.
 
-## [0.2.0] - Unreleased
+## [0.2.0] - 2026-10-23
 
 First Windows release.
 

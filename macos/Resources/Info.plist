@@ -56,7 +56,7 @@
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>NSHumanReadableCopyright</key>
-    <string>© 2026 ivLis Studio · MIT License</string>
+    <string>© 2026 ivLis Studio · CC BY-NC-ND 4.0</string>
     <key>PVUpdateRepository</key>
     <string>ivLis-Studio/pickverter</string>
     <key>PVUpdatePublicKey</key>

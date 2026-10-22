@@ -12,7 +12,7 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="다운로드" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <img alt="Windows 10+" src="https://img.shields.io/badge/Windows-10%2B-1D1D1F?style=flat-square&logo=windows&logoColor=white">
-  <a href="LICENSE"><img alt="MIT 라이선스" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
+  <a href="LICENSE"><img alt="라이선스: CC BY-NC-ND 4.0" src="https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-1D1D1F?style=flat-square"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="macOS CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=macOS%20CI"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
@@ -27,7 +27,7 @@
 </p>
 
 <!-- 영상은 GitHub 첨부 파일이라 README에서 바로 재생돼요. 원본: promo/ -->
-https://github.com/user-attachments/assets/6fce639f-3d08-496d-bed4-327f38d73594
+https://github.com/user-attachments/assets/f2b6a1cc-2df3-4cb4-a95c-205937050f43
 
 <p align="center"><sub>35초 · 소리를 켜고 보세요</sub></p>
 
@@ -208,4 +208,5 @@ CI가 Windows 러너에서 모든 창을 6개 언어·두 테마로 렌더링하
 
 ## 라이선스
 
-[MIT](LICENSE) © ivLis Studio
+[CC BY-NC-ND 4.0](LICENSE) © ivLis Studio — 출처를 밝히고, 상업적으로 쓰지 않고, 고치지 않은 그대로라면 자유롭게 공유할 수 있어요.
+0.2.0 이전 릴리스는 MIT 라이선스로 배포됐어요. 서드파티 구성 요소는 각자의 라이선스를 따라요.
