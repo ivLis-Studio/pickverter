@@ -91,19 +91,27 @@ ls -lh "$OUT"
 if [ "$PUBLISH" = "1" ]; then
   PRERELEASE=()
   [[ "$VERSION" == *-* ]] && PRERELEASE=(--prerelease)
-  if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
-    # The Windows workflow got there first: add the Mac files and put the Mac notes above its section.
-    gh release upload "$TAG" "$DMG" "$ZIP" "$OUT/update.json" "$OUT/SHA256SUMS.txt" --repo "$REPO" --clobber
+  ASSETS=("$DMG" "$ZIP" "$OUT/update.json" "$OUT/SHA256SUMS.txt")
+  # The Windows workflow got there first: add the Mac files and put the Mac notes above its section.
+  add_to_release() {
+    gh release upload "$TAG" "${ASSETS[@]}" --repo "$REPO" --clobber
     EXISTING="$(gh release view "$TAG" --repo "$REPO" --json body --jq .body)"
     if ! grep -q '<!-- mac -->' <<<"$EXISTING"; then
       { echo '<!-- mac -->'; cat "$BODY"; echo; printf '%s\n' "$EXISTING"; } > "$OUT/release-body-merged.md"
       gh release edit "$TAG" --repo "$REPO" --title "Pickverter $VERSION" --notes-file "$OUT/release-body-merged.md"
     fi
+  }
+  if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+    add_to_release
   else
     { echo '<!-- mac -->'; cat "$BODY"; } > "$OUT/release-body-marked.md"
-    gh release create "$TAG" "$DMG" "$ZIP" "$OUT/update.json" "$OUT/SHA256SUMS.txt" \
+    if ! gh release create "$TAG" "${ASSETS[@]}" \
       --repo "$REPO" --title "Pickverter $VERSION" --notes-file "$OUT/release-body-marked.md" \
-      ${DRAFT[@]+"${DRAFT[@]}"} ${PRERELEASE[@]+"${PRERELEASE[@]}"}
+      ${DRAFT[@]+"${DRAFT[@]}"} ${PRERELEASE[@]+"${PRERELEASE[@]}"}; then
+      # Both workflows run on the same tag: the other one may have created the release a moment ago.
+      gh release view "$TAG" --repo "$REPO" >/dev/null
+      add_to_release
+    fi
   fi
   echo "✓ published $TAG"
 fi

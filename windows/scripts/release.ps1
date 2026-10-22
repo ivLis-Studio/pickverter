@@ -93,22 +93,32 @@ if ($Publish) {
     $body = Join-Path $Out "release-body.md"
     $footer = Get-Content (Join-Path $Root "docs\release-footer.md") -Raw -Encoding utf8
     $windows = "<!-- windows -->" + $NewLine + "## Windows" + $NewLine + $NewLine + $text + $NewLine + $NewLine + $footer
-    gh release view $Tag --repo $Repo *> $null
-    if ($LASTEXITCODE -eq 0) {
+    # The Mac workflow got there first: add the Windows files and put the Windows notes below its own.
+    function Add-ToRelease {
         gh release upload $Tag @($assets.FullName) --repo $Repo --clobber
         if ($LASTEXITCODE) { throw "upload failed" }
         $existing = (gh release view $Tag --repo $Repo --json body --jq .body) -join $NewLine
         if (-not ($existing -match '<!-- windows -->')) {
             Set-Content $body ($existing.TrimEnd() + $NewLine + $NewLine + $windows) -Encoding utf8NoBOM
             gh release edit $Tag --repo $Repo --notes-file $body
+            if ($LASTEXITCODE) { throw "release notes update failed" }
         }
+    }
+    gh release view $Tag --repo $Repo *> $null
+    if ($LASTEXITCODE -eq 0) {
+        Add-ToRelease
     }
     else {
         Set-Content $body $windows -Encoding utf8NoBOM
         $flags = @()
         if ($Version -match '-') { $flags += "--prerelease" }
         gh release create $Tag @($assets.FullName) --repo $Repo --title "Pickverter $Version" --notes-file $body @flags
-        if ($LASTEXITCODE) { throw "release failed" }
+        if ($LASTEXITCODE) {
+            # Both workflows run on the same tag: the other one may have created the release a moment ago.
+            gh release view $Tag --repo $Repo *> $null
+            if ($LASTEXITCODE) { throw "release failed" }
+            Add-ToRelease
+        }
     }
     Write-Host "✓ published $Tag"
 }

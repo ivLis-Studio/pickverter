@@ -46,7 +46,7 @@ internal static class Snapshots
                 Directory.CreateDirectory(output);
                 Console.WriteLine("▸ " + output);
                 if (On("wheels")) await Wheels(output, F("photo.jpg"), F("report.pdf"), files);
-                if (On("cards")) await Cards(output, F("photo.jpg"));
+                if (On("cards")) await Cards(output, F("photo.jpg"), F("tone.wav"));
                 await Windows(output, files, F);
             }
         }
@@ -138,7 +138,7 @@ internal static class Snapshots
         await Save(documentCanvas, Path.Combine(output, "wheel-pdf.png"), side, side, Desk);
     }
 
-    private static async Task Cards(string output, string photo)
+    private static async Task Cards(string output, string photo, string tone)
     {
         var presenter = new CardPresenter();
         var option = Catalog.Options([photo], WheelMode.Convert).First(candidate => candidate.Id == "convert.png");
@@ -148,7 +148,9 @@ internal static class Snapshots
         var running = new Job(option, WheelMode.Convert, [photo], ResultDestination.File) { Progress = 0.42 };
         var done = new Job(option, WheelMode.Convert, [photo], ResultDestination.File);
         await done.Complete(new PickResult { Outputs = [result] });
-        var failed = new Job(option, WheelMode.Convert, [photo], ResultDestination.File);
+        // Audio needs ffmpeg, which is what the failed card offers to install.
+        var mp3 = Catalog.Options([tone], WheelMode.Convert).FirstOrDefault(candidate => candidate.Id == "convert.mp3");
+        var failed = mp3 != null ? new Job(mp3, WheelMode.Convert, [tone], ResultDestination.File) : new Job(option, WheelMode.Convert, [photo], ResultDestination.File);
         failed.Fail(L("err.ffmpeg"));
         failed.FixAction = new NoticeAction(L("engine.install_ffmpeg"), "arrow.down.circle", () => { });
         var notice = new Job(L("update.card.available", "0.3.0"), L("update.card.available.d"), "arrow.down.circle", JobTone.Info,

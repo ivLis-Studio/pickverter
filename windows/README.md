@@ -71,7 +71,7 @@ scripts/test.ps1 -Snapshots out     # …plus PNG renders of every window in six
 On a Mac: `dotnet build Pickverter.slnx` and `dotnet test --project tests/Pickverter.Core.Tests/Pickverter.Core.Tests.csproj`.
 
 Developer commands: `Pickverter.exe cli …` — `list`, `run <option-id> <files>`, `fixtures`, `selftest`, `glyphs`,
-`snapshot`, `screenshot`, `inspect` and the `update-*` tools. Editors can be answered from the environment
+`snapshot`, `screenshot`, `e2e` (drives File Explorer, the Alt tap and the wheel on a real desktop), `inspect` and the `update-*` tools. Editors can be answered from the environment
 (`PICKVERTER_EDITOR_CROP='{"rect":…}'`), `PICKVERTER_LANG=ja` picks a language and `PICKVERTER_DEBUG=1` writes a trace to
 `%LOCALAPPDATA%\Pickverter\Logs`.
 
@@ -80,8 +80,9 @@ Developer commands: `Pickverter.exe cli …` — `list`, `run <option-id> <files
 Both apps ship in the same GitHub release. Add a `## [x.y.z]` section to [CHANGELOG.md](CHANGELOG.md) (and to
 [../macos/CHANGELOG.md](../macos/CHANGELOG.md)), then push the tag `vx.y.z`. The **Windows Release** workflow tests, publishes
 self-contained x64 and Arm64 builds, makes the installers with Inno Setup, signs `update-windows.json` with the
-`PICKVERTER_UPDATE_KEY` secret (the same key as the Mac updater) and attaches everything to the release, whichever
-workflow creates it first. Locally: `scripts/release.ps1 -Version x.y.z -Publish`.
+`PICKVERTER_UPDATE_KEY` secret (the same key as the Mac updater; it refuses to publish a signature installed copies
+wouldn't accept) and attaches everything to the release, whichever workflow creates it first.
+Locally: `scripts/release.ps1 -Version x.y.z -Publish` (needs Inno Setup 6: `winget install JRSoftware.InnoSetup`).
 
 ## Layout
 
