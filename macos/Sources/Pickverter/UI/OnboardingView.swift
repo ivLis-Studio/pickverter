@@ -108,10 +108,12 @@ struct OnboardingView: View {
     /// Title, the setup steps and the gestures (everything above the button row).
     private var column: some View {
         VStack(alignment: .leading, spacing: 18) {
-            if updater.updatedFrom != nil {
+            if updater.updatedFrom != nil || CodeIdentity.clearedStaleGrants {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(L("ob.updated", updater.currentVersion)).font(.system(size: 22, weight: .bold))
-                    Text(L("ob.updated.d"))
+                    Text(updater.updatedFrom != nil ? L("ob.updated", updater.currentVersion) : "Pickverter")
+                        .font(.system(size: 22, weight: .bold))
+                    // The switch to a Developer ID signature costs the old grants once; say why.
+                    Text(CodeIdentity.clearedStaleGrants ? L("ob.signed.d") : L("ob.updated.d"))
                         .font(.system(size: 13)).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }

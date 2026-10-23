@@ -402,6 +402,9 @@ extension CLI {
                     return (AnyView(CompareView(model: model, close: {})), CompareWindow.windowSize(for: model.frameAspect))
                 case "onboarding":
                     return (AnyView(OnboardingView()), CGSize(width: 871, height: 664))
+                case "onboarding-signed":
+                    CodeIdentity.previewClearedGrants()
+                    return (AnyView(OnboardingView()), CGSize(width: 871, height: 664))
                 case "onboarding-progress":
                     FFmpegInstaller.shared.preview(.downloading(0.42))
                     return (AnyView(OnboardingView()), CGSize(width: 871, height: 664))
@@ -605,7 +608,7 @@ extension CLI {
         }
         do {
             let staged = try wait { try await updater.stage(manifest) }
-            print("staged \(staged.path) adhoc=\(Updater.isAdHoc(staged))")
+            print("staged \(staged.path) team=\(CodeIdentity.team(of: staged) ?? "ad-hoc")")
             let gone = Process()
             gone.executableURL = URL(fileURLWithPath: "/usr/bin/true")
             try gone.run()
@@ -621,5 +624,41 @@ extension CLI {
             print("ERR \(error.localizedDescription)")
             return 1
         }
+    }
+
+    // MARK: Self-test: signatures and privacy permissions
+
+    /// Which launches clear grants made to another signature, and the Team ID lookup behind it.
+    static func signingTests() -> Int {
+        var failures = 0
+        let cases: [(current: String?, last: String?, returning: Bool)] = [
+            (nil, nil, true),   // an ad-hoc build never clears or records
+            ("T", "T", true),   // the same signer as last time
+            ("T", nil, true),   // the first Developer ID launch after 0.3.0 and earlier
+            ("T", nil, false),  // a first launch only records
+            ("T", "U", true),   // another signer
+        ]
+        let decisions = cases.map { "\(CodeIdentity.change(current: $0.current, last: $0.last, returning: $0.returning))" }
+        check("signer changes", decisions.joined(separator: " "), "keep keep clearGrants record clearGrants", &failures)
+        check("a returning user", "\(CodeIdentity.isReturning(["onboarded": false])) "
+              + "\(CodeIdentity.isReturning(["NSNavPanelExpandedSizeForOpenMode": "{880, 448}"]))", "true false", &failures)
+        // The Security framework must read the same Team ID codesign prints ("not set" for ad-hoc builds).
+        let app = Bundle.main.bundleURL
+        let process = Process()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        process.arguments = ["-dv", app.path]
+        let pipe = Pipe()
+        process.standardError = pipe
+        process.standardOutput = FileHandle.nullDevice
+        try? process.run()
+        let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+        process.waitUntilExit()
+        let printed = output.split(separator: "\n").first(where: { $0.hasPrefix("TeamIdentifier=") })?.dropFirst("TeamIdentifier=".count)
+        let expected = printed.map(String.init).flatMap { $0 == "not set" ? nil : $0 } ?? "ad-hoc"
+        let team = CodeIdentity.team(of: app)
+        check("Team ID matches codesign", team ?? "ad-hoc", expected, &failures)
+        check("grants carry over only between signed copies", "\(CodeIdentity.keepsPermissions(from: app, to: app))",
+              "\(team != nil)", &failures)
+        return failures
     }
 }

@@ -131,7 +131,7 @@ https://github.com/user-attachments/assets/49415c57-42f0-4318-bb77-774c99dfaae4
 ### Mac
 
 1. [Releases](https://github.com/ivLis-Studio/pickverter/releases/latest)에서 **Pickverter-x.y.z.dmg**를 내려받아 Pickverter를 응용 프로그램 폴더로 끌어 놓으세요.
-2. 아직 공증(notarization)을 받지 않아 처음 한 번은 **시스템 설정 › 개인정보 보호 및 보안**에서 **그래도 열기**를 눌러야 해요(또는 앱 우클릭 › 열기).
+2. 앱을 여세요. Apple 공증을 받은 앱이라 다른 앱처럼 바로 열려요. macOS는 인터넷에서 받은 앱인지 한 번만 확인해요.
 3. **손쉬운 사용**(⌥ 탭·드래그 감지)과 **Finder 제어**(선택한 파일 읽기)를 허용하세요. 첫 화면이 차례대로 안내해요.
    이어서 **파일 접근**도 미리 허용할 수 있어요. **전체 디스크 접근 권한**(권장 — 어떤 폴더·드라이브도 다시 묻지 않음)을 켜거나,
    데스크탑·문서·다운로드·iCloud Drive만 허용하세요. 미리 해 두면 작업 도중에 macOS 권한 창이 끼어들지 않아요.

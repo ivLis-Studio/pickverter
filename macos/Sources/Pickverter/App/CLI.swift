@@ -302,6 +302,7 @@ enum CLI {
         failures += layoutTests(files)
         failures += editorTests()
         failures += crossPlatformTests(files)
+        failures += signingTests()
         return failures == 0 ? 0 : 1
     }
 

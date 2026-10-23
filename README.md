@@ -133,8 +133,7 @@ https://github.com/user-attachments/assets/e47fc193-fc9c-48ff-b08b-e94a4da85e0c
 ### Mac
 
 1. Download **Pickverter-x.y.z.dmg** from [Releases](https://github.com/ivLis-Studio/pickverter/releases/latest) and drag Pickverter into Applications.
-2. The app isn't notarized yet, so macOS asks once: open **System Settings › Privacy & Security** and click **Open Anyway**
-   (or right-click Pickverter › Open).
+2. Open it. Pickverter is signed and notarized by Apple, so it opens like any other app — macOS only confirms it came from the internet.
 3. Allow **Accessibility** (to notice the ⌥ tap and drags) and **Finder** control (to read your selection). The welcome window walks you through it.
    It then offers **File access**: turn on **Full Disk Access** (recommended — no prompts for any folder or drive), or allow
    just Desktop, Documents, Downloads and iCloud Drive. Doing it up front means macOS never stops a job halfway to ask.

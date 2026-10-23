@@ -51,6 +51,8 @@ final class AppController {
     let input = InputMonitor()
 
     func start() {
+        // Before anything looks at a permission: grants made to a differently signed copy are cleared once.
+        CodeIdentity.clearGrantsAfterSignerChange()
         ClipboardStore.prune()
         Task.detached(priority: .utility) { _ = Tools.ffmpegEncoders() }
         Task.detached(priority: .background) {

@@ -3,6 +3,11 @@
 All notable changes to Pickverter. Versions follow [Semantic Versioning](https://semver.org).
 The section for a version becomes the release notes shown in the in-app updater.
 
+## [0.3.1] - 2026-10-24
+
+- **Signed and notarized** — Pickverter is now signed with a Developer ID and notarized by Apple. A download opens like any other app, with no trip to Privacy & Security for "Open Anyway", and macOS can tell the app hasn't been tampered with.
+- **Permissions that stay** — updates keep Accessibility, Finder control and file access from now on. Coming from 0.3.0 or earlier, macOS asks for them one last time: the welcome window says why and walks you through it.
+
 ## [0.3.0] - 2026-10-24
 
 - **Files that cross between Mac and Windows** — ZIPs from Pickverter now keep their names readable on Windows (no more broken Korean or Japanese names, no .DS_Store or __MACOSX inside) and keep empty folders. ZIPs made on Windows unpack with readable Korean names, and nothing in an archive can land outside the folder it unpacks to.

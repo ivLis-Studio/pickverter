@@ -346,21 +346,8 @@ final class Updater: ObservableObject {
 
     // MARK: Installing
 
-    /// Ad-hoc signatures change with every build, so macOS treats the update as a new app for privacy permissions.
-    /// The old grants then look "on" in System Settings but no longer apply, so the installer clears them.
-    static func isAdHoc(_ app: URL) -> Bool {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
-        process.arguments = ["-dv", app.path]
-        let pipe = Pipe()
-        process.standardError = pipe
-        process.standardOutput = FileHandle.nullDevice
-        guard (try? process.run()) != nil else { return true }
-        let output = String(decoding: pipe.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
-        process.waitUntilExit()
-        return output.contains("Signature=adhoc") || !output.contains("Authority=")
-    }
-
+    /// Swaps the bundle once the app has quit. With RESET=1 it first clears the grants macOS keeps for the old
+    /// signature (see CodeIdentity), so the new copy asks again instead of failing quietly.
     static let installScript = """
     #!/bin/sh
     # Pickverter updater: wait for the app to quit, swap the bundle, relaunch.
@@ -371,8 +358,7 @@ final class Updater: ObservableObject {
     if /bin/mv "$TARGET" "$BACKUP"; then
       if /bin/mv "$NEW" "$TARGET"; then
         if [ "$RESET" = "1" ]; then
-          for SERVICE in Accessibility AppleEvents SystemPolicyAllFiles SystemPolicyDesktopFolder \\
-            SystemPolicyDocumentsFolder SystemPolicyDownloadsFolder SystemPolicyRemovableVolumes SystemPolicyNetworkVolumes; do
+          for SERVICE in \(CodeIdentity.privacyServices.joined(separator: " ")); do
             /usr/bin/tccutil reset "$SERVICE" "$BUNDLE_ID" >/dev/null 2>&1
           done
         fi
@@ -402,7 +388,7 @@ final class Updater: ObservableObject {
         let backup = Self.updatesFolder.appendingPathComponent("previous.app")
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        let reset = resetPermissions ?? Self.isAdHoc(staged)
+        let reset = resetPermissions ?? !CodeIdentity.keepsPermissions(from: target, to: staged)
         process.arguments = [script.path, "\(pid)", staged.path, target.path, backup.path, reset ? "1" : "0",
                              Bundle.main.bundleIdentifier ?? "com.pickverter.app", relaunch ? "open" : "no"]
         try process.run()
@@ -421,7 +407,8 @@ final class Updater: ObservableObject {
         }
         phase = .installing
         do {
-            let reset = Self.isAdHoc(staged)
+            // Developer ID builds of one team keep their grants; anything else starts over.
+            let reset = !CodeIdentity.keepsPermissions(from: Bundle.main.bundleURL, to: staged)
             try launchInstaller(staged: staged, target: Bundle.main.bundleURL, pid: ProcessInfo.processInfo.processIdentifier,
                                 relaunch: true, resetPermissions: reset)
             // Cleared folder grants must not be probed (and prompted for) the moment the new version starts.

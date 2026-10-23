@@ -3,6 +3,10 @@
 Notable changes to Pickverter for Windows. Versions follow [Semantic Versioning](https://semver.org) and match the Mac app.
 The section for a version becomes the Windows part of the GitHub release and the notes in the in-app updater.
 
+## [0.3.1] - 2026-10-24
+
+- **Nothing new on Windows** — this release signs and notarizes the Mac app. Windows keeps the same version number as the Mac, so updating changes nothing here.
+
 ## [0.3.0] - 2026-10-24
 
 - **Files that cross between Windows and Macs** — ZIPs made on a Mac now unpack with readable names (no letters split apart, no __MACOSX folder), and so do ZIPs from older tools and from PowerShell's Compress-Archive. ZIPs from Pickverter open cleanly on a Mac, keep empty folders and leave Thumbs.db and desktop.ini out, and nothing in an archive can land outside the folder it unpacks to.
