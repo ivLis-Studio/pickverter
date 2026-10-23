@@ -3,6 +3,17 @@
 Notable changes to Pickverter for Windows. Versions follow [Semantic Versioning](https://semver.org) and match the Mac app.
 The section for a version becomes the Windows part of the GitHub release and the notes in the in-app updater.
 
+## [0.3.0] - 2026-10-24
+
+- **Files that cross between Windows and Macs** — ZIPs made on a Mac now unpack with readable names (no letters split apart, no __MACOSX folder), and so do ZIPs from older tools and from PowerShell's Compress-Archive. ZIPs from Pickverter open cleanly on a Mac, keep empty folders and leave Thumbs.db and desktop.ini out, and nothing in an archive can land outside the folder it unpacks to.
+- **Text** — Korean EUC-KR text reads right in every conversion, and the new **Fix Encoding** tool rewrites it as UTF-8. CSVs start with a byte-order mark, so Excel reads every letter, and SMI subtitles convert to SRT, VTT and TXT.
+- **Join Split Letters** — names from a Mac that show up as ㅎㅏㄴ instead of 한 are joined from the Actions ring; a name another file already has is left alone. Every file Pickverter writes gets a name that reads right everywhere.
+- **See the result first** — point at Compress, Resize or a picture format and the wheel's center shows the new size before you click (≈ 509 KB · −40%). Compress can also aim for a size: under 500 KB to 5 MB for pictures, 10 to 100 MB for video, or a size of your own. **Compare** on a picture's result card shows the original and the result side by side.
+- **HWP and HWPX** — Hangul documents convert to PDF, DOCX, HWP ↔ HWPX, PNG, JPG, TXT, Markdown and HTML, with Copy Text and Count. Locked documents ask for their password, distribution documents work too, and PDFs keep their Korean text on PCs without Korean fonts. The free rhwp engine downloads on first use.
+- **Your wheel, in Settings** — Settings › Wheel lays out each ring per file type with a live preview: reorder slots, remove them, give an option its own slot or bring one in from another ring, then use the layout for every file type.
+- **Fixes** — PDF Compress works on PDFs from Chrome, Word, macOS and LibreOffice (it failed with "Object is not a name"), PDFs with only an owner password can be compressed, rotated, locked and edited, and damaged PDFs are rebuilt. Names with "%" convert, .icns opens, WebM falls back to AV1 on Arm, Mute keeps the original format, snapshots work for TS, MPEG and WMV, a lone .bz2 or .xz unpacks with 7-Zip. Dialogs stay above result cards, and Korean wraps at spaces in the wheel.
+- **License** — Pickverter is free and MIT licensed again.
+
 ## [0.2.1] - 2026-10-23
 
 - **ffmpeg in one click** — Pickverter now downloads ffmpeg itself: from the welcome window, Settings › Integrations, or simply by clicking a format that needs it — the job downloads ffmpeg on its own card and carries on. It is the build for your PC (x64 or Arm64), used only after it matches the SHA-256 GitHub publishes for it. winget is no longer needed; Settings can remove the downloaded copy, and uninstalling Pickverter removes it too.

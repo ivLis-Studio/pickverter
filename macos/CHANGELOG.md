@@ -3,6 +3,17 @@
 All notable changes to Pickverter. Versions follow [Semantic Versioning](https://semver.org).
 The section for a version becomes the release notes shown in the in-app updater.
 
+## [0.3.0] - 2026-10-24
+
+- **Files that cross between Mac and Windows** — ZIPs from Pickverter now keep their names readable on Windows (no more broken Korean or Japanese names, no .DS_Store or __MACOSX inside) and keep empty folders. ZIPs made on Windows unpack with readable Korean names, and nothing in an archive can land outside the folder it unpacks to.
+- **Text from Windows** — text saved on Korean Windows (EUC-KR) now reads right in every conversion, and the new **Fix Encoding** tool rewrites it as UTF-8. CSVs open in Excel with every letter intact, and SMI subtitles convert to SRT, VTT and TXT.
+- **Join Split Letters** — names that show up as ㅎㅏㄴ instead of 한 on Windows and the web are joined from the Actions ring. Every file Pickverter writes now gets a name that reads right everywhere.
+- **See the result first** — point at Compress, Resize or a picture format and the wheel's center shows the new size before you click (≈ 509 KB · −40%). Compress can also aim for a size: under 500 KB to 5 MB for pictures, 10 to 100 MB for video, or a size of your own. **Compare** on a picture's result card shows the original and the result side by side.
+- **HWP and HWPX** — Hangul documents convert to PDF, DOCX, HWP ↔ HWPX, PNG, JPG, TXT, Markdown and HTML, with Copy Text and Count. Locked documents ask for their password and distribution documents work too. The free rhwp engine downloads on first use.
+- **Your wheel, in Settings** — Settings › Wheel lays out each ring per file type with a live preview: reorder slots, remove them, give an option its own slot or bring one in from another ring, then use the layout for every file type.
+- **Fixes** — WebM falls back to AV1 when ffmpeg has no VP9 and accepts GIFs, Mute keeps the original format, snapshots work for TS, MPEG and WMV, a lone .gz, .bz2 or .xz unpacks, EXR pictures rotate and redact. Editors, prompts and the folder picker stay above result cards. Long single-word labels in the wheel shrink instead of breaking.
+- **License** — Pickverter is free and MIT licensed again.
+
 ## [0.2.1] - 2026-10-23
 
 - **ffmpeg in one click** — Pickverter now downloads ffmpeg itself: from the welcome window, Settings › Integrations, or simply by clicking a format that needs it — the job downloads ffmpeg on its own card and carries on. It is a signed static build, used only after its published SHA-256 and its builder's signature check out. Homebrew is no longer needed, and Settings can remove the downloaded copy again.
