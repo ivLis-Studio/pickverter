@@ -22,7 +22,7 @@ public static class HwpEngine
                 return await Unlocking(ctx, src, () => ctx.Produce(ctx.DestinationFor(src, "pdf"), async tmp =>
                 {
                     ctx.Report(null, L("note.rendering"));
-                    await Rhwp(ctx, src, ["export-pdf", src, "-o", tmp]);
+                    await Rhwp(ctx, src, ["export-pdf", src, "-o", tmp, .. PdfFonts]);
                 }));
             case "png":
             case "jpg":
@@ -35,7 +35,7 @@ public static class HwpEngine
                     await Unlocking(ctx, src, async () =>
                     {
                         ctx.Report(null, L("note.rendering"));
-                        await Rhwp(ctx, src, ["export-pdf", src, "-o", pdf]);
+                        await Rhwp(ctx, src, ["export-pdf", src, "-o", pdf, .. PdfFonts]);
                         return pdf;
                     });
                     return await PdfEngine.ToImages(pdf, ext, dpi, ctx, nameFrom: src);
@@ -111,6 +111,26 @@ public static class HwpEngine
     public static async Task<PickResult> Count(PickContext ctx) => DocumentEngine.Count(await AllText(ctx));
 
     // Running rhwp
+
+    /// rhwp's Windows build falls back to Batang for serif text and to D2Coding for fixed-width text once a document's own
+    /// fonts and their usual stand-ins are missing. Batang comes only with Korean Windows (its supplemental fonts) and
+    /// D2Coding with hardly any, and text whose fallback is missing comes out of the PDF blank: on an English Windows a
+    /// whole page can. Malgun Gothic, part of every Windows 10 and 11, stands in for them there. Where Batang is
+    /// installed nothing changes: rhwp finds it before it ever reaches the fallback.
+    public static IReadOnlyList<string> FontFallbacks(IReadOnlyList<string> fontFolders)
+    {
+        bool Has(string pattern) => fontFolders.Any(folder => Directory.Exists(folder) && Directory.EnumerateFiles(folder, pattern).Any());
+        var arguments = new List<string>();
+        if (!Has("batang.ttc")) arguments.AddRange(["--fallback-serif", "Malgun Gothic"]);
+        if (!Has("D2Coding*")) arguments.AddRange(["--fallback-mono", "Malgun Gothic"]);
+        return arguments;
+    }
+
+    /// The system's and the user's font folders (fonts installed for one account land in the second).
+    private static IReadOnlyList<string> PdfFonts => OperatingSystem.IsWindows()
+        ? FontFallbacks([Environment.GetFolderPath(Environment.SpecialFolder.Fonts),
+                         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Microsoft", "Windows", "Fonts")])
+        : [];
 
     private static string Executable() => HwpSetup.Executable ?? throw new PickException(HwpSetup.Unavailable() ?? Tools.HwpHint);
 

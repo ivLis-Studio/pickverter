@@ -212,6 +212,24 @@ public class HwpSetupTests
     }
 
     [Fact]
+    public void MalgunGothicStandsInWhereKoreanFontsAreMissing()
+    {
+        using var sandbox = new Sandbox();
+        var system = Path.Combine(sandbox.Root, "Fonts");
+        var user = Path.Combine(sandbox.Root, "UserFonts");
+        Directory.CreateDirectory(system);
+        Directory.CreateDirectory(user);
+        // An English Windows: no Batang, no D2Coding.
+        Assert.Equal(["--fallback-serif", "Malgun Gothic", "--fallback-mono", "Malgun Gothic"], HwpEngine.FontFallbacks([system, user]));
+        Assert.Equal(["--fallback-serif", "Malgun Gothic", "--fallback-mono", "Malgun Gothic"], HwpEngine.FontFallbacks([Path.Combine(sandbox.Root, "missing")]));
+        // A Korean Windows has Batang; D2Coding installed for one account counts too.
+        File.WriteAllBytes(Path.Combine(system, "batang.ttc"), []);
+        Assert.Equal(["--fallback-mono", "Malgun Gothic"], HwpEngine.FontFallbacks([system, user]));
+        File.WriteAllBytes(Path.Combine(user, "D2Coding-Ver1.3.2-20180524.ttc"), []);
+        Assert.Empty(HwpEngine.FontFallbacks([system, user]));
+    }
+
+    [Fact]
     public void UnpacksOnlyTheProgramAndItsLicense()
     {
         using var sandbox = new Sandbox();
