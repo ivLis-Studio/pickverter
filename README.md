@@ -17,6 +17,8 @@
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
 
+<p align="center"><b>Free for Mac and Windows</b> — no account, no subscription, no ads.</p>
+
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>Download</b></a> ·
   <a href="https://ivlis-studio.github.io/pickverter/"><b>Website</b></a> ·
@@ -222,6 +224,8 @@ Inside `macos/Sources/Pickverter/`:
 - `App/` app lifecycle, preferences, updater, CLI
 
 ## License
+
+Pickverter is free: download it and use it as much as you like.
 
 [CC BY-NC-ND 4.0](LICENSE) © ivLis Studio — share it unchanged, for non-commercial purposes, with credit.
 Releases before 0.2.0 were published under the MIT License. Third-party components keep their own licenses.

@@ -17,6 +17,8 @@
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
 
+<p align="center"><b>Mac·Windows용 무료 앱</b> — 계정도, 구독도, 광고도 없어요.</p>
+
 <p align="center">
   <a href="https://github.com/ivLis-Studio/pickverter/releases/latest"><b>다운로드</b></a> ·
   <a href="https://ivlis-studio.github.io/pickverter/?lang=ko"><b>웹사이트</b></a> ·
@@ -213,6 +215,8 @@ CI가 Windows 러너에서 모든 창을 6개 언어·두 테마로 렌더링하
 - `App/` 앱 생명주기, 환경설정, 업데이터, CLI
 
 ## 라이선스
+
+Pickverter는 무료예요. 내려받아 마음껏 쓰세요.
 
 [CC BY-NC-ND 4.0](LICENSE) © ivLis Studio — 출처를 밝히고, 상업적으로 쓰지 않고, 고치지 않은 그대로라면 자유롭게 공유할 수 있어요.
 0.2.0 이전 릴리스는 MIT 라이선스로 배포됐어요. 서드파티 구성 요소는 각자의 라이선스를 따라요.
