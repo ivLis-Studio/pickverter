@@ -3,7 +3,7 @@
 All notable changes to Pickverter. Versions follow [Semantic Versioning](https://semver.org).
 The section for a version becomes the release notes shown in the in-app updater.
 
-## [Unreleased]
+## [0.2.1] - 2026-10-23
 
 - **ffmpeg in one click** — Pickverter now downloads ffmpeg itself: from the welcome window, Settings › Integrations, or simply by clicking a format that needs it — the job downloads ffmpeg on its own card and carries on. It is a signed static build, used only after its published SHA-256 and its builder's signature check out. Homebrew is no longer needed, and Settings can remove the downloaded copy again.
 - **The wheel at screen edges** — near an edge or a corner the whole wheel now moves inward, so every slot, the outer options and the ring tabs stay on screen and clickable, clear of the menu bar and the Dock.

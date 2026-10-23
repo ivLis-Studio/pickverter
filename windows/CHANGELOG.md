@@ -3,7 +3,7 @@
 Notable changes to Pickverter for Windows. Versions follow [Semantic Versioning](https://semver.org) and match the Mac app.
 The section for a version becomes the Windows part of the GitHub release and the notes in the in-app updater.
 
-## [Unreleased]
+## [0.2.1] - 2026-10-23
 
 - **ffmpeg in one click** — Pickverter now downloads ffmpeg itself: from the welcome window, Settings › Integrations, or simply by clicking a format that needs it — the job downloads ffmpeg on its own card and carries on. It is the build for your PC (x64 or Arm64), used only after it matches the SHA-256 GitHub publishes for it. winget is no longer needed; Settings can remove the downloaded copy, and uninstalling Pickverter removes it too.
 - **The wheel at screen edges** — near an edge, a corner or the taskbar the whole wheel now moves inward, so every slot, the outer options and the ring tabs stay visible and clickable.
