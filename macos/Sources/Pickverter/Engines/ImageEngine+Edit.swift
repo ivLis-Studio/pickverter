@@ -84,7 +84,10 @@ extension ImageEngine {
         let width = image.width, height = image.height
         let size = CGSize(width: width, height: height)
         guard let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-                                  space: rgbSpace(image), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return nil }
+                                  space: rgbSpace(image), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+                ?? CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
         ctx.draw(image, in: CGRect(origin: .zero, size: size))
         let ci = CIContext(options: [.cacheIntermediates: false])
         for region in regions {

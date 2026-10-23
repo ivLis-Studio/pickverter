@@ -20,6 +20,11 @@ internal sealed class EditorHost : IEditors
             window.Completed += value => answer.TrySetResult(value);
             window.Cancelled += () => answer.TrySetCanceled();
             token.Register(() => Platform.Main.Post(window.Close));
+            // Result cards float above everything; an editor in use must not end up under one (a card covered the
+            // password dialog's Lock button on a small screen). Switch to another app and it steps back like any window.
+            window.Topmost = true;
+            window.Activated += (_, _) => window.Topmost = true;
+            window.Deactivated += (_, _) => window.Topmost = false;
             window.Show();
             Windowing.Activate(window);
         });

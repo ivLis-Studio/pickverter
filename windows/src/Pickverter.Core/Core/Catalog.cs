@@ -377,7 +377,8 @@ public static class Catalog
                          unavailable: Platform.Vision.OcrAvailable ? null : L("err.ocr_missing")),
                     Tool("rotate", "rotate.right", variants: RotateVariants(Turns.All, ImageEngine.Transform)),
                 };
-                if (MetaTool(files, true) is { } meta) list.Add(meta);
+                // SVG and macOS icons carry no photo metadata: editing or stripping it would only turn them into PNGs.
+                if (!files.All(file => FileNames.NormalizedExt(file) is "svg" or "icns") && MetaTool(files, true) is { } meta) list.Add(meta);
                 if (many)
                 {
                     list.Add(Tool("topdf", "doc.richtext", ctx => ImageEngine.CombineToPdf(ctx), detail: LP("tool.topdf.d", files.Count)));
@@ -451,7 +452,8 @@ public static class Catalog
                             ctx.BeginWork();
                             return PickResult.Of(await PdfEngine.Arrange(ctx.Files, arrangement, null, ctx));
                         }, symbol: "square.grid.3x3", interactive: true),
-                        Variant("tool.pages", "range", L("pages.range"), Batch.PerFile(PdfEngine.ExtractRange), symbol: "text.insert"),
+                        Variant("tool.pages", "range", L("pages.range"), Batch.PerFile(PdfEngine.ExtractRange), symbol: "text.insert",
+                                interactive: true),
                         Variant("tool.pages", "reverse", L("pages.reverse"), Batch.PerFile(PdfEngine.Reverse), symbol: "arrow.up.arrow.down"),
                         Variant("tool.pages", "blank", L("pages.blank"), Batch.PerFile(PdfEngine.RemoveBlank), symbol: "doc.badge.ellipsis", unavailable: noRender),
                         Variant("tool.pages", "odd", L("pages.odd"), Batch.PerFile((src, ctx) => PdfEngine.OddEven(src, true, ctx)), symbol: "1.square"),
@@ -460,7 +462,7 @@ public static class Catalog
                     Tool("split", "square.split.2x1", Batch.PerFile(PdfEngine.Split)),
                     Tool("rotate", "rotate.right", variants: RotateVariants([Turn.Right, Turn.Left, Turn.Half], PdfEngine.Rotate)),
                     Tool("copytext", "doc.on.clipboard", ctx => PdfEngine.CopyText(ctx), files: false),
-                    Tool("lock", "lock", Batch.PerFile(PdfEngine.Encrypt)),
+                    Tool("lock", "lock", Batch.PerFile(PdfEngine.Encrypt), interactive: true),
                 };
                 if (MetaTool(files, false) is { } meta) list.Add(meta);
                 if (many) list.Insert(1, Tool("merge", "doc.on.doc", ctx => PdfEngine.Merge(ctx), detail: LP("tool.merge.d", files.Count)));

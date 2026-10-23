@@ -58,8 +58,15 @@ public static class ArchiveEngine
                 await Shell.RunAsync(tar, ["-xf", src, "-C", folder], token: token);
                 if (Directory.EnumerateFileSystemEntries(folder).Any()) return;
             }
-            catch (ToolFailure) when (Tools.SevenZip != null)
+            catch (ToolFailure error) when (Tools.SevenZip != null || ext is "bz2" or "xz" or "7z" or "rar")
             {
+                // Windows' tar reads archives, not a lone .bz2/.xz stream (and older builds no 7z or rar): 7-Zip does.
+                Debug.Log("tar: " + error.Message);
+            }
+            catch (ToolFailure error)
+            {
+                Debug.Log("tar: " + error.Message);
+                throw new PickException(L("err.archive_open"));
             }
         }
         if (Tools.SevenZip is { } sevenZip)

@@ -132,7 +132,7 @@ enum FileActions {
             panel.prompt = move ? L("panel.move.prompt") : L("panel.copy.prompt")
             panel.message = move ? LP("panel.move.message", urls.count) : LP("panel.copy.message", urls.count)
             if let last = recentFolders.first { panel.directoryURL = last }
-            guard panel.runModal() == .OK, let picked = panel.url else { return .quiet }
+            guard DialogLevel.runModal(panel, panel.runModal) == .OK, let picked = panel.url else { return .quiet }
             destination = picked
         }
         guard let destination else { return .quiet }

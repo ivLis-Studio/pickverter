@@ -32,6 +32,58 @@ public static class ImageEngine
 
     public static bool SupportsAlpha(string ext) => ext is not ("jpg" or "bmp");
 
+    /// Writes through a stream: given a path, ImageMagick reads "%d", "%x"… as frame numbers, so "sale 50%.ico" or a
+    /// "… 50%.ico" resize came out under another name (and the job reported that nothing was produced).
+    public static void WriteTo(MagickImage image, string path, MagickFormat format)
+    {
+        using var stream = File.Create(path);
+        image.Write(stream, format);
+    }
+
+    public static void WriteTo(MagickImageCollection images, string path, MagickFormat format)
+    {
+        using var stream = File.Create(path);
+        images.Write(stream, format);
+    }
+
+    /// The largest PNG or JPEG 2000 picture inside a macOS .icns (ImageMagick has no reader for the container).
+    private static MagickImage? LoadIcns(string path)
+    {
+        var data = File.ReadAllBytes(path);
+        if (data.Length < 16 || data[0] != (byte)'i' || data[1] != (byte)'c' || data[2] != (byte)'n' || data[3] != (byte)'s') return null;
+        MagickImage? best = null;
+        var offset = 8;
+        while (offset + 8 <= data.Length)
+        {
+            var length = (int)System.Buffers.Binary.BinaryPrimitives.ReadUInt32BigEndian(data.AsSpan(offset + 4, 4));
+            if (length < 8 || length > data.Length - offset) break;
+            var body = data.AsSpan(offset + 8, length - 8);
+            var png = body.Length > 8 && body[0] == 0x89 && body[1] == (byte)'P' && body[2] == (byte)'N' && body[3] == (byte)'G';
+            var jp2 = body.Length > 12 && ((body[4] == (byte)'j' && body[5] == (byte)'P') || (body[0] == 0xFF && body[1] == 0x4F));
+            if (png || jp2)
+            {
+                try
+                {
+                    var candidate = new MagickImage(body.ToArray());
+                    if (best == null || (long)candidate.Width * candidate.Height > (long)best.Width * best.Height)
+                    {
+                        best?.Dispose();
+                        best = candidate;
+                    }
+                    else
+                    {
+                        candidate.Dispose();
+                    }
+                }
+                catch (MagickException)
+                {
+                }
+            }
+            offset += length;
+        }
+        return best;
+    }
+
     /// Decodes the primary image upright (EXIF orientation applied), optionally downsampled.
     public static MagickImage Load(string path, int? maxPixel = null)
     {
@@ -45,11 +97,15 @@ public static class ImageEngine
         try
         {
             MagickImage image;
-            if (ext is "ico" or "icns" or "gif" or "tiff" or "psd")
+            if (ext == "icns")
+            {
+                image = LoadIcns(path) ?? throw new PickException(L("err.read_image"));
+            }
+            else if (ext is "ico" or "gif" or "tiff" or "psd")
             {
                 using var frames = new MagickImageCollection(path, settings);
                 if (frames.Count == 0) throw new PickException(L("err.read_image"));
-                var chosen = ext is "ico" or "icns" ? frames.OrderByDescending(frame => (long)frame.Width * frame.Height).First() : frames[0];
+                var chosen = ext == "ico" ? frames.OrderByDescending(frame => (long)frame.Width * frame.Height).First() : frames[0];
                 image = new MagickImage(chosen);
             }
             else
@@ -154,7 +210,7 @@ public static class ImageEngine
             case "heic" when !MagickWrites("heic"):
             {
                 var png = path + ".pv.png";
-                image.Write(png, MagickFormat.Png);
+                WriteTo(image, png, MagickFormat.Png);
                 try
                 {
                     await Platform.Codecs.EncodeHeicAsync(png, path, quality ?? 0.82, CancellationToken.None);
@@ -173,10 +229,10 @@ public static class ImageEngine
                 break;
         }
         if (!Formats.TryGetValue(ext, out var format)) throw new PickException(L("err.encoder_missing", Catalog.FormatLabel(ext)));
-        image.Write(path, format);
+        WriteTo(image, path, format);
     }
 
-    /// Multi-size icon (256 down to 16), square and centered.
+    /// Multi-size icon: the picture's own size (up to 256) and the smaller sizes Explorer asks for, square and centered.
     private static void WriteIcon(MagickImage image, string path)
     {
         var side = Math.Max(image.Width, image.Height);
@@ -185,14 +241,15 @@ public static class ImageEngine
             image.BackgroundColor = MagickColors.Transparent;
             image.Extent(side, side, Gravity.Center);
         }
+        var largest = Math.Clamp(side, 16u, 256u);
         using var frames = new MagickImageCollection();
-        foreach (var size in new uint[] { 256, 128, 64, 48, 32, 24, 16 })
+        foreach (var size in new[] { largest }.Concat(new uint[] { 128, 64, 48, 32, 24, 16 }.Where(size => size < largest)))
         {
             var frame = new MagickImage(image);
             frame.Resize(new MagickGeometry(size, size) { IgnoreAspectRatio = true });
             frames.Add(frame);
         }
-        frames.Write(path, MagickFormat.Ico);
+        WriteTo(frames, path, MagickFormat.Ico);
     }
 
     public static void WritePdf(IReadOnlyList<MagickImage> images, string path)
@@ -214,7 +271,7 @@ public static class ImageEngine
             page.Quality = 90;
             pages.Add(page);
         }
-        pages.Write(path, MagickFormat.Pdf);
+        WriteTo(pages, path, MagickFormat.Pdf);
     }
 
     public static void KeepIfSmaller(string output, string source)
@@ -256,7 +313,7 @@ public static class ImageEngine
                 if (quality < 0.8) copy.Quantize(new QuantizeSettings { Colors = quality < 0.6 ? 96u : 256u, DitherMethod = DitherMethod.FloydSteinberg });
                 copy.Settings.SetDefine(MagickFormat.Png, "compression-level", "9");
                 copy.Settings.SetDefine(MagickFormat.Png, "exclude-chunks", "date,time");
-                copy.Write(tmp, MagickFormat.Png);
+                WriteTo(copy, tmp, MagickFormat.Png);
                 return Task.CompletedTask;
             });
         }
@@ -344,7 +401,7 @@ public static class ImageEngine
             image.BackgroundColor = MagickColors.White;
             image.Alpha(AlphaOption.Remove);
         }
-        image.Write(path, MagickFormat.Png);
+        WriteTo(image, path, MagickFormat.Png);
         return path;
     }
 

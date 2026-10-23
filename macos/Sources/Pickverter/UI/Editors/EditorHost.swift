@@ -1,6 +1,27 @@
 import AppKit
 import SwiftUI
 
+/// Result cards float at status-bar level, above every app. A Pickverter dialog the user is answering (an editor, the
+/// password or page-range prompt, the folder picker) goes one level higher, so a card never covers its buttons.
+@MainActor
+enum DialogLevel {
+    static let above = NSWindow.Level(rawValue: NSWindow.Level.statusBar.rawValue + 1)
+
+    /// Runs a modal alert or panel above the cards. AppKit puts the window back at modal-panel level when the session
+    /// starts and again when the app activates, so the level is held for as long as the session runs.
+    static func runModal(_ window: NSWindow, _ run: () -> NSApplication.ModalResponse) -> NSApplication.ModalResponse {
+        window.level = above
+        let holder = Timer(timeInterval: 0.05, repeats: true) { _ in
+            MainActor.assumeIsolated {
+                if window.level != above { window.level = above }
+            }
+        }
+        RunLoop.main.add(holder, forMode: .modalPanel)
+        defer { holder.invalidate() }
+        return run()
+    }
+}
+
 /// One regular window per editor. Finder gets focus back when the editor closes.
 @MainActor
 final class EditorWindowController: NSObject, NSWindowDelegate {
@@ -39,6 +60,8 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
         }
         self.window = window
         NSApp.activate(ignoringOtherApps: true)
+        // In front of the cards from the start, even when macOS keeps another app active for a moment.
+        window.level = DialogLevel.above
         window.makeKeyAndOrderFront(nil)
     }
 
@@ -54,6 +77,15 @@ final class EditorWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         if !dismissing { onClose?() }
+    }
+
+    // Above the cards while in use; once the user switches to another app it steps back like any window.
+    func windowDidBecomeKey(_ notification: Notification) {
+        window?.level = DialogLevel.above
+    }
+
+    func windowDidResignKey(_ notification: Notification) {
+        window?.level = .normal
     }
 }
 

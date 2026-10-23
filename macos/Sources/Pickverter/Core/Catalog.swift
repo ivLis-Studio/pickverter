@@ -324,7 +324,8 @@ enum Catalog {
                     try await ImageEngine.transform(src, turn: turn, ctx: ctx)
                 }),
             ]
-            if let meta = metaTool(files: files, image: true) { list.append(meta) }
+            // SVG carries no photo metadata: editing or stripping it would only turn the drawing into a PNG.
+            if !files.allSatisfy({ FileNames.normalizedExt($0) == "svg" }), let meta = metaTool(files: files, image: true) { list.append(meta) }
             if many {
                 list.append(tool("topdf", symbol: "doc.richtext", detail: LP("tool.topdf.d", files.count)) { ctx in
                     try await ImageEngine.combineToPDF(ctx)
@@ -407,7 +408,7 @@ enum Catalog {
                         ctx.beginWork()
                         return PickResult(outputs: [try await PDFEngine.arrange(ctx.files, arrangement, ctx: ctx)])
                     },
-                    variant("tool.pages", "range", L("pages.range"), symbol: "text.insert",
+                    variant("tool.pages", "range", L("pages.range"), symbol: "text.insert", interactive: true,
                             Batch.perFile { try await PDFEngine.extractRange($0, ctx: $1) }),
                     variant("tool.pages", "reverse", L("pages.reverse"), symbol: "arrow.up.arrow.down",
                             Batch.perFile { try await PDFEngine.reverse($0, ctx: $1) }),
@@ -423,7 +424,7 @@ enum Catalog {
                     try await PDFEngine.rotate(src, turn: turn, ctx: ctx)
                 }),
                 tool("copytext", symbol: "doc.on.clipboard", files: false) { ctx in try await PDFEngine.copyText(ctx) },
-                tool("lock", symbol: "lock", Batch.perFile { try await PDFEngine.encrypt($0, ctx: $1) }),
+                tool("lock", symbol: "lock", interactive: true, Batch.perFile { try await PDFEngine.encrypt($0, ctx: $1) }),
             ]
             if let meta = metaTool(files: files, image: false) { list.append(meta) }
             if many {

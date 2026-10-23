@@ -75,12 +75,14 @@ enum ActionCatalog {
     static func action(_ id: String, _ title: String, _ detail: String, _ symbol: String, variants: [PickOption] = [],
                        _ perform: ((PickContext) async throws -> PickResult)? = nil) -> PickOption {
         PickOption(id: "action." + id, title: title, detail: detail, symbol: symbol, producesFiles: false, variants: variants,
+                   interactive: perform == nil ? (variants.first?.interactive ?? false) : false,
                    perform: perform ?? variants[0].perform)
     }
 
-    static func sub(_ parent: String, _ key: String, _ title: String, symbol: String = "",
+    static func sub(_ parent: String, _ key: String, _ title: String, symbol: String = "", interactive: Bool = false,
                     _ perform: @escaping (PickContext) async throws -> PickResult) -> PickOption {
-        PickOption(id: "action." + parent + "." + key, title: title, detail: "", symbol: symbol, producesFiles: false, perform: perform)
+        PickOption(id: "action." + parent + "." + key, title: title, detail: "", symbol: symbol, producesFiles: false,
+                   interactive: interactive, perform: perform)
     }
 
     static func options(for files: [URL]) -> [PickOption] {
@@ -90,9 +92,10 @@ enum ActionCatalog {
         let editors = EditorChoice.installed
         let folders = FileActions.quickFolders(excluding: files)
 
+        // "Choose…" opens the folder picker first: its card waits until there is something to move.
         func relocate(_ move: Bool) -> [PickOption] {
             folders.map { folder in
-                sub(move ? "move" : "duplicate", folder.key, folder.title, symbol: folder.symbol) { ctx in
+                sub(move ? "move" : "duplicate", folder.key, folder.title, symbol: folder.symbol, interactive: folder.url == nil) { ctx in
                     try await MainActor.run { try FileActions.relocate(ctx.files, move: move, to: folder.url) }
                 }
             }

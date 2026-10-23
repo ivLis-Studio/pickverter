@@ -151,15 +151,18 @@ public static class ActionCatalog
         Symbol = symbol,
         ProducesFiles = false,
         Variants = variants ?? [],
+        Interactive = perform == null && variants is { Count: > 0 } && variants[0].Interactive,
         Perform = perform ?? variants![0].Perform,
     };
 
-    private static PickOption Sub(string parent, string key, string title, PickAction perform, string symbol = "") => new()
+    private static PickOption Sub(string parent, string key, string title, PickAction perform, string symbol = "",
+                                  bool interactive = false) => new()
     {
         Id = "action." + parent + "." + key,
         Title = title,
         Symbol = symbol,
         ProducesFiles = false,
+        Interactive = interactive,
         Perform = perform,
     };
 
@@ -172,9 +175,10 @@ public static class ActionCatalog
         var editors = Editors.Installed;
         var folders = FileActions.QuickFolders(files);
 
+        // "Choose…" opens the folder picker first: its card waits until there is something to move.
         List<PickOption> Relocate(bool move) => folders.Select(folder =>
             Sub(move ? "move" : "duplicate", folder.Key, folder.Title,
-                ctx => FileActions.Relocate(ctx.Files, move, folder.Path), folder.Symbol)).ToList();
+                ctx => FileActions.Relocate(ctx.Files, move, folder.Path, ctx.BeginWork), folder.Symbol, interactive: folder.Path == null)).ToList();
 
         PickAction OpenTerminal(TerminalKind kind) => ctx =>
         {

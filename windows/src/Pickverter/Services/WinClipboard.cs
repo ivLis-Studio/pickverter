@@ -121,7 +121,7 @@ internal sealed class WinClipboard : IClipboardService
         {
             try
             {
-                await Platform.Main.RunAsync(() => Clipboard.SetDataObject(build(), true));
+                await OnSta(() => Clipboard.SetDataObject(build(), true));
                 return;
             }
             catch (COMException) when (attempt < 8)
@@ -133,5 +133,32 @@ internal sealed class WinClipboard : IClipboardService
                 await Task.Delay(60);
             }
         }
+    }
+
+    /// The clipboard is OLE and wants an STA thread. The app hands the call to its UI thread; the command line has no
+    /// UI thread, and after an await it may be on the thread pool (MTA), so it borrows a short-lived STA thread.
+    private static Task OnSta(Action action)
+    {
+        if (Application.Current != null || Thread.CurrentThread.GetApartmentState() == ApartmentState.STA) return Platform.Main.RunAsync(action);
+        var done = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                action();
+                done.SetResult();
+            }
+            catch (Exception error)
+            {
+                done.SetException(error);
+            }
+        })
+        {
+            IsBackground = true,
+            Name = "Pickverter clipboard",
+        };
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        return done.Task;
     }
 }

@@ -124,8 +124,17 @@ enum MediaEngine {
             if allowCopy { return ["-map", "0", "-c", "copy"] }
             return ["-map", "0:v:0?", "-map", "0:a:0?", "-vf", even] + x264(crf: 20) + ["-c:a", "aac", "-b:a", "192k"]
         case "webm":
-            return ["-map", "0:v:0?", "-map", "0:a:0?", "-c:v", "libvpx-vp9", "-crf", "32", "-b:v", "0", "-row-mt", "1",
-                    "-deadline", "good", "-cpu-used", "4", "-c:a", "libopus", "-b:a", "128k"]
+            // VP9 when this ffmpeg has it, otherwise AV1 (WebM carries both). GIFs decode to palette/RGBA frames that the
+            // encoders refuse ("Invalid argument"): hand them 4:2:0.
+            let video: [String]
+            if Tools.hasEncoder("libvpx-vp9") {
+                video = ["-c:v", "libvpx-vp9", "-pix_fmt", "yuv420p", "-crf", "32", "-b:v", "0", "-row-mt", "1", "-deadline", "good", "-cpu-used", "4"]
+            } else if Tools.hasEncoder("libsvtav1") {
+                video = ["-vf", even, "-c:v", "libsvtav1", "-pix_fmt", "yuv420p", "-crf", "35", "-preset", "8"]
+            } else {
+                video = ["-vf", even, "-c:v", "libaom-av1", "-pix_fmt", "yuv420p", "-crf", "34", "-b:v", "0", "-cpu-used", "6", "-row-mt", "1"]
+            }
+            return ["-map", "0:v:0?", "-map", "0:a:0?"] + video + ["-c:a", "libopus", "-b:a", "128k"]
         case "gif":
             let scale = options.gifWidth.map { "scale='min(\($0),iw)':-2:flags=lanczos," } ?? ""
             return ["-vf", "fps=\(options.gifFPS),\(scale)split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4",
@@ -237,12 +246,22 @@ enum MediaEngine {
         }
     }
 
+    /// Containers ffmpeg writes back with the picture untouched: muting keeps the file's own format.
+    static let muteInPlace: Set<String> = ["mp4", "m4v", "mov", "mkv", "webm", "avi", "wmv", "flv", "mpg", "mpeg", "3gp", "ts", "mts", "m2ts", "ogv"]
+
     static func mute(_ src: URL, ctx: PickContext) async throws -> URL {
         let source = FileNames.normalizedExt(src)
-        let ext = ["mp4", "mov", "mkv", "webm", "m4v"].contains(source) ? source : "mp4"
-        return try await tool(src, ext: ext, suffix: L("sfx.muted"), ctx: ctx) { info in
-            guard info.hasAudio else { throw PickError(L("err.already_silent")) }
-            return ["-map", "0:v", "-c:v", "copy", "-an"]
+        let ext = muteInPlace.contains(source) ? source : "mp4"
+        do {
+            return try await tool(src, ext: ext, suffix: L("sfx.muted"), ctx: ctx) { info in
+                guard info.hasAudio else { throw PickError(L("err.already_silent")) }
+                return ["-map", "0:v", "-c:v", "copy", "-an"]
+            }
+        } catch is Shell.Failure {
+            // The picture can't be copied into that container (WMV or Flash video into MP4, say): encode it instead.
+            return try await tool(src, ext: "mp4", suffix: L("sfx.muted"), ctx: ctx) { _ in
+                ["-map", "0:v:0", "-an", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2"] + x264(crf: 20) + ["-movflags", "+faststart"]
+            }
         }
     }
 
@@ -252,10 +271,26 @@ enum MediaEngine {
         if Tools.ffmpeg != nil {
             let info = await probe(src)
             let time = max(0, min(info.duration - 0.05, info.duration * position))
-            return try await ctx.produce(dst) { tmp in
-                try await runFFmpeg(input: src, output: tmp, args: ["-frames:v", "1", "-update", "1"],
-                                    preInput: ["-ss", String(format: "%.3f", max(0, time))], duration: 0, ctx: ctx)
+            let at = String(format: "%.3f", time)
+            // A fast seek first. MPEG-TS, MPEG-PS and WMV have no index, so the seek can land between keyframes or past
+            // the last frame and nothing comes out: then decode the end of the file, or from the start.
+            var attempts: [(preInput: [String], args: [String])] = [(["-ss", at], ["-frames:v", "1", "-update", "1"])]
+            if position >= 1 {
+                attempts.append((["-sseof", "-3"], ["-update", "1"]))
+                attempts.append(([], ["-update", "1"]))
+            } else if time > 0 {
+                attempts.append(([], ["-ss", at, "-frames:v", "1", "-update", "1"]))
             }
+            for (index, attempt) in attempts.enumerated() {
+                do {
+                    return try await ctx.produce(dst) { tmp in
+                        try await runFFmpeg(input: src, output: tmp, args: attempt.args, preInput: attempt.preInput, duration: 0, ctx: ctx)
+                    }
+                } catch let error where index < attempts.count - 1 && (error is PickError || error is Shell.Failure) {
+                    continue
+                }
+            }
+            throw PickError(L("err.no_result"))
         }
         let asset = AVURLAsset(url: src)
         let duration = try await asset.load(.duration)

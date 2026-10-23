@@ -39,6 +39,27 @@ internal static class EndToEnd
         return found;
     }
 
+    /// Result cards that overlap the dialog, and how many of them sit above it (covering its buttons).
+    private static (int Overlapping, int Above) CardsOver(System.Windows.Window dialog)
+    {
+        var target = new System.Windows.Interop.WindowInteropHelper(dialog).Handle;
+        Native.GetWindowRect(target, out var area);
+        var cards = System.Windows.Application.Current.Windows.OfType<CardWindow>().Where(card => card.IsVisible)
+            .Select(card => new System.Windows.Interop.WindowInteropHelper(card).Handle).ToList();
+        bool Overlaps(IntPtr card)
+        {
+            Native.GetWindowRect(card, out var rect);
+            return rect.Left < area.Right && area.Left < rect.Right && rect.Top < area.Bottom && area.Top < rect.Bottom;
+        }
+        var overlapping = cards.Where(Overlaps).ToHashSet();
+        var above = 0;
+        for (var window = Native.GetWindow(target, Native.GW_HWNDPREV); window != IntPtr.Zero; window = Native.GetWindow(window, Native.GW_HWNDPREV))
+        {
+            if (overlapping.Contains(window)) above++;
+        }
+        return (overlapping.Count, above);
+    }
+
     public static async Task<int> Run(string folder)
     {
         folder = Path.GetFullPath(folder);
@@ -59,34 +80,40 @@ internal static class EndToEnd
         InputMonitor.Shared.Start();
         Report(InputMonitor.Shared.IsRunning, "keyboard and mouse hooks");
 
-        Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + photo + "\"") { UseShellExecute = true });
-        IntPtr window = IntPtr.Zero;
-        IReadOnlyList<string> selection = [];
-        var watch = Stopwatch.StartNew();
-        var scripted = false;
-        while (selection.Count == 0 && watch.Elapsed < TimeSpan.FromSeconds(20))
+        async Task<(IntPtr Window, IReadOnlyList<string> Selection, long Ms)> SelectInExplorer(string file)
         {
-            await Task.Delay(250);
-            // A fresh folder can open before /select applies (seen on Windows Server 2025): select the file the way a
-            // script would. What's being tested is reading the selection, not Explorer's command line.
-            if (!scripted && watch.Elapsed > TimeSpan.FromSeconds(4))
+            Process.Start(new ProcessStartInfo("explorer.exe", "/select,\"" + file + "\"") { UseShellExecute = true });
+            var found = IntPtr.Zero;
+            IReadOnlyList<string> selected = [];
+            var clock = Stopwatch.StartNew();
+            var scripted = false;
+            while (selected.Count == 0 && clock.Elapsed < TimeSpan.FromSeconds(20))
             {
-                scripted = true;
-                var done = await StaWorker.Run("e2e select", () => SelectWithAutomation(photo), TimeSpan.FromSeconds(10), false);
-                Console.WriteLine($"  /select left nothing selected; selected through Explorer's automation: {done}");
-            }
-            foreach (var candidate in ExplorerWindows())
-            {
-                var selected = await Explorer.SelectionAsync(candidate);
-                if (selected.Any(path => string.Equals(path, photo, StringComparison.OrdinalIgnoreCase)))
+                await Task.Delay(250);
+                // A fresh folder can open before /select applies (seen on Windows Server 2025): select the file the way a
+                // script would. What's being tested is reading the selection, not Explorer's command line.
+                if (!scripted && clock.Elapsed > TimeSpan.FromSeconds(4))
                 {
-                    window = candidate;
-                    selection = selected;
-                    break;
+                    scripted = true;
+                    var done = await StaWorker.Run("e2e select", () => SelectWithAutomation(file), TimeSpan.FromSeconds(10), false);
+                    Console.WriteLine($"  /select left nothing selected; selected through Explorer's automation: {done}");
+                }
+                foreach (var candidate in ExplorerWindows())
+                {
+                    var items = await Explorer.SelectionAsync(candidate);
+                    if (items.Any(path => string.Equals(path, file, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        found = candidate;
+                        selected = items;
+                        break;
+                    }
                 }
             }
+            return (found, selected, clock.ElapsedMilliseconds);
         }
-        Report(selection.Count > 0, $"File Explorer selection read over COM ({selection.Count} item, {watch.ElapsedMilliseconds} ms)");
+
+        var (window, selection, selectMs) = await SelectInExplorer(photo);
+        Report(selection.Count > 0, $"File Explorer selection read over COM ({selection.Count} item, {selectMs} ms)");
         if (window == IntPtr.Zero)
         {
             var frames = ExplorerWindows().ToList();
@@ -151,6 +178,91 @@ internal static class EndToEnd
         var formats = await Platform.Clipboard.DescribeAsync();
         Report(formats.Contains("FileDrop"), "Ctrl+C puts the result on the clipboard (" + formats + ")");
         Snapshots.CaptureScreen(Path.Combine(shots, "5-clipboard.png"));
+        Tap(0x1B);
+        await Task.Delay(300);
+
+        // A PDF password through the real dialog: Tools ring, Password, type it twice, Enter.
+        // (The command line answers editors from the environment; this one wants the real window.)
+        Platform.Editors = new Pickverter.UI.Editors.EditorHost();
+        var pdf = files.First(path => Path.GetFileName(path) == "report.pdf");
+        var (pdfWindow, pdfSelection, _) = await SelectInExplorer(pdf);
+        Report(pdfSelection.Count > 0, "File Explorer selects the PDF");
+        if (pdfWindow != IntPtr.Zero)
+        {
+            Windowing.Bring(pdfWindow);
+            await Task.Delay(600);
+            Tap(0xA4);
+            for (var wait = 0; wait < 30 && !WheelController.Shared.IsVisible; wait++) await Task.Delay(100);
+            Tap(0x09);
+            await Task.Delay(300);
+            for (var step = 0; step < 24 && WheelController.Shared.Model.Active?.Option.Id != "tool.lock"; step++)
+            {
+                Tap(0x27);
+                await Task.Delay(120);
+            }
+            Report(WheelController.Shared.Model.Active?.Option.Id == "tool.lock", "the Tools ring reaches Password");
+            var before = Directory.GetFiles(Path.GetDirectoryName(pdf)!, "*.pdf").ToHashSet(StringComparer.OrdinalIgnoreCase);
+            Tap(0x0D);
+            Pickverter.UI.Editors.PasswordDialog? dialog = null;
+            for (var wait = 0; wait < 50 && dialog == null; wait++)
+            {
+                await Task.Delay(100);
+                dialog = System.Windows.Application.Current.Windows.OfType<Pickverter.UI.Editors.PasswordDialog>()
+                    .FirstOrDefault(candidate => candidate.IsVisible);
+            }
+            Report(dialog != null, "Password opens its dialog");
+            await Task.Delay(500);
+            if (dialog != null)
+            {
+                // A job that finishes while the dialog is open (here: another PNG) must slide its card in under it,
+                // and the card left over from the PNG step must not come back on top either.
+                var convert = Catalog.Options([photo], WheelMode.Convert).First(option => option.Id == "convert.png");
+                JobCenter.Shared.Run(convert, WheelMode.Convert, [photo], default);
+                await Task.Delay(1500);
+                var (overlapping, above) = CardsOver(dialog);
+                Console.WriteLine($"  {overlapping} card(s) overlap the dialog, {above} above it");
+                Report(above == 0, "result cards stay under the password dialog");
+            }
+            Snapshots.CaptureScreen(Path.Combine(shots, "6-password.png"));
+            foreach (var key in new ushort[] { 0x50, 0x56, 0x31, 0x32, 0x33, 0x34, 0x09, 0x50, 0x56, 0x31, 0x32, 0x33, 0x34, 0x0D })
+            {
+                Tap(key);
+                await Task.Delay(60);
+            }
+            string? locked = null;
+            for (var wait = 0; wait < 100 && locked == null; wait++)
+            {
+                await Task.Delay(100);
+                locked = Directory.GetFiles(Path.GetDirectoryName(pdf)!, "*.pdf").FirstOrDefault(path => !before.Contains(path));
+            }
+            Report(locked != null, "the locked PDF lands next to the original: " + (locked == null ? "none" : Path.GetFileName(locked)));
+            if (locked != null)
+            {
+                await Task.Delay(300);
+                var needsPassword = false;
+                try
+                {
+                    using var open = PdfSharp.Pdf.IO.PdfReader.Open(locked, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+                }
+                catch (Exception)
+                {
+                    needsPassword = true;
+                }
+                var opens = false;
+                try
+                {
+                    using var open = PdfSharp.Pdf.IO.PdfReader.Open(locked, "pv1234", PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+                    opens = open.PageCount > 0;
+                }
+                catch (Exception error)
+                {
+                    Console.WriteLine("  open with the password: " + error.Message);
+                }
+                Report(needsPassword && opens, "it asks for the password and opens with it");
+            }
+            await Task.Delay(700);
+            Snapshots.CaptureScreen(Path.Combine(shots, "7-locked.png"));
+        }
 
         InputMonitor.Shared.Stop();
         tray.Dispose();

@@ -178,6 +178,10 @@ enum PDFEngine {
 
     @MainActor
     static func askPassword(for url: URL) -> String? {
+        // Tests answer through the environment like the other editors ("cancel" cancels).
+        if let injected = ProcessInfo.processInfo.environment["PICKVERTER_EDITOR_PASSWORD"] {
+            return injected == "cancel" || injected.isEmpty ? nil : injected
+        }
         NSApp.activate(ignoringOtherApps: true)
         let alert = NSAlert()
         alert.messageText = L("pdf.password.title")
@@ -188,7 +192,7 @@ enum PDFEngine {
         alert.addButton(withTitle: L("pdf.password.lock"))
         alert.addButton(withTitle: L("common.cancel"))
         alert.window.initialFirstResponder = field
-        guard alert.runModal() == .alertFirstButtonReturn, !field.stringValue.isEmpty else { return nil }
+        guard DialogLevel.runModal(alert.window, alert.runModal) == .alertFirstButtonReturn, !field.stringValue.isEmpty else { return nil }
         return field.stringValue
     }
 }

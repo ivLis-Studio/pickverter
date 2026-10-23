@@ -124,8 +124,11 @@ enum ImageEngine {
     static func redraw(_ image: CGImage, width: Int, height: Int, opaque: Bool = false,
                        transform: ((CGContext) -> Void)? = nil, drawRect: CGRect? = nil) -> CGImage? {
         let info = opaque ? CGImageAlphaInfo.noneSkipLast.rawValue : CGImageAlphaInfo.premultipliedLast.rawValue
+        // HDR pictures (EXR, some HEIC) carry an extended-range space that an 8-bit context refuses: draw those in sRGB.
         guard let ctx = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
-                                  space: rgbSpace(image), bitmapInfo: info) else { return nil }
+                                  space: rgbSpace(image), bitmapInfo: info)
+                ?? CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
+                             space: CGColorSpace(name: CGColorSpace.sRGB)!, bitmapInfo: info) else { return nil }
         ctx.interpolationQuality = .high
         if opaque {
             ctx.setFillColor(CGColor(gray: 1, alpha: 1))
@@ -150,16 +153,7 @@ enum ImageEngine {
         if !supportsAlpha(ext), hasAlpha(image) {
             output = redraw(image, width: image.width, height: image.height, opaque: true) ?? image
         }
-        if ext == "ico" {
-            output = scaled(output, maxSide: 256) ?? output
-            if output.width != output.height {
-                let source = output
-                let side = max(source.width, source.height)
-                output = redraw(source, width: side, height: side,
-                                drawRect: CGRect(x: (side - source.width) / 2, y: (side - source.height) / 2,
-                                                 width: source.width, height: source.height)) ?? output
-            }
-        }
+        if ext == "ico" { try writeICO(output, to: url); return }
         if let type = uti(for: ext), writableTypes.contains(type) {
             guard let dest = CGImageDestinationCreateWithURL(url as CFURL, type as CFString, 1, nil) else {
                 throw PickError(L("err.write_image"))
@@ -172,6 +166,53 @@ enum ImageEngine {
             return
         }
         try await encodeExternally(output, to: url, ext: ext, quality: quality)
+    }
+
+    /// A Windows icon holding the picture's own size (up to 256) and the smaller sizes Explorer asks for, each a PNG
+    /// inside the .ico (Vista and later read those). ImageIO's ICO writer takes a single picture and refuses sizes such
+    /// as 192 px, so a 75 % resize of an icon failed.
+    static func writeICO(_ image: CGImage, to url: URL) throws {
+        let side = max(image.width, image.height)
+        var square = image
+        if image.width != image.height {
+            square = redraw(image, width: side, height: side,
+                            drawRect: CGRect(x: (side - image.width) / 2, y: (side - image.height) / 2,
+                                             width: image.width, height: image.height)) ?? image
+        }
+        let largest = min(max(side, 16), 256)
+        let sizes = [largest] + [128, 64, 48, 32, 24, 16].filter { $0 < largest }
+        var entries: [(size: Int, png: Data)] = []
+        for size in sizes {
+            guard let picture = redraw(square, width: size, height: size) else { continue }
+            let data = NSMutableData()
+            guard let dest = CGImageDestinationCreateWithData(data, UTType.png.identifier as CFString, 1, nil) else { continue }
+            CGImageDestinationAddImage(dest, picture, nil)
+            guard CGImageDestinationFinalize(dest) else { continue }
+            entries.append((size, data as Data))
+        }
+        guard !entries.isEmpty else { throw PickError(L("err.write_image")) }
+        var out = Data()
+        func u16(_ value: Int) { withUnsafeBytes(of: UInt16(value).littleEndian) { out.append(contentsOf: $0) } }
+        func u32(_ value: Int) { withUnsafeBytes(of: UInt32(value).littleEndian) { out.append(contentsOf: $0) } }
+        u16(0)
+        u16(1)
+        u16(entries.count)
+        var offset = 6 + 16 * entries.count
+        for entry in entries {
+            let dimension = UInt8(entry.size >= 256 ? 0 : entry.size)
+            out.append(contentsOf: [dimension, dimension, 0, 0])
+            u16(1)
+            u16(32)
+            u32(entry.png.count)
+            u32(offset)
+            offset += entry.png.count
+        }
+        for entry in entries { out.append(entry.png) }
+        do {
+            try out.write(to: url)
+        } catch {
+            throw PickError(L("err.write_image"))
+        }
     }
 
     /// WebP (and anything ImageIO can't write) goes through cwebp or ImageMagick.

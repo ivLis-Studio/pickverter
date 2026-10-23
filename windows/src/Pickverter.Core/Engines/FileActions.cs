@@ -61,10 +61,12 @@ public static class FileActions
         return list;
     }
 
-    public static async Task<PickResult> Relocate(IReadOnlyList<string> files, bool move, string? target)
+    /// Moves or copies into target, or into a folder the user picks; picked runs once the destination is known.
+    public static async Task<PickResult> Relocate(IReadOnlyList<string> files, bool move, string? target, Action? picked = null)
     {
         var destination = target ?? await Platform.Actions.PickFolderAsync(move, files.Count, Preferences.Shared.RecentFolders.FirstOrDefault());
         if (destination == null) return PickResult.Quiet;
+        picked?.Invoke();
         Remember(destination);
         var results = new List<string>();
         foreach (var file in files)

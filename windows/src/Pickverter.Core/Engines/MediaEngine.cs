@@ -155,8 +155,16 @@ public static class MediaEngine
                 if (allowCopy) return ["-map", "0", "-c", "copy"];
                 return ["-map", "0:v:0?", "-map", "0:a:0?", "-vf", even, .. X264(20), "-c:a", "aac", "-b:a", "192k"];
             case "webm":
-                return ["-map", "0:v:0?", "-map", "0:a:0?", "-c:v", "libvpx-vp9", "-crf", "32", "-b:v", "0", "-row-mt", "1",
-                        "-deadline", "good", "-cpu-used", "4", "-c:a", "libopus", "-b:a", "128k"];
+            {
+                // VP9 when this ffmpeg has it. BtbN's Windows on Arm build has no libvpx, so AV1, which WebM also carries
+                // and every browser plays. GIFs decode to palette/RGBA frames that the encoders refuse: hand them 4:2:0.
+                List<string> video = Tools.HasEncoder("libvpx-vp9")
+                    ? ["-c:v", "libvpx-vp9", "-pix_fmt", "yuv420p", "-crf", "32", "-b:v", "0", "-row-mt", "1", "-deadline", "good", "-cpu-used", "4"]
+                    : Tools.HasEncoder("libsvtav1")
+                        ? ["-vf", even, "-c:v", "libsvtav1", "-pix_fmt", "yuv420p", "-crf", "35", "-preset", "8"]
+                        : ["-vf", even, "-c:v", "libaom-av1", "-pix_fmt", "yuv420p", "-crf", "34", "-b:v", "0", "-cpu-used", "6", "-row-mt", "1"];
+                return ["-map", "0:v:0?", "-map", "0:a:0?", .. video, "-c:a", "libopus", "-b:a", "128k"];
+            }
             case "gif":
             {
                 var scale = options.GifWidth is { } width ? $"scale='min({width},iw)':-2:flags=lanczos," : "";
@@ -238,15 +246,31 @@ public static class MediaEngine
             return args;
         });
 
-    public static Task<string> Mute(string src, PickContext ctx)
+    /// Containers ffmpeg writes back with the picture untouched: muting keeps the file's own format.
+    private static readonly HashSet<string> MuteInPlace = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "mp4", "m4v", "mov", "mkv", "webm", "avi", "wmv", "flv", "mpg", "mpeg", "3gp", "ts", "mts", "m2ts", "ogv",
+    };
+
+    public static async Task<string> Mute(string src, PickContext ctx)
     {
         var source = FileNames.NormalizedExt(src);
-        var ext = source is "mp4" or "mov" or "mkv" or "webm" or "m4v" ? source : "mp4";
-        return Tool(src, ext, L("sfx.muted"), ctx, info =>
+        var ext = MuteInPlace.Contains(source) ? source : "mp4";
+        try
         {
-            if (!info.HasAudio) throw new PickException(L("err.already_silent"));
-            return ["-map", "0:v", "-c:v", "copy", "-an"];
-        });
+            return await Tool(src, ext, L("sfx.muted"), ctx, info =>
+            {
+                if (!info.HasAudio) throw new PickException(L("err.already_silent"));
+                return ["-map", "0:v", "-c:v", "copy", "-an"];
+            });
+        }
+        catch (ToolFailure error)
+        {
+            // The picture can't be copied into that container (WMV or Flash video into MP4, say): encode it instead.
+            Debug.Log("mute copy: " + error.Message);
+            return await Tool(src, "mp4", L("sfx.muted"), ctx, _ =>
+                ["-map", "0:v:0", "-an", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", .. X264(20), "-movflags", "+faststart"]);
+        }
     }
 
     /// position: 0 = first frame, 0.5 = middle, 1 = last frame.
@@ -257,7 +281,33 @@ public static class MediaEngine
         {
             var info = await ProbeAsync(src, ctx.Token);
             var time = Math.Max(0, Math.Min(info.Duration - 0.05, info.Duration * position));
-            return await ctx.Produce(destination, tmp => RunFFmpeg(src, tmp, ["-frames:v", "1", "-update", "1"], 0, ctx, ["-ss", Seconds(time)]));
+            // A fast seek first. MPEG-TS, MPEG-PS and WMV have no index, so the seek can land between keyframes or past
+            // the last frame and nothing comes out: then decode the end of the file, or from the start.
+            var attempts = new List<(List<string> PreInput, List<string> Args)>
+            {
+                (["-ss", Seconds(time)], ["-frames:v", "1", "-update", "1"]),
+            };
+            if (position >= 1)
+            {
+                attempts.Add((["-sseof", "-3"], ["-update", "1"]));
+                attempts.Add(([], ["-update", "1"]));
+            }
+            else if (time > 0)
+            {
+                attempts.Add(([], ["-ss", Seconds(time), "-frames:v", "1", "-update", "1"]));
+            }
+            for (var index = 0; ; index++)
+            {
+                var (preInput, args) = attempts[index];
+                try
+                {
+                    return await ctx.Produce(destination, tmp => RunFFmpeg(src, tmp, args, 0, ctx, preInput));
+                }
+                catch (Exception error) when (error is PickException or ToolFailure && index < attempts.Count - 1)
+                {
+                    Debug.Log("snapshot retry: " + error.Message);
+                }
+            }
         }
         var duration = await Platform.Media.DurationAsync(src);
         var seconds = Math.Max(0, Math.Min(duration - 0.05, duration * position));

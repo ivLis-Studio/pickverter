@@ -16,16 +16,44 @@ public static class PdfEngine
         {
             return PdfReader.Open(path, mode);
         }
-        catch (Exception error) when (error.Message.Contains("password", StringComparison.OrdinalIgnoreCase) ||
-                                      error.Message.Contains("encrypt", StringComparison.OrdinalIgnoreCase) ||
-                                      error.Message.Contains("protected", StringComparison.OrdinalIgnoreCase))
+        catch (Exception error) when (LooksLocked(error))
         {
             throw new PickException(L("err.pdf_locked"));
         }
         catch (Exception error) when (error is not PickException)
         {
             Debug.Log("pdf open: " + error.Message);
+            // PDFsharp gives up on cross-reference tables that every viewer repairs ("'PdfTrailer' must not be null",
+            // seen in Word 2019 files). PdfPig reads those: copy the pages into a clean file and open that instead.
+            if (Rebuilt(path) is { } bytes)
+            {
+                try
+                {
+                    return PdfReader.Open(new MemoryStream(bytes), mode);
+                }
+                catch (Exception again)
+                {
+                    Debug.Log("pdf rebuilt: " + again.Message);
+                }
+            }
             throw new PickException(L("err.pdf_open"));
+        }
+    }
+
+    /// The pages of a PDF PDFsharp can't parse, copied by PdfPig into a new document (null when PdfPig can't either).
+    private static byte[]? Rebuilt(string path)
+    {
+        try
+        {
+            using var source = PigDocument.Open(path);
+            var builder = new UglyToad.PdfPig.Writer.PdfDocumentBuilder();
+            for (var number = 1; number <= source.NumberOfPages; number++) builder.AddPage(source, number);
+            return builder.Build();
+        }
+        catch (Exception error)
+        {
+            Debug.Log("pdf rebuild: " + error.Message);
+            return null;
         }
     }
 
@@ -33,6 +61,86 @@ public static class PdfEngine
     {
         using var doc = Open(path, PdfDocumentOpenMode.Import);
         return doc.PageCount;
+    }
+
+    private static bool LooksLocked(Exception error) =>
+        error.Message.Contains("password", StringComparison.OrdinalIgnoreCase) ||
+        error.Message.Contains("encrypt", StringComparison.OrdinalIgnoreCase) ||
+        error.Message.Contains("protected", StringComparison.OrdinalIgnoreCase);
+
+    /// Opens src for changes, applies them and saves to path. A PDF that opens without a password but carries an owner
+    /// password (restrictions only: bank statements, forms) can't be modified in place, so its pages move into a new
+    /// document first, the way Split and Extract already read it. Files that open for changes but trip PDFsharp while
+    /// changing or saving (broken references, odd object streams) get the same second chance.
+    private static void Edit(string src, string path, Action<PdfDocument> change)
+    {
+        PdfDocument? document = null;
+        try
+        {
+            document = PdfReader.Open(src, PdfDocumentOpenMode.Modify);
+        }
+        catch (Exception error) when (error is not PickException)
+        {
+            // Restrictions-only PDFs (and files PDFsharp can only read after a repair) take the import route.
+            Debug.Log("pdf modify: " + error.Message);
+        }
+        if (document is not null)
+        {
+            try
+            {
+                change(document);
+                document.Save(path);
+                return;
+            }
+            catch (Exception error) when (error is not PickException and not OperationCanceledException)
+            {
+                Debug.Log("pdf modify save: " + error.Message);
+            }
+            finally
+            {
+                document.Dispose();
+            }
+        }
+        using var source = Open(src, PdfDocumentOpenMode.Import);
+        using var copy = new PdfDocument();
+        copy.Info.Title = source.Info.Title;
+        copy.Info.Author = source.Info.Author;
+        copy.Info.Subject = source.Info.Subject;
+        copy.Info.Keywords = source.Info.Keywords;
+        copy.Info.Creator = source.Info.Creator;
+        foreach (var page in source.Pages) copy.AddPage(page);
+        change(copy);
+        copy.Save(path);
+    }
+
+    private static PdfItem? Resolve(PdfItem? item) => item is PdfReference reference ? reference.Value : item;
+
+    /// A name, or a one-name array; null for anything else (PDFsharp's GetName throws on arrays and references).
+    private static string? NameOf(PdfItem? item) => Resolve(item) switch
+    {
+        PdfName name => name.Value,
+        PdfArray { Elements.Count: 1 } array => NameOf(array.Elements[0]),
+        _ => null,
+    };
+
+    /// "rgb", "gray", or null for color spaces left alone (CMYK, indexed, Lab, separations…). Chrome, Word and macOS
+    /// tag most photos [/ICCBased profile] rather than /DeviceRGB.
+    private static string? ColorModel(PdfItem? item)
+    {
+        switch (Resolve(item))
+        {
+            case PdfName name:
+                return name.Value switch { "/DeviceRGB" or "/CalRGB" => "rgb", "/DeviceGray" or "/CalGray" => "gray", _ => null };
+            case PdfArray { Elements.Count: > 0 } array:
+                var family = NameOf(array.Elements[0]);
+                if (family == "/CalRGB") return "rgb";
+                if (family == "/CalGray") return "gray";
+                if (family == "/ICCBased" && array.Elements.Count > 1 && Resolve(array.Elements[1]) is PdfDictionary profile)
+                    return profile.Elements.GetInteger("/N") switch { 3 => "rgb", 1 => "gray", _ => null };
+                return null;
+            default:
+                return null;
+        }
     }
 
     public static async Task<string> Convert(string src, string ext, double dpi, PickContext ctx)
@@ -70,7 +178,7 @@ public static class PdfEngine
             await Platform.Pdf.RenderPageAsync(pdf, index, dpi, png, token);
             using var image = new MagickImage(png);
             image.Quality = 90;
-            image.Write(path, MagickFormat.Jpeg);
+            ImageEngine.WriteTo(image, path, MagickFormat.Jpeg);
         }
         finally
         {
@@ -98,24 +206,30 @@ public static class PdfEngine
         });
     }
 
-    /// Text layer first; pages without one (scans) fall back to Windows OCR.
-    public static async Task<string> ExtractText(string path, PickContext ctx)
+    /// PdfPig's reader, with its exceptions turned into the messages the app shows.
+    private static PigDocument OpenText(string path)
     {
-        var pages = new List<string>();
-        PigDocument document;
         try
         {
-            document = PigDocument.Open(path);
+            return PigDocument.Open(path);
         }
         catch (Exception error) when (error.GetType().Name.Contains("Encrypted", StringComparison.Ordinal) ||
                                       error.Message.Contains("password", StringComparison.OrdinalIgnoreCase))
         {
             throw new PickException(L("err.pdf_locked"));
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            Debug.Log("pdfpig open: " + error.Message);
             throw new PickException(L("err.pdf_open"));
         }
+    }
+
+    /// Text layer first; pages without one (scans) fall back to Windows OCR.
+    public static async Task<string> ExtractText(string path, PickContext ctx)
+    {
+        var pages = new List<string>();
+        var document = OpenText(path);
         using (document)
         {
             var count = document.NumberOfPages;
@@ -170,29 +284,30 @@ public static class PdfEngine
 
     private static void Recompress(PdfDictionary image)
     {
-        var elements = image.Elements;
-        if (elements.ContainsKey("/SMask") || elements.ContainsKey("/Mask") || elements.GetBoolean("/ImageMask")) return;
-        if (image.Stream == null) return;
-        var width = elements.GetInteger("/Width");
-        var height = elements.GetInteger("/Height");
-        if (width * height < 96 * 96) return;
-        var colorSpace = elements.GetName("/ColorSpace");
-        if (colorSpace is not ("/DeviceRGB" or "/DeviceGray")) return;
-        var filter = elements.GetName("/Filter");
-        var original = image.Stream.Value;
-        byte[]? encoded = null;
-        uint newWidth = (uint)width, newHeight = (uint)height;
         try
         {
+            var elements = image.Elements;
+            if (elements.ContainsKey("/SMask") || elements.ContainsKey("/Mask") || elements.GetBoolean("/ImageMask")) return;
+            if (image.Stream == null) return;
+            var width = elements.GetInteger("/Width");
+            var height = elements.GetInteger("/Height");
+            if (width * height < 96 * 96) return;
+            var model = ColorModel(elements["/ColorSpace"]);
+            if (model == null) return;
+            var filter = NameOf(elements["/Filter"]);
+            var original = image.Stream.Value;
+            uint newWidth, newHeight;
+            byte[] encoded;
             MagickImage? magick = null;
             if (filter == "/DCTDecode")
             {
                 magick = new MagickImage(original);
             }
-            else if (filter == "/FlateDecode" && elements.GetInteger("/BitsPerComponent") == 8 && !elements.ContainsKey("/DecodeParms"))
+            else if (filter == "/FlateDecode" && elements.GetInteger("/BitsPerComponent") == 8 && !elements.ContainsKey("/DecodeParms") &&
+                     !elements.ContainsKey("/Decode"))
             {
                 var raw = image.Stream.UnfilteredValue;
-                var channels = colorSpace == "/DeviceRGB" ? 3 : 1;
+                var channels = model == "rgb" ? 3 : 1;
                 if (raw.Length == width * height * channels)
                 {
                     magick = new MagickImage(raw, new MagickReadSettings
@@ -207,6 +322,8 @@ public static class PdfEngine
             if (magick == null) return;
             using (magick)
             {
+                // A JPEG whose own colors don't match the PDF's (CMYK inside an RGB-tagged image) stays as it is.
+                if (magick.ColorSpace == ColorSpace.CMYK) return;
                 if (Math.Max(magick.Width, magick.Height) > 2000) magick.Resize(new MagickGeometry(2000, 2000) { Greater = true });
                 magick.Strip();
                 magick.Quality = 70;
@@ -214,45 +331,56 @@ public static class PdfEngine
                 newHeight = magick.Height;
                 encoded = magick.ToByteArray(MagickFormat.Jpeg);
             }
+            if (encoded.Length >= original.Length * 0.9) return;
+            image.Stream.Value = encoded;
+            elements.SetName("/Filter", "/DCTDecode");
+            elements.Remove("/DecodeParms");
+            elements.SetInteger("/Width", (int)newWidth);
+            elements.SetInteger("/Height", (int)newHeight);
+            elements.SetInteger("/BitsPerComponent", 8);
         }
-        catch (Exception)
+        catch (Exception error)
         {
-            return;
+            // One odd image never stops the rest of the document from shrinking.
+            Debug.Log("pdf image: " + error.Message);
         }
-        if (encoded == null || encoded.Length >= original.Length * 0.9) return;
-        image.Stream.Value = encoded;
-        elements.SetName("/Filter", "/DCTDecode");
-        elements.Remove("/DecodeParms");
-        elements.SetInteger("/Width", (int)newWidth);
-        elements.SetInteger("/Height", (int)newHeight);
-        elements.SetInteger("/BitsPerComponent", 8);
+    }
+
+    /// Images on a page and inside its form XObjects (Chrome and Word wrap most pictures in a form).
+    private static void RecompressImages(PdfDictionary? resources, HashSet<PdfDictionary> seen, int depth)
+    {
+        if (resources == null || depth > 8) return;
+        if (Resolve(resources.Elements["/XObject"]) is not PdfDictionary objects) return;
+        foreach (var key in objects.Elements.Keys.ToList())
+        {
+            if (Resolve(objects.Elements[key]) is not PdfDictionary item || !seen.Add(item)) continue;
+            switch (NameOf(item.Elements["/Subtype"]))
+            {
+                case "/Image":
+                    Recompress(item);
+                    break;
+                case "/Form":
+                    RecompressImages(Resolve(item.Elements["/Resources"]) as PdfDictionary, seen, depth + 1);
+                    break;
+            }
+        }
     }
 
     public static async Task<string> Compress(string src, PickContext ctx)
     {
         ctx.Report(null, L("note.optimizing"));
-        var output = await ctx.Produce(ctx.DestinationFor(src, "pdf", L("sfx.compressed")), tmp =>
+        var output = await ctx.Produce(ctx.DestinationFor(src, "pdf", L("sfx.compressed")), tmp => Edit(src, tmp, document =>
         {
-            using var document = Open(src, PdfDocumentOpenMode.Modify);
             var seen = new HashSet<PdfDictionary>();
             foreach (var page in document.Pages)
             {
                 ctx.Check();
-                var resources = page.Elements.GetDictionary("/Resources");
-                var objects = resources?.Elements.GetDictionary("/XObject");
-                if (objects == null) continue;
-                foreach (var key in objects.Elements.Keys.ToList())
-                {
-                    if (objects.Elements.GetReference(key)?.Value is not PdfDictionary item) continue;
-                    if (item.Elements.GetName("/Subtype") != "/Image" || !seen.Add(item)) continue;
-                    Recompress(item);
-                }
+                RecompressImages(Resolve(page.Elements["/Resources"]) as PdfDictionary, seen, 0);
             }
             document.Options.CompressContentStreams = true;
             document.Options.NoCompression = false;
             document.Options.FlateEncodeMode = PdfFlateEncodeMode.BestCompression;
-            document.Save(tmp);
-        });
+        }));
         ImageEngine.KeepIfSmaller(output, src);
         return output;
     }
@@ -299,12 +427,10 @@ public static class PdfEngine
     public static async Task<string> Rotate(string src, Turn turn, PickContext ctx)
     {
         var degrees = turn switch { Turn.Left => 270, Turn.Half => 180, _ => 90 };
-        return await ctx.Produce(ctx.DestinationFor(src, "pdf", L("sfx.rotated")), tmp =>
+        return await ctx.Produce(ctx.DestinationFor(src, "pdf", L("sfx.rotated")), tmp => Edit(src, tmp, document =>
         {
-            using var document = Open(src, PdfDocumentOpenMode.Modify);
             foreach (var page in document.Pages) page.Rotate = (page.Rotate + degrees) % 360;
-            document.Save(tmp);
-        });
+        }));
     }
 
     public static async Task<string> Encrypt(string src, PickContext ctx)
@@ -312,14 +438,12 @@ public static class PdfEngine
         var password = await Platform.Editors.PasswordAsync(src, ctx.Token);
         if (string.IsNullOrEmpty(password)) throw new OperationCanceledException();
         ctx.BeginWork();
-        return await ctx.Produce(ctx.DestinationFor(src, "pdf", L("sfx.locked")), tmp =>
+        return await ctx.Produce(ctx.DestinationFor(src, "pdf", L("sfx.locked")), tmp => Edit(src, tmp, document =>
         {
-            using var document = Open(src, PdfDocumentOpenMode.Modify);
             document.SecurityHandler.SetEncryptionToV5(true);
             document.SecuritySettings.UserPassword = password;
             document.SecuritySettings.OwnerPassword = password;
-            document.Save(tmp);
-        });
+        }));
     }
 
     // Pages
@@ -409,7 +533,7 @@ public static class PdfEngine
 
     public static async Task<string> RemoveBlank(string src, PickContext ctx)
     {
-        using var document = PigDocument.Open(src);
+        using var document = OpenText(src);
         var count = document.NumberOfPages;
         var keep = new List<int>();
         for (var index = 0; index < count; index++)
@@ -479,13 +603,14 @@ public static class PdfEngine
 
     public static void WriteInfo(string src, IReadOnlyDictionary<string, string> fields, string destination)
     {
-        using var document = Open(src, PdfDocumentOpenMode.Modify);
-        var info = document.Info;
-        if (fields.TryGetValue("title", out var title)) info.Title = title;
-        if (fields.TryGetValue("author", out var author)) info.Author = author;
-        if (fields.TryGetValue("subject", out var subject)) info.Subject = subject;
-        if (fields.TryGetValue("keywords", out var keywords)) info.Keywords = keywords;
-        if (fields.TryGetValue("creator", out var creator)) info.Creator = creator;
-        document.Save(destination);
+        Edit(src, destination, document =>
+        {
+            var info = document.Info;
+            if (fields.TryGetValue("title", out var title)) info.Title = title;
+            if (fields.TryGetValue("author", out var author)) info.Author = author;
+            if (fields.TryGetValue("subject", out var subject)) info.Subject = subject;
+            if (fields.TryGetValue("keywords", out var keywords)) info.Keywords = keywords;
+            if (fields.TryGetValue("creator", out var creator)) info.Creator = creator;
+        });
     }
 }

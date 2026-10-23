@@ -370,9 +370,10 @@ internal sealed class CardWindow : Window
         if (appearing || !IsVisible)
         {
             var offset = (int)Math.Round(10 * (fromTop ? -1 : 1) * (Native.GetDpiForWindow(hwnd) / 96.0));
-            Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, x, y + offset, width, height, Native.SWP_NOACTIVATE);
+            var after = InsertAfter();
+            Native.SetWindowPos(hwnd, after, x, y + offset, width, height, Native.SWP_NOACTIVATE);
             Show();
-            Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, x, y + offset, width, height, Native.SWP_NOACTIVATE | Native.SWP_SHOWWINDOW);
+            Native.SetWindowPos(hwnd, after, x, y + offset, width, height, Native.SWP_NOACTIVATE | Native.SWP_SHOWWINDOW);
             Animate(x, y + offset, x, y, width, height);
             return;
         }
@@ -381,12 +382,28 @@ internal sealed class CardWindow : Window
         Animate(current.Left, current.Top, x, y, width, height);
     }
 
+    /// A new card goes above every window, except a Pickverter dialog the user is working in (an editor, the password
+    /// prompt, the folder picker): it slides in underneath, so it never covers the dialog's buttons.
+    private IntPtr InsertAfter()
+    {
+        var front = Native.GetForegroundWindow();
+        if (front == IntPtr.Zero || front == hwnd) return Native.HWND_TOPMOST;
+        Native.GetWindowThreadProcessId(front, out var process);
+        if (process != (uint)Environment.ProcessId) return Native.HWND_TOPMOST;
+        var root = Native.GetAncestor(front, Native.GA_ROOTOWNER);
+        if (root == IntPtr.Zero) root = front;
+        var topmost = (Native.GetWindowLongPtr(root, Native.GWL_EXSTYLE).ToInt64() & Native.WS_EX_TOPMOST) != 0;
+        return topmost ? front : Native.HWND_TOPMOST;
+    }
+
+    // Moving never changes the stacking (SWP_NOZORDER): a card that slid in under a dialog stays under it.
     private void Animate(int fromX, int fromY, int toX, int toY, int width, int height)
     {
         mover?.Stop();
+        const uint flags = Native.SWP_NOACTIVATE | Native.SWP_NOZORDER;
         if (!SystemParameters.ClientAreaAnimation)
         {
-            Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, toX, toY, width, height, Native.SWP_NOACTIVATE);
+            Native.SetWindowPos(hwnd, IntPtr.Zero, toX, toY, width, height, flags);
             return;
         }
         var started = DateTime.UtcNow;
@@ -398,7 +415,7 @@ internal sealed class CardWindow : Window
             var eased = 1 - Math.Pow(1 - t, 3);
             var x = (int)Math.Round(fromX + (toX - fromX) * eased);
             var y = (int)Math.Round(fromY + (toY - fromY) * eased);
-            Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, x, y, width, height, Native.SWP_NOACTIVATE);
+            Native.SetWindowPos(hwnd, IntPtr.Zero, x, y, width, height, flags);
             if (t >= 1) mover?.Stop();
         };
         mover.Start();

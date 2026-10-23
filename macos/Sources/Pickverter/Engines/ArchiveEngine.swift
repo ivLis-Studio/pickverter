@@ -1,23 +1,38 @@
 import AppKit
 
 enum ArchiveEngine {
+    /// Unpacks into a folder: ZIP through ditto, a lone .gz or .bz2 file through gunzip/bunzip2, a lone .xz through
+    /// Apple's own LZMA decoder (macOS has no xz command), and every other archive through tar.
+    static func unpack(_ src: URL, into folder: URL) async throws {
+        let (base, ext) = FileNames.split(src.lastPathComponent)
+        if ext == "zip" {
+            try await Shell.run("/usr/bin/ditto", ["-x", "-k", src.path, folder.path])
+        } else if ["gz", "bz2", "xz"].contains(ext), !base.lowercased().hasSuffix(".tar") {
+            let out = folder.appendingPathComponent(base)
+            if ext == "xz" {
+                do {
+                    let plain = try (Data(contentsOf: src) as NSData).decompressed(using: .lzma)
+                    try (plain as Data).write(to: out)
+                } catch {
+                    throw PickError(L("err.archive_open"))
+                }
+            } else {
+                try await Shell.run(ext == "gz" ? "/usr/bin/gunzip" : "/usr/bin/bunzip2", ["-c", src.path], stdoutTo: out)
+            }
+        } else {
+            try await Shell.run("/usr/bin/tar", ["-xf", src.path, "-C", folder.path])
+        }
+    }
+
     /// Extracts next to the archive. A single top-level item is not wrapped in an extra folder.
     static func extract(_ src: URL, ctx: PickContext) async throws -> URL {
         let fm = FileManager.default
-        let (base, ext) = FileNames.split(src.lastPathComponent)
+        let base = FileNames.split(src.lastPathComponent).base
         let staging = fm.temporaryDirectory.appendingPathComponent("pickverter-x-" + UUID().uuidString, isDirectory: true)
         try fm.createDirectory(at: staging, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: staging) }
         ctx.report(nil, L("note.extracting"))
-        if ext == "zip" {
-            try await Shell.run("/usr/bin/ditto", ["-x", "-k", src.path, staging.path])
-        } else if ext == "gz" || ext == "bz2" || ext == "xz", !base.lowercased().hasSuffix(".tar") {
-            let tool = ext == "gz" ? "/usr/bin/gunzip" : ext == "bz2" ? "/usr/bin/bunzip2" : "/usr/bin/xz"
-            let out = staging.appendingPathComponent(base)
-            try await Shell.run(tool, ["-c", src.path], stdoutTo: out)
-        } else {
-            try await Shell.run("/usr/bin/tar", ["-xf", src.path, "-C", staging.path])
-        }
+        try await unpack(src, into: staging)
         let items = try fm.contentsOfDirectory(at: staging, includingPropertiesForKeys: nil)
             .filter { !["__MACOSX", ".DS_Store"].contains($0.lastPathComponent) }
         guard !items.isEmpty else { throw PickError(L("err.archive_empty")) }
@@ -71,11 +86,7 @@ enum ArchiveEngine {
         let staging = fm.temporaryDirectory.appendingPathComponent("pickverter-c-" + UUID().uuidString, isDirectory: true)
         try fm.createDirectory(at: staging, withIntermediateDirectories: true)
         defer { try? fm.removeItem(at: staging) }
-        if FileNames.split(src.lastPathComponent).ext == "zip" {
-            try await Shell.run("/usr/bin/ditto", ["-x", "-k", src.path, staging.path])
-        } else {
-            try await Shell.run("/usr/bin/tar", ["-xf", src.path, "-C", staging.path])
-        }
+        try await unpack(src, into: staging)
         let names = try fm.contentsOfDirectory(atPath: staging.path).filter { $0 != "__MACOSX" && $0 != ".DS_Store" }
         guard !names.isEmpty else { throw PickError(L("err.archive_empty")) }
         let dst = ctx.destination(for: src, ext: format)

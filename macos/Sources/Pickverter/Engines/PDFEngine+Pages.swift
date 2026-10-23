@@ -120,7 +120,7 @@ extension PDFEngine {
         alert.addButton(withTitle: L("pdf.range.extract"))
         alert.addButton(withTitle: L("common.cancel"))
         alert.window.initialFirstResponder = field
-        guard alert.runModal() == .alertFirstButtonReturn else { return nil }
+        guard DialogLevel.runModal(alert.window, alert.runModal) == .alertFirstButtonReturn else { return nil }
         return field.stringValue
     }
 
