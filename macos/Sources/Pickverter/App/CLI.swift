@@ -41,13 +41,14 @@ enum CLI {
         case "symbols": return checkSymbols()
         case "inspect": return rest.first.map { inspect($0) } ?? usage()
         case "ffmpeg-install": return ffmpegInstall()
+        case "rhwp-install": return rhwpInstall()
         default: return usage()
         }
     }
 
     static func usage() -> Int32 {
         print("usage: Pickverter cli list|run|snapshot|card|menu|selftest|icon|i18n-plist|fixtures|editor-snapshot|symbols|"
-              + "update-keygen|update-manifest|update-verify|update-check|update-selftest|ffmpeg-install …")
+              + "update-keygen|update-manifest|update-verify|update-check|update-selftest|ffmpeg-install|rhwp-install …")
         return 64
     }
 
@@ -62,6 +63,25 @@ enum CLI {
                 }
             }
             print(String(format: "OK %@ · %@ · %.1fs", Tools.ffmpeg ?? "?", FFmpegInstaller.installedVersion ?? "?",
+                         Date().timeIntervalSince(started)))
+            return 0
+        } catch {
+            print("ERR \(error.localizedDescription)")
+            return 1
+        }
+    }
+
+    /// Downloads rhwp exactly like the first HWP conversion does (PICKVERTER_RHWP_DIR picks the folder).
+    static func rhwpInstall() -> Int32 {
+        let started = Date()
+        do {
+            try wait {
+                try await HWPInstaller.shared.install { fraction in
+                    let percent = Int((fraction * 100).rounded(.down))
+                    if percent % 25 == 0 { print("  … \(percent)%") }
+                }
+            }
+            print(String(format: "OK %@ · %@ · %.1fs", HWPInstaller.executable ?? "?", HWPInstaller.installedVersion ?? "?",
                          Date().timeIntervalSince(started)))
             return 0
         } catch {
@@ -106,7 +126,7 @@ enum CLI {
             return 2
         }
         // Like a click on the wheel: a missing ffmpeg is downloaded first.
-        if option.unavailable == Tools.ffmpegHint { option = FFmpegInstaller.preparing(option) }
+        if Tools.isDownload(option.unavailable) { option = Tools.preparing(option, for: option.unavailable) }
         if let reason = option.unavailable { print("unavailable: \(reason)"); return 3 }
         let destination = ResultDestination(rawValue: ProcessInfo.processInfo.environment["PICKVERTER_DEST"] ?? "") ?? .file
         var lastNote: String?

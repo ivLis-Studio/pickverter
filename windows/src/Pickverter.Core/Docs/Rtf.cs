@@ -617,7 +617,7 @@ public static class Rtf
                         for (var column = 0; column < columns; column++)
                         {
                             var cell = column < table.Rows[row].Count ? table.Rows[row][column] : [];
-                            b.Append("\\pard\\intbl ").Append(Runs(cell, forceBold: row == 0)).Append("\\cell ");
+                            b.Append("\\pard\\intbl ").Append(Runs(cell, forceBold: row == 0 && table.HeaderRow)).Append("\\cell ");
                         }
                         b.Append("\\row\n");
                     }

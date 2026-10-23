@@ -39,7 +39,28 @@ jobs:
       - name: Build
         run: dotnet build Pickverter.slnx -c Release
 
+      - name: rhwp download (the copy Pickverter installs for itself)
+        env:
+          PICKVERTER_RHWP_DIR: ${{ runner.temp }}\pickverter-rhwp
+        run: |
+          $exe = "src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe"
+          & $exe cli rhwp-install | Out-Host
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # Convert with that copy: rhwp's own PDF and HWP, DOCX through DocLang, page images through Windows' PDF renderer.
+          $fixtures = Join-Path $env:RUNNER_TEMP "hwp-fixtures"
+          & $exe cli fixtures $fixtures | Out-Host
+          $report = Join-Path $fixtures "report.hwpx"
+          foreach ($id in "convert.pdf", "convert.hwp", "convert.docx", "convert.png") {
+            & $exe cli run $id $report | Out-Host
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          foreach ($name in "report.pdf", "report.hwp", "report.docx", "report.png") {
+            if (-not (Test-Path (Join-Path $fixtures $name))) { throw "no $name" }
+          }
+
       - name: Unit tests
+        env:
+          PICKVERTER_RHWP_DIR: ${{ runner.temp }}\pickverter-rhwp
         run: dotnet test --project tests/Pickverter.Core.Tests/Pickverter.Core.Tests.csproj -c Release --no-build
 
       - name: Glyphs
@@ -48,6 +69,8 @@ jobs:
           exit $LASTEXITCODE
 
       - name: Windows self test
+        env:
+          PICKVERTER_RHWP_DIR: ${{ runner.temp }}\pickverter-rhwp
         run: |
           & src/Pickverter/bin/Release/net10.0-windows10.0.19041.0/Pickverter.exe cli selftest "$env:RUNNER_TEMP\selftest" | Out-Host
           exit $LASTEXITCODE

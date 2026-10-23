@@ -158,16 +158,16 @@
       "Modelo baixado (%@) · roda neste PC"
     ],
     "engine.footer": [
-      "Images, PDFs, documents and background removal work out of the box. ffmpeg adds more video and audio formats; without it, Windows' own codecs handle MP4, M4A, MP3 and WAV.",
-      "이미지·PDF·문서·배경 제거는 바로 쓸 수 있어요. ffmpeg이 있으면 더 많은 동영상·오디오 형식을 지원하고, 없을 때는 Windows 내장 코덱으로 MP4·M4A·MP3·WAV를 처리해요.",
-      "画像・PDF・書類・背景削除はそのまま使えます。ffmpegがあれば動画と音声の形式が増えます。ない場合はWindows標準のコーデックでMP4・M4A・MP3・WAVを処理します。",
-      "图像、PDF、文档和背景移除开箱即用。安装 ffmpeg 可支持更多视频和音频格式；没有它时，由 Windows 自带编解码器处理 MP4、M4A、MP3 和 WAV。",
-      "影像、PDF、文件和背景移除開箱即用。安裝 ffmpeg 可支援更多影片和音訊格式；沒有它時，由 Windows 內建編解碼器處理 MP4、M4A、MP3 和 WAV。",
-      "Imágenes, PDF, documentos y quitar fondos funcionan de inmediato. ffmpeg añade más formatos de vídeo y audio; sin él, los códecs de Windows convierten MP4, M4A, MP3 y WAV.",
-      "Images, PDF, documents et détourage fonctionnent d'emblée. ffmpeg ajoute des formats vidéo et audio ; sans lui, les codecs de Windows gèrent MP4, M4A, MP3 et WAV.",
-      "Bilder, PDFs, Dokumente und Freistellen funktionieren sofort. ffmpeg ergänzt weitere Video- und Audioformate; ohne ffmpeg übernehmen die Windows-Codecs MP4, M4A, MP3 und WAV.",
-      "Изображения, PDF, документы и удаление фона работают сразу. ffmpeg добавляет форматы видео и аудио; без него MP4, M4A, MP3 и WAV обрабатывают кодеки Windows.",
-      "Imagens, PDFs, documentos e remoção de fundo funcionam de imediato. O ffmpeg adiciona formatos de vídeo e áudio; sem ele, os codecs do Windows cuidam de MP4, M4A, MP3 e WAV."
+      "Images, PDFs, documents and background removal work out of the box. ffmpeg adds more video and audio formats; without it, Windows' own codecs handle MP4, M4A, MP3 and WAV. rhwp converts HWP and HWPX documents.",
+      "이미지·PDF·문서·배경 제거는 바로 쓸 수 있어요. ffmpeg이 있으면 더 많은 동영상·오디오 형식을 지원하고, 없을 때는 Windows 내장 코덱으로 MP4·M4A·MP3·WAV를 처리해요. rhwp가 있으면 한글 문서(HWP·HWPX)를 변환해요.",
+      "画像・PDF・書類・背景削除はそのまま使えます。ffmpegがあれば動画と音声の形式が増えます。ない場合はWindows標準のコーデックでMP4・M4A・MP3・WAVを処理します。rhwpがあればHWP・HWPX文書を変換できます。",
+      "图像、PDF、文档和背景移除开箱即用。安装 ffmpeg 可支持更多视频和音频格式；没有它时，由 Windows 自带编解码器处理 MP4、M4A、MP3 和 WAV。安装 rhwp 可转换 HWP 和 HWPX 文档。",
+      "影像、PDF、文件和背景移除開箱即用。安裝 ffmpeg 可支援更多影片和音訊格式；沒有它時，由 Windows 內建編解碼器處理 MP4、M4A、MP3 和 WAV。安裝 rhwp 可轉換 HWP 和 HWPX 文件。",
+      "Imágenes, PDF, documentos y quitar fondos funcionan de inmediato. ffmpeg añade más formatos de vídeo y audio; sin él, los códecs de Windows convierten MP4, M4A, MP3 y WAV. rhwp convierte documentos HWP y HWPX.",
+      "Images, PDF, documents et détourage fonctionnent d'emblée. ffmpeg ajoute des formats vidéo et audio ; sans lui, les codecs de Windows gèrent MP4, M4A, MP3 et WAV. rhwp convertit les documents HWP et HWPX.",
+      "Bilder, PDFs, Dokumente und Freistellen funktionieren sofort. ffmpeg ergänzt weitere Video- und Audioformate; ohne ffmpeg übernehmen die Windows-Codecs MP4, M4A, MP3 und WAV. rhwp wandelt HWP- und HWPX-Dokumente um.",
+      "Изображения, PDF, документы и удаление фона работают сразу. ffmpeg добавляет форматы видео и аудио; без него MP4, M4A, MP3 и WAV обрабатывают кодеки Windows. rhwp преобразует документы HWP и HWPX.",
+      "Imagens, PDFs, documentos e remoção de fundo funcionam de imediato. O ffmpeg adiciona formatos de vídeo e áudio; sem ele, os codecs do Windows cuidam de MP4, M4A, MP3 e WAV. O rhwp converte documentos HWP e HWPX."
     ],
     "engine.heic": [
       "HEIC export",
@@ -312,6 +312,18 @@
       "HEIF- und HEVC-Erweiterungen nötig (Store)",
       "Нужны расширения HEIF и HEVC (Store)",
       "Requer extensões HEIF e HEVC (Store)"
+    ],
+    "err.hwp_arm": [
+      "rhwp needs Windows 11 on this PC",
+      "이 PC에서는 Windows 11이 있어야 rhwp를 쓸 수 있어요",
+      "このPCでrhwpを使うにはWindows 11が必要です",
+      "此电脑需要 Windows 11 才能使用 rhwp",
+      "此電腦需要 Windows 11 才能使用 rhwp",
+      "rhwp necesita Windows 11 en este PC",
+      "rhwp nécessite Windows 11 sur ce PC",
+      "rhwp benötigt auf diesem PC Windows 11",
+      "Для rhwp на этом компьютере нужна Windows 11",
+      "O rhwp precisa do Windows 11 neste PC"
     ],
     "err.no_access": [
       "Windows blocked access to “%@”",

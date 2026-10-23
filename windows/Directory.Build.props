@@ -6,7 +6,7 @@
     <Version Condition="'$(Version)' == ''">0.2.0</Version>
     <Company>ivLis Studio</Company>
     <Product>Pickverter</Product>
-    <Copyright>© 2026 ivLis Studio · CC BY-NC-ND 4.0</Copyright>
+    <Copyright>© 2026 ivLis Studio · MIT License</Copyright>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <PickverterRelease Condition="'$(PickverterRelease)' == ''">false</PickverterRelease>
     <SatelliteResourceLanguages>en</SatelliteResourceLanguages>

@@ -17,8 +17,9 @@ public sealed record ListEntry(IReadOnlyList<Run> Runs, int Level = 0);
 public sealed record ListBlock(bool Ordered, IReadOnlyList<ListEntry> Entries) : Block;
 public sealed record QuoteBlock(IReadOnlyList<Run> Runs) : Block;
 public sealed record CodeBlock(string Text) : Block;
-/// Rows of cells; the first row is the header.
-public sealed record TableBlock(IReadOnlyList<IReadOnlyList<IReadOnlyList<Run>>> Rows) : Block;
+/// Rows of cells; the first row is the header unless HeaderRow is false (HWP tables without header cells: a one-cell
+/// box around body text must not turn bold).
+public sealed record TableBlock(IReadOnlyList<IReadOnlyList<IReadOnlyList<Run>>> Rows, bool HeaderRow = true) : Block;
 public sealed record ImageBlock(byte[] Data, string Ext, string Alt, int Width, int Height) : Block;
 public sealed record RuleBlock : Block;
 

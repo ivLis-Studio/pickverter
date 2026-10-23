@@ -39,6 +39,8 @@ enum Converter {
         case .document:
             if ext == "epub" { return try await EPUBBuilder.fromDocuments([src], ctx: ctx) }
             return try await DocumentEngine.convert(src, to: ext, ctx: ctx)
+        case .hwp:
+            return try await HWPEngine.convert(src, to: ext, dpi: options.dpi, ctx: ctx)
         case .office:
             return try await OfficeEngine.convert(src, to: ext, ctx: ctx)
         case .table, .json:

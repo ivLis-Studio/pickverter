@@ -24,7 +24,7 @@
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Pickverter","operatingSystem":"macOS 14 or later, Windows 10 or later","applicationCategory":"UtilitiesApplication",
  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Organization","name":"ivLis Studio"},
- "downloadUrl":"https://github.com/ivLis-Studio/pickverter/releases/latest","license":"https://creativecommons.org/licenses/by-nc-nd/4.0/"}
+ "downloadUrl":"https://github.com/ivLis-Studio/pickverter/releases/latest","license":"https://opensource.org/licenses/MIT"}
 </script>
 </head>
 <body>
@@ -165,6 +165,7 @@
             <div class="group"><h3><i class="ico" data-i="music"></i><span data-t="g.audio">Audio</span></h3><div class="chips"><span class="chip">MP3</span><span class="chip">M4A</span><span class="chip">WAV</span><span class="chip">FLAC</span><span class="chip">AIFF</span><span class="chip">OGG</span><span class="chip">Opus</span></div></div>
             <div class="group"><h3><i class="ico" data-i="file-text"></i>PDF</h3><div class="chips"><span class="chip">PNG</span><span class="chip">JPG</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">DOCX</span><span class="chip">RTF</span><span class="chip">HTML</span></div></div>
             <div class="group"><h3><i class="ico" data-i="files"></i><span data-t="g.docs">Documents</span></h3><div class="chips"><span class="chip">PDF</span><span class="chip">DOCX</span><span class="chip">RTF</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">HTML</span><span class="chip">ODT</span><span class="chip">EPUB</span></div></div>
+            <div class="group"><h3><i class="ico" data-i="file-text"></i><span data-t="g.hwp">HWP &amp; HWPX</span></h3><div class="chips"><span class="chip">PDF</span><span class="chip">DOCX</span><span class="chip">HWP ↔ HWPX</span><span class="chip">PNG</span><span class="chip">JPG</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">HTML</span></div></div>
             <div class="group"><h3><i class="ico" data-i="table"></i><span data-t="g.office">Office, iWork &amp; data</span></h3><p data-t="g.office.d">Excel, Numbers, Pages, Keynote and PowerPoint · tables to CSV, TSV, JSON, Markdown, HTML · subtitles SRT, VTT · ZIP, TAR.GZ</p></div>
           </div>
         </div>
@@ -311,7 +312,7 @@
       <div class="feat reveal"><i class="ico" data-i="undo-2"></i><h3 data-t="det.3.t">Nothing to lose</h3><p data-t="det.3.d">Originals are never overwritten, and every result card can undo the job.</p></div>
       <div class="feat reveal"><i class="ico" data-i="refresh-ccw"></i><h3 data-t="det.4.t">Updates itself, safely</h3><p data-t="det.4.d">New versions come from GitHub Releases and are checked — Ed25519 signature, SHA-256 and code signature — before installing.</p></div>
       <div class="feat reveal"><i class="ico" data-i="keyboard"></i><h3 data-t="det.5.t">Keyboard all the way</h3><p data-t="det.5.d">Arrow keys, number keys, type a format name to jump, Return to run. VoiceOver announces every slot.</p></div>
-      <div class="feat reveal"><i class="ico" data-i="code"></i><h3 data-t="det.6.t">Free, with the source on GitHub</h3><p data-t="det.6.d">Licensed under CC BY-NC-ND 4.0. Read the code, file an issue, or suggest a translation fix on GitHub.</p></div>
+      <div class="feat reveal"><i class="ico" data-i="code"></i><h3 data-t="det.6.t">Free, with the source on GitHub</h3><p data-t="det.6.d">Open source under the MIT License. Read the code, file an issue, or suggest a translation fix on GitHub.</p></div>
     </div>
     <table class="kbd-table reveal">
       <thead><tr><th data-t="kb.gesture">Gesture</th><th data-t="kb.does">What it does</th></tr></thead>
@@ -377,7 +378,7 @@
         <dl>
           <dt data-t="dl.req">Requires</dt><dd data-t="dl.req.v">macOS 14 Sonoma or later</dd>
           <dt data-t="dl.chip">Chips</dt><dd data-t="dl.chip.v">Apple silicon and Intel (universal)</dd>
-          <dt data-t="dl.price">Price</dt><dd data-t="dl.price.v">Free · CC BY-NC-ND 4.0</dd>
+          <dt data-t="dl.price">Price</dt><dd data-t="dl.price.v">Free · MIT License</dd>
           <dt data-t="dl.verify">Verify</dt><dd><a class="dl-sums" href="https://github.com/ivLis-Studio/pickverter/releases/latest" data-t="dl.verify.v">SHA-256 checksums</a></dd>
         </dl>
       </aside>
@@ -390,13 +391,14 @@
   <div class="wrap">
     <div class="section-head center reveal"><span class="kicker">FAQ</span><h2 id="faq-title" data-t="faq.title">Good questions.</h2></div>
     <div class="faq reveal">
-      <details><summary data-t="faq.1.q">Is it really free?</summary><p data-t="faq.1.a">Yes — no account, no subscription, no ads. The source is published under CC BY-NC-ND 4.0: share it unchanged, with credit, for non-commercial purposes.</p></details>
-      <details><summary data-t="faq.2.q">Are my files uploaded anywhere?</summary><p data-t="faq.2.a">No. Every conversion and edit runs on your Mac with Apple’s frameworks and, if you add it, ffmpeg. Pickverter only goes online to check GitHub for updates (you can turn that off) and to download ffmpeg when you ask for it.</p></details>
+      <details><summary data-t="faq.1.q">Is it really free?</summary><p data-t="faq.1.a">Yes — no account, no subscription, no ads. The source is open under the MIT License.</p></details>
+      <details><summary data-t="faq.2.q">Are my files uploaded anywhere?</summary><p data-t="faq.2.a">No. Every conversion and edit runs on your Mac with Apple’s frameworks and, if you add them, ffmpeg and rhwp. Pickverter only goes online to check GitHub for updates (you can turn that off) and to download ffmpeg or rhwp when you need them.</p></details>
       <details><summary data-t="faq.3.q">Why does it need Accessibility and Finder access?</summary><p data-t="faq.3.a">Accessibility lets Pickverter notice the ⌥ tap and drags anywhere on screen. Finder control lets it read which files you selected. File access lets it read and write files in Desktop, Documents and Downloads without a prompt in the middle of a job.</p></details>
       <details><summary data-t="faq.4.q">Why does macOS ask for permissions again after an update?</summary><p data-t="faq.4.a">Releases are currently signed ad hoc (there’s no Apple Developer ID yet), so macOS treats each new version as a new app. Pickverter clears the stale entries and reopens the welcome window so you can switch them back on.</p></details>
       <details><summary data-t="faq.5.q">Do I need ffmpeg?</summary><p data-t="faq.5.a">No — images, PDFs, documents and many audio and video jobs work out of the box with Apple’s frameworks. ffmpeg adds formats like WebM, MKV, FLAC, OGG and Opus, plus extra video tools. Pickverter downloads a signed build for you in one click and checks it before use; <code>brew install ffmpeg</code> works too.</p></details>
       <details><summary data-t="faq.6.q">Which Macs are supported?</summary><p data-t="faq.6.a">Any Mac with macOS 14 Sonoma or later — Apple silicon and Intel, from one universal download.</p></details>
-      <details><summary data-t="faq.7.q">How do I uninstall it?</summary><p data-t="faq.7.a">Quit Pickverter from the menu bar and move it from Applications to the Trash. If Pickverter downloaded ffmpeg, remove it first in Settings › Integrations. You can also remove Pickverter from the Accessibility and Full Disk Access lists in System Settings.</p></details>
+      <details><summary data-t="faq.7.q">How do I uninstall it?</summary><p data-t="faq.7.a">Quit Pickverter from the menu bar and move it from Applications to the Trash. If Pickverter downloaded ffmpeg or rhwp, remove them first in Settings › Integrations. You can also remove Pickverter from the Accessibility and Full Disk Access lists in System Settings.</p></details>
+      <details><summary data-t="faq.8.q">Can it convert HWP files?</summary><p data-t="faq.8.a">Yes. HWP and HWPX documents (Hangul Word Processor) turn into PDF, Word, images, text, Markdown or HTML, and HWP and HWPX convert into each other — password-protected and distribution documents too. The open-source rhwp engine lays out the pages; Pickverter downloads it the first time you convert one.</p></details>
     </div>
   </div>
 </section>
@@ -417,14 +419,14 @@
 
 <footer>
   <div class="wrap">
-    <span>© 2026 ivLis Studio · <a href="https://github.com/ivLis-Studio/pickverter/blob/main/LICENSE" data-t="foot.license">CC BY-NC-ND 4.0</a></span>
+    <span>© 2026 ivLis Studio · <a href="https://github.com/ivLis-Studio/pickverter/blob/main/LICENSE" data-t="foot.license">MIT License</a></span>
     <nav aria-label="Footer">
       <a href="https://github.com/ivLis-Studio/pickverter">GitHub</a>
       <a href="https://github.com/ivLis-Studio/pickverter/releases" data-t="foot.releases">Releases</a>
       <a href="https://github.com/ivLis-Studio/pickverter/blob/main/macos/CHANGELOG.md" data-href-win="https://github.com/ivLis-Studio/pickverter/blob/main/windows/CHANGELOG.md" data-t="foot.changelog">Changelog</a>
       <a href="https://github.com/ivLis-Studio/pickverter/issues" data-t="foot.issues">Report an issue</a>
     </nav>
-    <span style="width:100%;font-size:13px;color:var(--faint)" data-t="foot.credits">Icons by Lucide (ISC). Photos in the demo were generated for it. macOS and Finder are trademarks of Apple Inc.; Windows is a trademark of Microsoft.</span>
+    <span style="width:100%;font-size:13px;color:var(--faint)" data-t="foot.credits">Icons by Lucide (ISC). HWP documents are laid out by rhwp (MIT). Photos in the demo were generated for it. macOS and Finder are trademarks of Apple Inc.; Windows is a trademark of Microsoft.</span>
   </div>
 </footer>
 

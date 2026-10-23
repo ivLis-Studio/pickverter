@@ -176,6 +176,7 @@ struct IntegrationSettings: View {
             }
             Section {
                 FFmpegRow()
+                HWPRow()
                 EngineRow(name: "ImageMagick", purpose: L("engine.png"), formula: "imagemagick", path: Tools.magick)
                 EngineRow(name: "cwebp", purpose: L("engine.webp"), formula: "webp", path: Tools.cwebp)
                 Button(L("engine.rescan")) {
@@ -277,6 +278,57 @@ struct FFmpegRow: View {
                     .buttonStyle(.borderedProminent)
             }
         } else if FFmpegInstaller.isManaged {
+            Button(L("engine.remove")) { installer.remove() }
+        }
+    }
+}
+
+/// rhwp (HWP and HWPX): download it right here (with progress) or remove the downloaded copy.
+struct HWPRow: View {
+    @ObservedObject private var installer = HWPInstaller.shared
+
+    var body: some View {
+        let installed = HWPInstaller.executable != nil
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                Image(systemName: installed ? "checkmark.circle.fill" : "minus.circle")
+                    .foregroundStyle(installed ? Color.green : Color.secondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 6) {
+                        Text("rhwp")
+                        Text(L("engine.hwp")).font(.caption).foregroundStyle(.secondary)
+                    }
+                    Text(detail(installed))
+                        .font(.caption)
+                        .foregroundStyle(installer.failure != nil ? Color.orange : Color.secondary)
+                        .lineLimit(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                controls(installed)
+            }
+            if case .downloading(let fraction) = installer.phase {
+                ProgressView(value: fraction).controlSize(.small)
+            } else if installer.phase == .installing {
+                ProgressView().progressViewStyle(.linear).controlSize(.small)
+            }
+        }
+    }
+
+    private func detail(_ installed: Bool) -> String {
+        if let status = installer.statusLine { return status }
+        guard installed else { return L("engine.hwp.offer") }
+        return L("engine.hwp.managed", "rhwp " + (HWPInstaller.installedVersion ?? HWPInstaller.version))
+    }
+
+    @ViewBuilder
+    private func controls(_ installed: Bool) -> some View {
+        if installer.isWorking {
+            Button(L("common.cancel")) { installer.cancel() }
+        } else if !installed {
+            Button(installer.failure != nil ? L("update.retry") : L("engine.install_hwp")) { installer.start() }
+                .buttonStyle(.borderedProminent)
+        } else if ProcessInfo.processInfo.environment["PICKVERTER_RHWP"] == nil {
             Button(L("engine.remove")) { installer.remove() }
         }
     }

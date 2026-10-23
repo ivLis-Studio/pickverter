@@ -21,7 +21,7 @@ AppPublisherURL=https://github.com/ivLis-Studio/pickverter
 AppSupportURL=https://github.com/ivLis-Studio/pickverter/issues
 AppUpdatesURL=https://github.com/ivLis-Studio/pickverter/releases
 ; ASCII only: ISCC reads scripts without a byte order mark in the system code page.
-AppCopyright=Copyright (C) 2026 ivLis Studio. CC BY-NC-ND 4.0.
+AppCopyright=Copyright (C) 2026 ivLis Studio. MIT License.
 VersionInfoVersion={#Copy(Version, 1, Pos("-", Version + "-") - 1)}
 DefaultDirName={localappdata}\Programs\Pickverter
 DisableDirPage=auto

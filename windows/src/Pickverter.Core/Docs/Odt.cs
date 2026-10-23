@@ -346,17 +346,18 @@ public static class Odt
                     body.Append($"<table:table table:name=\"Table{tableIndex}\" table:style-name=\"Table\"><table:table-column table:number-columns-repeated=\"{columns}\"/>");
                     for (var row = 0; row < table.Rows.Count; row++)
                     {
-                        if (row == 0) body.Append("<table:table-header-rows>");
+                        var header = row == 0 && table.HeaderRow;
+                        if (header) body.Append("<table:table-header-rows>");
                         body.Append("<table:table-row>");
                         for (var column = 0; column < columns; column++)
                         {
                             var cell = column < table.Rows[row].Count ? table.Rows[row][column] : [];
-                            var runs = row == 0 ? cell.Select(run => run with { Style = run.Style | RunStyle.Bold }) : cell;
+                            var runs = header ? cell.Select(run => run with { Style = run.Style | RunStyle.Bold }) : cell;
                             body.Append("<table:table-cell table:style-name=\"Cell\" office:value-type=\"string\"><text:p text:style-name=\"Table_20_Contents\">")
                                 .Append(Inline(runs)).Append("</text:p></table:table-cell>");
                         }
                         body.Append("</table:table-row>");
-                        if (row == 0) body.Append("</table:table-header-rows>");
+                        if (header) body.Append("</table:table-header-rows>");
                     }
                     body.Append("</table:table>");
                     break;

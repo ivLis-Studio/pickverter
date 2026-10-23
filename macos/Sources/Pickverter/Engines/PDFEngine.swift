@@ -50,19 +50,22 @@ enum PDFEngine {
         return ctx.makeImage()
     }
 
-    static func toImages(_ src: URL, ext: String, dpi: CGFloat, ctx: PickContext) async throws -> URL {
+    /// One image per page (a folder for several). `original` names the results when `src` is an intermediate PDF
+    /// (an HWP document rendered by rhwp): they land next to the original, named after it.
+    static func toImages(_ src: URL, ext: String, dpi: CGFloat, ctx: PickContext, named original: URL? = nil) async throws -> URL {
         let doc = try open(src)
         let count = doc.pageCount
         guard count > 0 else { throw PickError(L("err.pdf_empty")) }
+        let source = original ?? src
         if count == 1 {
-            return try await ctx.produce(ctx.destination(for: src, ext: ext)) { tmp in
+            return try await ctx.produce(ctx.destination(for: source, ext: ext)) { tmp in
                 guard let page = doc.page(at: 0), let image = render(page, dpi: dpi) else { throw PickError(L("err.render_page")) }
                 try await ImageEngine.encode(image, to: tmp, ext: ext, quality: 0.9)
             }
         }
-        let base = FileNames.split(src.lastPathComponent).base
+        let base = FileNames.split(source.lastPathComponent).base
         let digits = max(2, String(count).count)
-        return try await ctx.produce(ctx.destination(for: src, ext: nil, suffix: ext.uppercased())) { folder in
+        return try await ctx.produce(ctx.destination(for: source, ext: nil, suffix: ext.uppercased())) { folder in
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
             for index in 0..<count {
                 try Task.checkCancellation()

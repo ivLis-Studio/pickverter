@@ -186,14 +186,17 @@ public static class PdfEngine
         }
     }
 
-    public static async Task<string> ToImages(string src, string ext, double dpi, PickContext ctx)
+    /// One image per page (a folder for several). nameFrom names the results when src is an intermediate PDF (an HWP
+    /// document laid out by rhwp): they land next to that original, named after it.
+    public static async Task<string> ToImages(string src, string ext, double dpi, PickContext ctx, string? nameFrom = null)
     {
+        var origin = nameFrom ?? src;
         var count = PageCount(src);
         if (count == 0) throw new PickException(L("err.pdf_empty"));
-        if (count == 1) return await ctx.Produce(ctx.DestinationFor(src, ext), tmp => RenderToFile(src, 0, dpi, tmp, ext, ctx.Token));
-        var stem = FileNames.Base(src);
+        if (count == 1) return await ctx.Produce(ctx.DestinationFor(origin, ext), tmp => RenderToFile(src, 0, dpi, tmp, ext, ctx.Token));
+        var stem = FileNames.Base(origin);
         var digits = Math.Max(2, count.ToString(CultureInfo.InvariantCulture).Length);
-        return await ctx.Produce(ctx.DestinationFor(src, null, ext.ToUpperInvariant()), async folder =>
+        return await ctx.Produce(ctx.DestinationFor(origin, null, ext.ToUpperInvariant()), async folder =>
         {
             Directory.CreateDirectory(folder);
             for (var index = 0; index < count; index++)

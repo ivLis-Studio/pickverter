@@ -6,8 +6,8 @@ using System.Windows.Media.Imaging;
 
 namespace Pickverter.UI.Editors;
 
-/// Opens the editors (crop, hide areas, trim, pages, info, password, page range) on the UI thread and hands the
-/// answer back to the job. Closing an editor cancels the job without leaving a card behind.
+/// Opens the editors (crop, hide areas, trim, pages, info, password, page range, document password) on the UI thread
+/// and hands the answer back to the job. Closing an editor cancels the job without leaving a card behind.
 internal sealed class EditorHost : IEditors
 {
     private static async Task<T> Open<T>(string name, Func<EditorWindow<T>> make, CancellationToken token)
@@ -51,6 +51,9 @@ internal sealed class EditorHost : IEditors
 
     public Task<string> RangeAsync(string file, int pageCount, CancellationToken token) =>
         Open("range", () => new RangeDialog(file, pageCount), token);
+
+    public Task<string> UnlockAsync(string file, bool retry, CancellationToken token) =>
+        Open("unlock", () => new PasswordDialog(file, unlock: true, retry: retry), token);
 }
 
 /// An editor window that ends with an answer (Finish) or without one (closed, Esc, Cancel).
@@ -211,16 +214,22 @@ internal sealed class Segmented<T> : Border
 
 // Small dialogs
 
+/// Sets a PDF's password (typed twice), or asks for the one that opens a locked HWP document (unlock: one field;
+/// retry: the last one didn't match).
 internal sealed class PasswordDialog : EditorWindow<string>
 {
     private readonly string file;
+    private readonly bool unlock;
+    private readonly bool retry;
     private readonly PasswordBox first = new() { FontSize = 14, Padding = new Thickness(8, 6, 8, 6) };
     private readonly PasswordBox second = new() { FontSize = 14, Padding = new Thickness(8, 6, 8, 6) };
     private readonly TextBlock error = Ui.Caption("");
 
-    public PasswordDialog(string file)
+    public PasswordDialog(string file, bool unlock = false, bool retry = false)
     {
         this.file = file;
+        this.unlock = unlock;
+        this.retry = retry;
         Width = 460;
         SizeToContent = SizeToContent.Height;
         ResizeMode = ResizeMode.NoResize;
@@ -230,19 +239,26 @@ internal sealed class PasswordDialog : EditorWindow<string>
 
     protected override void Rebuild()
     {
-        Title = L("pdf.password.title");
+        var title = unlock ? L("hwp.password.title") : L("pdf.password.title");
+        Title = title;
         error.Foreground = Theme.Critical;
-        var lockButton = Ui.Button(L("pdf.password.lock"), Submit, prominent: true);
-        lockButton.IsDefault = true;
+        // Opening a document has no second field to mismatch: its only message is that the last password was wrong.
+        if (unlock) error.Text = retry ? L("err.hwp_password") : "";
+        var primary = Ui.Button(unlock ? L("hwp.password.open") : L("pdf.password.lock"), Submit, prominent: true);
+        primary.IsDefault = true;
         var form = Ui.Column(10,
-            Ui.Text(L("pdf.password.title"), 20, FontWeights.SemiBold),
-            Ui.Text(L("pdf.password.info", FileNames.Name(file)), 13, brush: Theme.TextSecondary, wrap: true),
-            Ui.Caption(L("pdf.password.placeholder")), Ui.Detach(first),
-            Ui.Caption(L("pdf.password.confirm")), Ui.Detach(second),
-            Ui.Detach(error));
+            Ui.Text(title, 20, FontWeights.SemiBold),
+            Ui.Text(unlock ? L("hwp.password.info", FileNames.Name(file)) : L("pdf.password.info", FileNames.Name(file)), 13, brush: Theme.TextSecondary, wrap: true),
+            Ui.Caption(L("pdf.password.placeholder")), Ui.Detach(first));
+        if (!unlock)
+        {
+            form.Children.Add(Ui.Caption(L("pdf.password.confirm")));
+            form.Children.Add(Ui.Detach(second));
+        }
+        form.Children.Add(Ui.Detach(error));
         form.Margin = new Thickness(24, 22, 24, 18);
         var dock = new DockPanel();
-        var footer = Footer(null, CancelButton(this), lockButton);
+        var footer = Footer(null, CancelButton(this), primary);
         DockPanel.SetDock(footer, Dock.Bottom);
         dock.Children.Add(footer);
         dock.Children.Add(form);
@@ -252,7 +268,7 @@ internal sealed class PasswordDialog : EditorWindow<string>
     private void Submit()
     {
         if (first.Password.Length == 0) return;
-        if (first.Password != second.Password)
+        if (!unlock && first.Password != second.Password)
         {
             error.Text = L("pdf.password.mismatch");
             second.Focus();

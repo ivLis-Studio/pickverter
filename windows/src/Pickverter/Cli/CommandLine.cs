@@ -26,6 +26,8 @@ internal static class CommandLine
           cli e2e <folder>                          File Explorer, Alt, the wheel and keys on a real desktop
           cli inspect                               File Explorer selection and window under the pointer
           cli ffmpeg-install                        download ffmpeg like Settings does (PICKVERTER_FFMPEG_DIR picks the folder)
+          cli rhwp-install                          download rhwp, the HWP engine, like a first HWP conversion does
+                                                    (PICKVERTER_RHWP_DIR picks the folder)
           cli update-keygen <private-key-file>
           cli update-pubkey [private-key-file]
           cli update-manifest --version V --zip-x64 Z --url-x64 U [--zip-arm64 Z --url-arm64 U]
@@ -59,6 +61,8 @@ internal static class CommandLine
                     return Headless(() => RunOption(rest).GetAwaiter().GetResult());
                 case "ffmpeg-install":
                     return Headless(() => FFmpegInstall().GetAwaiter().GetResult());
+                case "rhwp-install":
+                    return Headless(() => RhwpInstall().GetAwaiter().GetResult());
                 case "fixtures":
                     if (rest.Length == 0) break;
                     Headless(() =>
@@ -215,8 +219,8 @@ internal static class CommandLine
             Console.Error.WriteLine($"no option {id} for these files");
             return 2;
         }
-        // Like a click on the wheel: a missing ffmpeg is downloaded first.
-        if (option.Unavailable == Tools.FFmpegHint) option = FFmpegSetup.Prepare(option);
+        // Like a click on the wheel: a missing ffmpeg or rhwp is downloaded first.
+        if (Tools.IsDownload(option.Unavailable)) option = Tools.Preparing(option, option.Unavailable);
         if (option.Unavailable != null)
         {
             Console.Error.WriteLine($"{id} unavailable: {option.Unavailable}");
@@ -246,6 +250,29 @@ internal static class CommandLine
             });
             Console.WriteLine($"OK {Tools.FFmpeg} · {FFmpegSetup.InstalledVersion} · {watch.Elapsed.TotalSeconds:0.0}s");
             return 0;
+        }
+        catch (Exception error)
+        {
+            Console.Error.WriteLine("ERR " + error.Message);
+            return 1;
+        }
+    }
+
+    private static async Task<int> RhwpInstall()
+    {
+        var watch = Stopwatch.StartNew();
+        var shown = -1;
+        try
+        {
+            await HwpSetup.InstallAsync(fraction =>
+            {
+                var percent = (int)(fraction * 100);
+                if (percent / 25 == shown / 25) return;
+                shown = percent;
+                Console.WriteLine($"  … {percent}%");
+            });
+            Console.WriteLine($"OK {HwpSetup.Executable} · {HwpSetup.InstalledVersion} · {watch.Elapsed.TotalSeconds:0.0}s");
+            return HwpSetup.Executable != null ? 0 : 1;
         }
         catch (Exception error)
         {

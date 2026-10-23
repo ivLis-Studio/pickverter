@@ -12,7 +12,7 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="다운로드" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=%EB%8B%A4%EC%9A%B4%EB%A1%9C%EB%93%9C&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <img alt="Windows 10+" src="https://img.shields.io/badge/Windows-10%2B-1D1D1F?style=flat-square&logo=windows&logoColor=white">
-  <a href="LICENSE"><img alt="라이선스: CC BY-NC-ND 4.0" src="https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-1D1D1F?style=flat-square"></a>
+  <a href="LICENSE"><img alt="라이선스: MIT" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="macOS CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=macOS%20CI"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
@@ -50,7 +50,7 @@ https://github.com/user-attachments/assets/f2b6a1cc-2df3-4cb4-a95c-205937050f43
 
 <table>
   <tr>
-    <td valign="top" width="33%"><b>⇧ 변환</b><br><sub>이미지 · 동영상 · 오디오 · PDF · 문서 · EPUB · 오피스·iWork · 표 · 자막 · 압축 파일</sub></td>
+    <td valign="top" width="33%"><b>⇧ 변환</b><br><sub>이미지 · 동영상 · 오디오 · PDF · 문서 · 한글(HWP·HWPX) · EPUB · 오피스·iWork · 표 · 자막 · 압축 파일</sub></td>
     <td valign="top" width="33%"><b>⌘ 도구</b><br><sub>배경 제거 · 얼굴·글자 가리기 · 압축 · 크기 조절 · 자르기 · OCR · 회전 · 구간 자르기 · 나누기·합치기 · PDF 페이지 · 암호 · 정보</sub></td>
     <td valign="top" width="33%"><b>⌃ 액션</b><br><sub>AirDrop · 터미널 · 코드 편집기 · 경로 복사 · 파일 복사 · 이동 · 띄워두기 · 공유 · 체크섬</sub></td>
   </tr>
@@ -58,6 +58,7 @@ https://github.com/user-attachments/assets/f2b6a1cc-2df3-4cb4-a95c-205937050f43
 
 - **변환** 이미지(JPG·PNG·HEIC·WebP·AVIF·TIFF·GIF·BMP·PDF·ICO), 동영상(MP4·MOV·WebM·MKV·GIF·MP3·M4A·WAV),
   오디오(MP3·M4A·WAV·FLAC·AIFF·OGG·Opus), PDF(PNG·JPG·TXT·MD·DOCX·RTF·HTML), 문서(PDF·DOCX·RTF·TXT·MD·HTML·ODT·**EPUB**),
+  **한글 HWP·HWPX**(PDF·DOCX·HWP ↔ HWPX·PNG·JPG·TXT·MD·HTML — 암호 문서와 배포용 문서도),
   엑셀·Numbers·Pages·Keynote·파워포인트, 표(CSV·TSV·JSON·MD·HTML), 자막(SRT·VTT·TXT), 압축(ZIP·TAR.GZ)
 - **편집 창** 동영상·오디오 구간 자르기, 비율 프리셋이 있는 자르기, 가리기(모자이크·흐림·채우기 — 얼굴과 글자 자동 찾기),
   끌어서 정리하는 PDF 페이지, 사진·PDF·미디어 정보 편집(사진은 가능하면 재압축 없이)
@@ -118,6 +119,8 @@ https://github.com/user-attachments/assets/49415c57-42f0-4318-bb77-774c99dfaae4
    데스크탑·문서·다운로드·iCloud Drive만 허용하세요. 미리 해 두면 작업 도중에 macOS 권한 창이 끼어들지 않아요.
 4. 선택: [ffmpeg](https://ffmpeg.org)이 있으면 동영상·오디오 형식이 더 늘어나요. 첫 화면이나 설정에서, 또는 그 형식이 처음 필요할 때
    클릭 한 번으로 Pickverter가 직접 내려받아요(`brew install ffmpeg`로 설치해도 돼요).
+   한글 문서(HWP·HWPX)는 오픈소스 HWP 엔진 [rhwp](https://github.com/edwardkim/rhwp)로 변환해요. 처음 변환할 때(또는 설정 › 연동에서)
+   Pickverter가 직접 내려받아요(약 13MB).
    Pages·Keynote·Numbers나 LibreOffice가 설치되어 있으면 오피스/iWork 문서를 고품질로 내보낼 수 있어요.
 
 macOS 14 이상, Apple 실리콘과 Intel 모두 지원해요.
@@ -129,6 +132,7 @@ macOS 14 이상, Apple 실리콘과 Intel 모두 지원해요.
 2. 아직 코드 서명이 없어 **"Windows의 PC 보호"** 창이 뜰 수 있어요. **추가 정보 › 실행**을 누르세요.
 3. 첫 화면이 Windows 보안의 **제어된 폴더 액세스**를 확인하고(켜져 있으면 Pickverter를 허용하도록 도와줘요), 클릭 한 번으로 **ffmpeg**을 내려받고,
    Windows 시작 시 실행을 켜 줘요. 그 밖에는 권한이 필요 없어요.
+   한글 문서 엔진 rhwp는 HWP·HWPX 파일을 처음 변환할 때 알아서 내려받아요.
 
 Windows 10 2004 이상 또는 Windows 11(x64·Arm64)에서 동작해요. Pickverter는 알림 영역에 머물러요.
 키 배치·엔진·빌드 방법은 [windows/README.md](windows/README.md)에 있어요.
@@ -210,7 +214,7 @@ CI가 Windows 러너에서 모든 창을 6개 언어·두 테마로 렌더링하
 - `Input/` 이벤트 탭(보조 키 탭, ⌥-클릭, 드래그), Finder 선택 읽기
 - `Wheel/` 휠 패널, 바깥 옵션 링, 드롭 대상, 렌더링
 - `Core/` 옵션 모델, 링별 항목, 휠 꾸미기, 작업 대기열, 현지화
-- `Engines/` 이미지(ImageIO, Vision), 미디어(ffmpeg, AVFoundation), PDF(PDFKit), 문서, EPUB, 오피스/iWork, 데이터, 압축
+- `Engines/` 이미지(ImageIO, Vision), 미디어(ffmpeg, AVFoundation), PDF(PDFKit), 문서, 한글(rhwp), EPUB, 오피스/iWork, 데이터, 압축
 - `UI/` 결과 카드, 편집 창, 설정, 메뉴 막대, 첫 화면, 업데이트 창
 - `App/` 앱 생명주기, 환경설정, 업데이터, CLI
 
@@ -218,5 +222,5 @@ CI가 Windows 러너에서 모든 창을 6개 언어·두 테마로 렌더링하
 
 Pickverter는 무료예요. 내려받아 마음껏 쓰세요.
 
-[CC BY-NC-ND 4.0](LICENSE) © ivLis Studio — 출처를 밝히고, 상업적으로 쓰지 않고, 고치지 않은 그대로라면 자유롭게 공유할 수 있어요.
-0.2.0 이전 릴리스는 MIT 라이선스로 배포됐어요. 서드파티 구성 요소는 각자의 라이선스를 따라요.
+[MIT](LICENSE) © ivLis Studio. 서드파티 구성 요소는 각자의 라이선스를 따라요. 한글 문서 변환에 쓰는
+[rhwp](https://github.com/edwardkim/rhwp)(Edward Kim, MIT)와 요청할 때 내려받는 ffmpeg이 대표적이에요.

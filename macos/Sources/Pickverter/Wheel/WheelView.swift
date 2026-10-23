@@ -282,8 +282,8 @@ struct HubView: View {
                         .lineLimit(1).minimumScaleFactor(0.7)
                 }
                 let reason = option.unavailable ?? parent?.unavailable
-                let offersDownload = reason == Tools.ffmpegHint
-                Text(offersDownload ? L("ffmpeg.click") : (reason ?? model.previewLine(for: option, parent: parent)))
+                let offersDownload = Tools.isDownload(reason)
+                Text(offersDownload ? Tools.downloadPrompt(reason) : (reason ?? model.previewLine(for: option, parent: parent)))
                     .font(.system(size: 9.5))
                     .foregroundStyle(offersDownload ? Theme.accent : (reason != nil ? Color.orange : Color.secondary))
                     .multilineTextAlignment(.center)

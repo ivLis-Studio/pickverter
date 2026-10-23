@@ -83,6 +83,7 @@ enum Catalog {
         case .audio: return ["mp3", "m4a", "wav", "flac", "aiff", "ogg", "opus"]
         case .pdf: return ["png", "jpg", "txt", "md", "docx", "rtf", "html"]
         case .document: return ["pdf", "docx", "rtf", "txt", "md", "html", "odt", "epub"]
+        case .hwp: return HWPEngine.targets(for: source)
         case .office: return OfficeEngine.targets(for: source)
         case .table: return ["csv", "tsv", "json", "md", "html"]
         case .json: return ["csv", "tsv", "md", "html"]
@@ -142,9 +143,9 @@ enum Catalog {
                         variant(id, "full", L("gif.large"), unavailable: unavailable, run(ConvertOptions(gifWidth: nil, gifFPS: 15))),
                     ]
                 }
-                if ["png", "jpg"].contains(ext), kindSet == [.pdf] {
+                if ["png", "jpg"].contains(ext), kindSet == [.pdf] || kindSet == [.hwp] {
                     option.variants = [300, 150, 600].map { dpi in
-                        variant(id, "\(dpi)", "\(dpi) dpi", run(ConvertOptions(dpi: CGFloat(dpi))))
+                        variant(id, "\(dpi)", "\(dpi) dpi", unavailable: unavailable, run(ConvertOptions(dpi: CGFloat(dpi))))
                     }
                 }
                 return option
@@ -169,6 +170,8 @@ enum Catalog {
                 for file in files where FileKind.of(file) == .office {
                     if let reason = OfficeEngine.unavailable(FileNames.normalizedExt(file), ext) { return reason }
                 }
+            case .hwp:
+                if let reason = HWPEngine.unavailable { return reason }
             default:
                 break
             }
@@ -447,6 +450,12 @@ enum Catalog {
                 list.append(tool("media", symbol: "photo.on.rectangle", Batch.perFile { try await OfficeEngine.extractMedia($0, ctx: $1) }))
             }
             return list
+        case .hwp:
+            let unavailable = HWPEngine.unavailable
+            return [
+                tool("copytext", symbol: "doc.on.clipboard", files: false, unavailable: unavailable) { ctx in try await HWPEngine.copyText(ctx) },
+                tool("count", symbol: "number", files: false, unavailable: unavailable) { ctx in try await HWPEngine.count(ctx) },
+            ]
         case .office:
             var list: [PickOption] = []
             if files.allSatisfy({ ["pptx", "ppsx", "xlsx", "xlsm"].contains(FileNames.normalizedExt($0)) }) {

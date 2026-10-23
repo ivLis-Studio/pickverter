@@ -242,10 +242,11 @@ final class JobCenter: ObservableObject {
                         ?? L("err.no_access", FileAccess.placeName(for: files.first ?? URL(fileURLWithPath: "/")))
                     job.fixAction = Job.NoticeAction(title: L("access.fix"), symbol: "lock.open") { FileAccess.openBestSettings() }
                     job.state = .failed(message)
-                } else if Tools.isMissingFFmpeg(error) {
-                    // Download ffmpeg on a fresh card, then run the same thing again.
-                    job.fixAction = Job.NoticeAction(title: L("engine.install_ffmpeg"), symbol: "arrow.down.circle") { [weak self] in
-                        self?.run(FFmpegInstaller.preparing(option), mode: mode, files: files, anchor: anchor, destination: destination)
+                } else if let hint = Tools.missingEngine(in: error) {
+                    // Download ffmpeg or rhwp on a fresh card, then run the same thing again.
+                    let title = hint == Tools.hwpHint ? L("engine.install_hwp") : L("engine.install_ffmpeg")
+                    job.fixAction = Job.NoticeAction(title: title, symbol: "arrow.down.circle") { [weak self] in
+                        self?.run(Tools.preparing(option, for: hint), mode: mode, files: files, anchor: anchor, destination: destination)
                     }
                     job.state = .failed(error.localizedDescription)
                 } else {

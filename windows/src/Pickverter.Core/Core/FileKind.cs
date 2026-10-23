@@ -1,6 +1,6 @@
 namespace Pickverter;
 
-public enum FileKind { Image, Video, Audio, Pdf, Document, Office, Table, Json, Subtitle, Archive, Folder, Other }
+public enum FileKind { Image, Video, Audio, Pdf, Document, Hwp, Office, Table, Json, Subtitle, Archive, Folder, Other }
 
 public static class FileKinds
 {
@@ -21,6 +21,8 @@ public static class FileKinds
     {
         "docx", "doc", "rtf", "txt", "text", "md", "markdown", "html", "htm", "odt",
     };
+    /// Hangul Word Processor documents (Hancom Office), read and written by rhwp.
+    public static readonly HashSet<string> HwpExts = new(StringComparer.OrdinalIgnoreCase) { "hwp", "hwpx" };
     public static readonly HashSet<string> TableExts = new(StringComparer.OrdinalIgnoreCase) { "csv", "tsv" };
     public static readonly HashSet<string> SubtitleExts = new(StringComparer.OrdinalIgnoreCase) { "srt", "vtt" };
     public static readonly HashSet<string> ArchiveExts = new(StringComparer.OrdinalIgnoreCase)
@@ -35,6 +37,7 @@ public static class FileKinds
         if (Directory.Exists(path)) return FileKind.Folder;
         if (ext == "pdf") return FileKind.Pdf;
         if (ext == "json") return FileKind.Json;
+        if (HwpExts.Contains(ext)) return FileKind.Hwp;
         if (ImageExts.Contains(ext)) return FileKind.Image;
         if (VideoExts.Contains(ext)) return FileKind.Video;
         if (AudioExts.Contains(ext)) return FileKind.Audio;

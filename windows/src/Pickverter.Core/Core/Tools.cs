@@ -12,6 +12,32 @@ public static class Tools
 
     public static string FFmpegHint => L("err.ffmpeg");
 
+    public static string HwpHint => L("err.hwp");
+
+    // Engines Pickverter downloads itself (ffmpeg, rhwp): options that need one stay clickable, and the job downloads
+    // the engine on its own card before it starts.
+
+    /// The reason only says a downloadable engine is missing.
+    public static bool IsDownload(string? reason) => reason != null && (reason == FFmpegHint || reason == HwpHint);
+
+    /// The line under the wheel's hub for such an option.
+    public static string DownloadPrompt(string? reason) => reason == HwpHint ? L("hwp.click") : L("ffmpeg.click");
+
+    /// The same option, downloading the engine it needs first.
+    public static PickOption Preparing(PickOption option, string? reason) =>
+        reason == HwpHint ? HwpSetup.Prepare(option) : reason == FFmpegHint ? FFmpegSetup.Prepare(option) : option;
+
+    /// The engine a failed job was missing (its hint), when that is all that went wrong.
+    public static string? MissingEngine(Exception error)
+    {
+        if (FFmpegSetup.IsMissing(error)) return FFmpegHint;
+        if (HwpSetup.IsMissing(error)) return HwpHint;
+        return null;
+    }
+
+    /// The button on a failed card that downloads that engine.
+    public static string InstallTitle(string hint) => hint == HwpHint ? L("engine.install_hwp") : L("engine.install_ffmpeg");
+
     /// PICKVERTER_NO_FFMPEG=1 pretends ffmpeg is missing (tests of the built-in media path).
     public static bool FFmpegDisabled => Environment.GetEnvironmentVariable("PICKVERTER_NO_FFMPEG") is { Length: > 0 };
 
@@ -284,9 +310,10 @@ public sealed class ToolFailure(string tool, int status, string stderr) : Except
 
 public static class Shell
 {
-    /// Runs a program without a shell (no quoting pitfalls). Cancelling kills the whole process tree.
+    /// Runs a program without a shell (no quoting pitfalls). Cancelling kills the whole process tree. input goes to the
+    /// program's standard input as UTF-8 (a password for rhwp's --password-stdin), which is closed after it.
     public static async Task<string> RunAsync(string executable, IEnumerable<string> arguments, string? cwd = null, string? stdoutTo = null,
-                                              Action<string>? onLine = null, CancellationToken token = default)
+                                              Action<string>? onLine = null, CancellationToken token = default, string? input = null)
     {
         var info = new ProcessStartInfo(executable)
         {
@@ -298,6 +325,8 @@ public static class Shell
             StandardOutputEncoding = stdoutTo == null ? Encoding.UTF8 : null,
             StandardErrorEncoding = Encoding.UTF8,
         };
+        // The console code page (949 on Korean Windows) would garble anything but ASCII; no byte-order mark either.
+        if (input != null) info.StandardInputEncoding = new UTF8Encoding(false);
         foreach (var argument in arguments) info.ArgumentList.Add(argument);
         if (cwd != null) info.WorkingDirectory = cwd;
         var tool = Path.GetFileNameWithoutExtension(executable);
@@ -310,7 +339,15 @@ public static class Shell
         {
             throw new PickException(L("err.run_tool", tool) + " · " + error.Message);
         }
-        try { process.StandardInput.Close(); } catch (Exception) { }
+        try
+        {
+            // A few bytes fit the pipe's buffer: writing never waits for the program to read.
+            if (input != null) process.StandardInput.Write(input);
+            process.StandardInput.Close();
+        }
+        catch (Exception)
+        {
+        }
         var output = new StringBuilder();
         var errors = new StringBuilder();
         Task outTask;

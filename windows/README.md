@@ -50,10 +50,14 @@ and gives it back otherwise.
 - **Engines**: Windows OCR and face detection, the Windows PDF renderer, Microsoft Edge for HTML → PDF, Media Foundation for MP4, M4A,
   MP3 and WAV without ffmpeg, Microsoft Office (Word, Excel, PowerPoint) or LibreOffice for faithful Office exports,
   HEIC export with the HEIF + HEVC extensions from the Microsoft Store. Background removal downloads its model (178 MB) once.
+  HWP and HWPX documents go through [rhwp](https://github.com/edwardkim/rhwp) (MIT), the open-source HWP engine, which
+  Pickverter downloads (about 20 MB, pinned version and SHA-256) the first time you convert one; on Arm64 PCs it runs under
+  Windows 11's x64 emulation.
 - **Look**: Fluent UI System Icons, Segoe UI Variable, your accent color, light and dark mode, Windows 11 window shadows and
   rounded corners. Result cards appear in the corner you choose (bottom right by default) and their buttons never wrap.
 
-Files never leave your PC. The only network requests are the update check and, if you use it, the one-time model download.
+Files never leave your PC. The only network requests are the update check and, if you use them, the one-time downloads
+(ffmpeg, rhwp, the background-removal model).
 
 ## Updates
 
@@ -92,7 +96,7 @@ Locally: `scripts/release.ps1 -Version x.y.z -Publish` (needs Inno Setup 6: `win
 ## Layout
 
 - `src/Pickverter.Core/` — everything that doesn't need Windows: option catalog, wheel model, engines (Magick.NET, PDFsharp,
-  PdfPig, ONNX Runtime, ffmpeg), documents, preferences, updater. Strings come from `macos/Resources/i18n.json` plus the
+  PdfPig, ONNX Runtime, ffmpeg, rhwp), documents, preferences, updater. Strings come from `macos/Resources/i18n.json` plus the
   Windows overlay [`Resources/i18n.windows.json`](Resources/i18n.windows.json).
 - `src/Pickverter/` — the WPF app: `Input/` (low-level hooks, File Explorer selection), `UI/` (wheel, cards, tray,
   settings, welcome, editors), `Services/` (Windows implementations of every platform service), `Cli/`.

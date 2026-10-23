@@ -27,6 +27,13 @@ jobs:
           swiftc --version
       - name: Build
         run: scripts/build-app.sh debug
+      - name: HWP engine
+        # The pinned rhwp release, checked by SHA-256 the same way the app does it on first use.
+        env:
+          PICKVERTER_RHWP_DIR: ${{ runner.temp }}/pickverter-rhwp
+        run: build/Pickverter.app/Contents/MacOS/Pickverter cli rhwp-install
       - name: Test
+        env:
+          PICKVERTER_RHWP_DIR: ${{ runner.temp }}/pickverter-rhwp
         run: scripts/test.sh --quick
 

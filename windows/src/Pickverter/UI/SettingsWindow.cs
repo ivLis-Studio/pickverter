@@ -40,7 +40,8 @@ internal sealed class SettingsWindow : AppWindow
         Preferences.Shared.PropertyChanged += OnPreference;
         WheelLayout.Shared.PropertyChanged += OnLayout;
         Updater.Shared.PropertyChanged += OnUpdater;
-        FFmpegSetup.Changed += OnFFmpeg;
+        FFmpegSetup.Changed += OnEngine;
+        HwpSetup.Changed += OnEngine;
         Activated += (_, _) =>
         {
             if (page == SettingsPage.Integrations)
@@ -54,7 +55,8 @@ internal sealed class SettingsWindow : AppWindow
             Preferences.Shared.PropertyChanged -= OnPreference;
             WheelLayout.Shared.PropertyChanged -= OnLayout;
             Updater.Shared.PropertyChanged -= OnUpdater;
-            FFmpegSetup.Changed -= OnFFmpeg;
+            FFmpegSetup.Changed -= OnEngine;
+            HwpSetup.Changed -= OnEngine;
         };
         Rebuild();
     }
@@ -79,16 +81,18 @@ internal sealed class SettingsWindow : AppWindow
     }
 
     private FFmpegSetup.SetupPhase shownPhase = FFmpegSetup.Phase;
-    private DateTime lastFFmpegRebuild = DateTime.MinValue;
+    private HwpSetup.SetupPhase shownHwpPhase = HwpSetup.Phase;
+    private DateTime lastEngineRebuild = DateTime.MinValue;
 
-    /// The ffmpeg row follows its download: every phase change, progress at most a few times a second.
-    private void OnFFmpeg()
+    /// The ffmpeg and rhwp rows follow their downloads: every phase change, progress at most a few times a second.
+    private void OnEngine()
     {
         if (page != SettingsPage.Integrations || building) return;
-        var phaseChanged = FFmpegSetup.Phase != shownPhase;
-        if (!phaseChanged && (DateTime.UtcNow - lastFFmpegRebuild).TotalMilliseconds < 300) return;
+        var phaseChanged = FFmpegSetup.Phase != shownPhase || HwpSetup.Phase != shownHwpPhase;
+        if (!phaseChanged && (DateTime.UtcNow - lastEngineRebuild).TotalMilliseconds < 300) return;
         shownPhase = FFmpegSetup.Phase;
-        lastFFmpegRebuild = DateTime.UtcNow;
+        shownHwpPhase = HwpSetup.Phase;
+        lastEngineRebuild = DateTime.UtcNow;
         Rebuild();
     }
 
@@ -339,6 +343,7 @@ internal sealed class SettingsWindow : AppWindow
 
         Header(L("set.engines"));
         Add(FFmpegRow());
+        Add(HwpRow());
         var ocr = WinVision.OcrLanguages;
         Add(Ui.SettingRow(L("engine.ocr"), ocr.Count > 0 ? string.Join(", ", ocr) : L("engine.ocr.none"),
             ocr.Count > 0 ? Status(true, L("office.installed")) : Ui.Button(L("engine.ocr.add"), () => Platform.Shell.OpenUrl("ms-settings:regionlanguage")),
@@ -421,6 +426,47 @@ internal sealed class SettingsWindow : AppWindow
             }));
         }
         return Ui.SettingRow("ffmpeg · " + L("engine.media"), detail, actions, "film");
+    }
+
+    /// rhwp, the HWP engine: downloaded the first time an HWP file is converted, or here ahead of time (progress in the
+    /// row); Remove deletes the downloaded copy.
+    private Border HwpRow()
+    {
+        var actions = Ui.Row(8);
+        string detail;
+        if (HwpSetup.IsWorking)
+        {
+            detail = HwpSetup.StatusLine ?? "";
+            actions.Children.Add(Ui.Button(L("common.cancel"), HwpSetup.Cancel));
+        }
+        else if (HwpSetup.Executable is not { } rhwp)
+        {
+            var failed = HwpSetup.Phase == HwpSetup.SetupPhase.Failed;
+            if (HwpSetup.RunsHere)
+            {
+                detail = failed ? HwpSetup.Failure ?? "" : L("engine.hwp.offer");
+                actions.Children.Add(Ui.Button(failed ? L("update.retry") : L("engine.install_hwp"), HwpSetup.Start, prominent: true));
+            }
+            else
+            {
+                // Windows 10 on Arm can't run the x64 build: say so instead of offering a download that can't work.
+                detail = L("err.hwp_arm");
+            }
+        }
+        else if (HwpSetup.IsManaged)
+        {
+            detail = L("engine.hwp.managed", "rhwp " + (HwpSetup.InstalledVersion ?? HwpSetup.Version));
+            actions.Children.Add(Ui.Button(L("engine.remove"), () =>
+            {
+                HwpSetup.Remove();
+                Rebuild();
+            }));
+        }
+        else
+        {
+            detail = rhwp;
+        }
+        return Ui.SettingRow("rhwp · " + L("engine.hwp"), detail, actions, "doc.text");
     }
 
     private static CancellationTokenSource? modelDownload;

@@ -237,6 +237,14 @@ extension CLI {
             print(String(format: "duration=%.2f", facts.0))
             if let size = facts.1 { print("size=\(Int(size.width))x\(Int(size.height))") }
             if let title = facts.2["title"] { print("title=\(title)") }
+        case .hwp:
+            // rhwp's own reading: page count and format prove an HWP/HWPX result opens.
+            if let rhwp = HWPInstaller.executable,
+               let json = try? wait({ try await Shell.run(rhwp, ["info", path, "--json"]) }),
+               let info = try? JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any] {
+                if let pages = info["pageCount"] as? Int { print("pages=\(pages)") }
+                if let format = info["format"] as? String { print("format=\(format)") }
+            }
         default:
             break
         }

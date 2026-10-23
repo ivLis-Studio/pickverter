@@ -239,7 +239,7 @@ public sealed class WheelModel
             {
                 IsFormat = option.Value.IsFormat,
                 Unavailable = option.Value.Unavailable != null,
-                NeedsDownload = option.Value.Unavailable == Tools.FFmpegHint,
+                NeedsDownload = Tools.IsDownload(option.Value.Unavailable),
                 HasVariants = option.Value.Variants.Count > 0,
             },
             Item.More more => new SegmentData(item.Id, L("wheel.more"), "ellipsis") { IsMore = true, PageLabel = $"{more.Page + 1}/{more.Total}" },
@@ -273,7 +273,7 @@ public sealed class WheelModel
         {
             if (Active is not { } active) return false;
             var reason = active.Option.Unavailable ?? active.Parent?.Unavailable;
-            return reason == null || reason == Tools.FFmpegHint;
+            return reason == null || Tools.IsDownload(reason);
         }
     }
 
@@ -351,7 +351,7 @@ public sealed class WheelModel
             variants.Select((variant, position) => new SegmentData(variant.Id, variant.Title, variant.Symbol)
             {
                 Unavailable = variant.Unavailable != null,
-                NeedsDownload = variant.Unavailable == Tools.FFmpegHint,
+                NeedsDownload = Tools.IsDownload(variant.Unavailable),
                 IsDefault = position == preferred && variants.Count > 1,
             }).ToList());
         // The tab bar sits under 6 o'clock; hide it when the ring opens over it.
@@ -508,9 +508,9 @@ public sealed class WheelModel
                 var option = sub is { } s && s >= 0 && s < parent.Variants.Count ? parent.Variants[s] : parent;
                 if (sub == null && parent.Variants.Count > 1 && !IsDemo) option = parent.Variants[WheelLayout.Shared.PreferredVariant(parent)];
                 var reason = option.Unavailable ?? parent.Unavailable;
-                // Missing ffmpeg isn't a dead end: the job downloads it first, right on its card.
-                var needsFFmpeg = reason == Tools.FFmpegHint;
-                if (reason != null && !needsFFmpeg)
+                // A missing ffmpeg or rhwp isn't a dead end: the job downloads it first, right on its card.
+                var needsDownload = Tools.IsDownload(reason);
+                if (reason != null && !needsDownload)
                 {
                     ShowFlash(reason);
                     Platform.Feedback.Beep();
@@ -519,7 +519,7 @@ public sealed class WheelModel
                 if (sub != null && option.Id != parent.Id && !IsDemo) WheelLayout.Shared.NoteUsed(parent.Id, option.Id);
                 var targets = files is { Count: > 0 } ? files : Files;
                 var display = Display(option, option.Id == parent.Id ? null : parent);
-                if (needsFFmpeg) display = FFmpegSetup.Prepare(display);
+                if (needsDownload) display = Tools.Preparing(display, reason);
                 if (ResolveDestination(display, flip, forced) is not { } destination)
                 {
                     EnterChoice(new PendingChoice(display, targets, Mode));

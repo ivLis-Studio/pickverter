@@ -5,6 +5,7 @@
 #   scripts/test.sh            # all cases (media cases that need ffmpeg run when it is installed)
 #   scripts/test.sh --quick    # skip ffmpeg-only cases
 #   KEEP=1 scripts/test.sh     # keep the scratch folder for inspection
+# HWP cases run when Pickverter's rhwp is installed (cli rhwp-install; PICKVERTER_RHWP_DIR picks the folder).
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -45,6 +46,16 @@ if [ "$QUICK" = 0 ] && command -v ffmpeg >/dev/null 2>&1; then
   ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc=duration=6:size=640x360:rate=30 \
     -f lavfi -i sine=frequency=330:duration=6 -shortest -c:v libx264 -pix_fmt yuv420p -c:a aac "$FIX/talk.mp4"
   ffmpeg -hide_banner -loglevel error -i "$FIX/tone.wav" -c:a libmp3lame -q:a 4 "$FIX/tone.mp3"
+fi
+
+HAS_RHWP=0
+RHWP_DIR="${PICKVERTER_RHWP_DIR:-$HOME/Library/Application Support/Pickverter/rhwp}"
+RHWP_VERSION="$(sed -n 's/.*static let version = "\(.*\)".*/\1/p' Sources/Pickverter/Engines/HWPInstaller.swift)"
+if [ -x "$RHWP_DIR/rhwp" ] && [ "$(cat "$RHWP_DIR/version.txt" 2>/dev/null)" = "$RHWP_VERSION" ]; then
+  HAS_RHWP=1
+  export PICKVERTER_RHWP_DIR="$RHWP_DIR"
+  "$RHWP_DIR/rhwp" convert "$FIX/report.hwpx" "$FIX/report.hwp" >/dev/null 2>&1 || true
+  head -c 4096 /dev/urandom > "$FIX/broken.hwp"
 fi
 
 # t <name> <check> <option-id> <fixture…>   (optional: E='VAR=value' for the editor answer)
@@ -142,6 +153,21 @@ t pptx-md ext:md convert.md deck.pptx
 t pptx-media dir:1 tool.media deck.pptx
 t pptx-text msg tool.copytext deck.pptx
 t csv-json ext:json convert.json people.csv
+
+if [ "$HAS_RHWP" = 1 ]; then
+  echo "— HWP (rhwp $RHWP_VERSION)"
+  t hwpx-pdf fact:pages=1 convert.pdf report.hwpx
+  t hwpx-hwp fact:format=hwp5 convert.hwp report.hwpx
+  t hwp-hwpx fact:format=hwpx convert.hwpx report.hwp
+  t hwpx-docx ext:docx convert.docx report.hwpx
+  t hwp-txt ext:txt convert.txt report.hwp
+  t hwpx-md ext:md convert.md report.hwpx
+  t hwpx-html ext:html convert.html report.hwpx
+  t hwpx-png ext:png convert.png.150 report.hwpx
+  t hwp-text msg tool.copytext report.hwp
+  t hwpx-count msg tool.count report.hwpx
+  t hwp-broken fail convert.pdf broken.hwp
+fi
 
 echo "— audio & video (AVFoundation)"
 E='PICKVERTER_EDITOR_TRIM={"start":1,"end":2.5,"lossless":false}' t wav-cut near:duration=1.5 tool.cut tone.wav

@@ -200,9 +200,9 @@ internal sealed class WheelCanvas : FrameworkElement
             else lines.Add(Glyphs.Formatted(option.Symbol.Length == 0 ? parent?.Symbol ?? "circle" : option.Symbol, 18, Theme.TextPrimary, Dip));
             if (parent != null) lines.Add(Fit(option.Title, width, 11, FontWeights.SemiBold, Theme.AccentText, 0.7));
             var unavailable = option.Unavailable ?? parent?.Unavailable;
-            // Missing ffmpeg is an offer, not a dead end: a click downloads it and carries on.
-            var offersDownload = unavailable == Tools.FFmpegHint;
-            lines.Add(Fit(offersDownload ? L("ffmpeg.click") : unavailable ?? model.PreviewLine(option, parent), width, 9.5, FontWeights.Normal,
+            // A missing ffmpeg or rhwp is an offer, not a dead end: a click downloads it and carries on.
+            var offersDownload = Tools.IsDownload(unavailable);
+            lines.Add(Fit(offersDownload ? Tools.DownloadPrompt(unavailable) : unavailable ?? model.PreviewLine(option, parent), width, 9.5, FontWeights.Normal,
                 offersDownload ? Theme.AccentText : unavailable != null ? Theme.Caution : Theme.TextSecondary, 0.85, lines: 2,
                 middle: unavailable == null));
             string? hint = null;
@@ -347,7 +347,8 @@ internal sealed class WheelCanvas : FrameworkElement
         var face = Theme.Face(weight);
         FormattedText Make(double fontSize)
         {
-            var formatted = new FormattedText(text, Loc.Culture, FlowDirection.LeftToRight, face, fontSize, brush, Dip);
+            var shown = lines > 1 ? KeepWords(text, face, fontSize, width) : text;
+            var formatted = new FormattedText(shown, Loc.Culture, FlowDirection.LeftToRight, face, fontSize, brush, Dip);
             formatted.Trimming = TextTrimming.CharacterEllipsis;
             return formatted;
         }
@@ -389,6 +390,36 @@ internal sealed class WheelCanvas : FrameworkElement
     }
 
     private static int LinesOf(FormattedText text, double size) => Math.Max(1, (int)Math.Round(text.Height / (size * 1.33)));
+
+    /// Korean puts spaces between words, but WPF breaks Hangul between any two syllables ("받/고"). Such text is
+    /// wrapped at its spaces first, as on the Mac; a single word wider than the line still breaks where WPF puts it.
+    private string KeepWords(string text, Typeface face, double size, double width)
+    {
+        if (width <= 0 || !text.Any(IsHangul)) return text;
+        double Measure(string value) => new FormattedText(value, Loc.Culture, FlowDirection.LeftToRight, face, size, Brushes.Black, Dip).WidthIncludingTrailingWhitespace;
+        var wrapped = new List<string>();
+        foreach (var paragraph in text.Split('\n'))
+        {
+            var line = "";
+            foreach (var word in paragraph.Split(' '))
+            {
+                var longer = line.Length == 0 ? word : line + " " + word;
+                if (line.Length > 0 && Measure(longer) > width)
+                {
+                    wrapped.Add(line);
+                    line = word;
+                }
+                else
+                {
+                    line = longer;
+                }
+            }
+            wrapped.Add(line);
+        }
+        return string.Join("\n", wrapped);
+    }
+
+    private static bool IsHangul(char c) => c is >= '\uAC00' and <= '\uD7A3' or >= '\u1100' and <= '\u11FF' or >= '\u3130' and <= '\u318F';
 
     /// A single word longer than the width would be broken mid-word: treat it as overflow and shrink instead.
     private static bool Overflows(FormattedText text, double width) => text.WidthIncludingTrailingWhitespace > width + 0.5 && text.MinWidth > width;

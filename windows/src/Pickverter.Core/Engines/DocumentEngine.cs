@@ -149,14 +149,22 @@ public static class DocumentEngine
     public static async Task<PickResult> CopyText(PickContext ctx)
     {
         var text = await AllText(ctx.Files, ctx.Token);
+        return await CopyText(text);
+    }
+
+    /// Puts text read from documents on the clipboard (Windows line endings).
+    public static async Task<PickResult> CopyText(string text)
+    {
         if (text.Length == 0) throw new PickException(L("err.no_text"));
         await Platform.Clipboard.SetTextAsync(text.Replace("\r\n", "\n").Replace("\n", "\r\n"));
         return PickResult.Note(LP("msg.chars_copied", text.Length));
     }
 
-    public static async Task<PickResult> Count(PickContext ctx)
+    public static async Task<PickResult> Count(PickContext ctx) => Count(await AllText(ctx.Files, ctx.Token));
+
+    /// Characters (without and with spaces), words and lines.
+    public static PickResult Count(string text)
     {
-        var text = await AllText(ctx.Files, ctx.Token);
         var characters = text.Count(c => !char.IsWhiteSpace(c));
         var words = text.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length;
         var lines = text.Split('\n', StringSplitOptions.RemoveEmptyEntries).Count(line => line.Trim().Length > 0);

@@ -47,6 +47,7 @@ window.SITE_I18N = {
   "g.video": "동영상",
   "g.audio": "오디오",
   "g.docs": "문서",
+  "g.hwp": "한글 문서",
   "g.office": "오피스·iWork·데이터",
   "g.office.d": "Excel·Numbers·Pages·Keynote·PowerPoint · 표를 CSV·TSV·JSON·마크다운·HTML로 · 자막 SRT·VTT · ZIP·TAR.GZ",
   "t.removebg": "배경 제거",
@@ -143,7 +144,7 @@ window.SITE_I18N = {
   "det.5.t": "키보드만으로도",
   "det.5.d": "화살표·숫자 키, 형식 이름을 타이핑해 바로 이동, Return으로 실행. VoiceOver가 모든 칸을 읽어 줘요.",
   "det.6.t": "무료, 소스는 GitHub에",
-  "det.6.d": "CC BY-NC-ND 4.0 라이선스예요. 코드를 읽고, 이슈를 남기고, 번역 수정을 제안해 주세요.",
+  "det.6.d": "MIT 라이선스 오픈소스예요. 코드를 읽고, 이슈를 남기고, 번역 수정을 제안해 주세요.",
   "kb.gesture": "동작",
   "kb.does": "하는 일",
   "kb.1": "Finder에서 파일을 고른 상태라면 그 파일들의 휠을 열어요",
@@ -181,16 +182,16 @@ window.SITE_I18N = {
   "dl.chip": "칩",
   "dl.chip.v": "Apple 실리콘·Intel (유니버설)",
   "dl.price": "가격",
-  "dl.price.v": "무료 · CC BY-NC-ND 4.0",
+  "dl.price.v": "무료 · MIT 라이선스",
   "dl.arm": "Arm64 설치 파일",
   "dl.zip": "포터블 ZIP",
   "dl.verify": "검증",
   "dl.verify.v": "SHA-256 체크섬",
   "faq.title": "자주 묻는 질문.",
   "faq.1.q": "정말 무료인가요?",
-  "faq.1.a": "네. 계정도, 구독도, 광고도 없어요. 소스 코드는 CC BY-NC-ND 4.0으로 공개돼 있어서, 출처를 밝히고 고치지 않은 그대로라면 비상업적으로 공유할 수 있어요.",
+  "faq.1.a": "네. 계정도, 구독도, 광고도 없어요. 소스 코드는 MIT 라이선스로 공개돼 있어요.",
   "faq.2.q": "파일이 어딘가로 업로드되나요?",
-  "faq.2.a": "아니요. 모든 변환과 편집은 Apple 프레임워크와(추가했다면) ffmpeg로 Mac 안에서만 처리돼요. 인터넷은 GitHub에서 업데이트를 확인할 때(끌 수 있어요)와, 원할 때 ffmpeg를 내려받을 때만 써요.",
+  "faq.2.a": "아니요. 모든 변환과 편집은 Apple 프레임워크와(추가했다면) ffmpeg·rhwp로 Mac 안에서만 처리돼요. 인터넷은 GitHub에서 업데이트를 확인할 때(끌 수 있어요)와, 필요할 때 ffmpeg나 rhwp를 내려받을 때만 써요.",
   "faq.3.q": "손쉬운 사용과 Finder 권한은 왜 필요한가요?",
   "faq.3.a": "손쉬운 사용은 화면 어디서든 ⌥ 입력과 드래그를 알아채는 데 필요해요. Finder 제어는 어떤 파일을 골랐는지 읽는 데, 파일 접근은 작업 도중 권한 창 없이 데스크탑·문서·다운로드의 파일을 읽고 쓰는 데 필요해요.",
   "faq.4.q": "업데이트 후 왜 권한을 다시 물어보나요?",
@@ -200,12 +201,14 @@ window.SITE_I18N = {
   "faq.6.q": "어떤 Mac에서 쓸 수 있나요?",
   "faq.6.a": "macOS 14 Sonoma 이상이면 Apple 실리콘·Intel 모두, 유니버설 앱 하나로 돼요.",
   "faq.7.q": "삭제는 어떻게 하나요?",
-  "faq.7.a": "메뉴 막대에서 Pickverter를 종료하고 응용 프로그램에서 휴지통으로 옮기세요. Pickverter가 ffmpeg를 내려받았다면 먼저 설정 › 연동에서 삭제하세요. 시스템 설정의 손쉬운 사용·전체 디스크 접근 목록에서도 지울 수 있어요.",
-  "foot.license": "CC BY-NC-ND 4.0 라이선스",
+  "faq.7.a": "메뉴 막대에서 Pickverter를 종료하고 응용 프로그램에서 휴지통으로 옮기세요. Pickverter가 ffmpeg나 rhwp를 내려받았다면 먼저 설정 › 연동에서 삭제하세요. 시스템 설정의 손쉬운 사용·전체 디스크 접근 목록에서도 지울 수 있어요.",
+  "faq.8.q": "한글(HWP) 문서도 바꿀 수 있나요?",
+  "faq.8.a": "네. HWP·HWPX 문서를 PDF·워드·이미지·텍스트·마크다운·HTML로 바꾸고, HWP와 HWPX끼리도 바꿔요. 암호 문서와 배포용 문서도 돼요. 쪽 배치는 오픈소스 엔진 rhwp가 맡고, 처음 변환할 때 Pickverter가 알아서 내려받아요.",
+  "foot.license": "MIT 라이선스",
   "foot.releases": "릴리스",
   "foot.changelog": "변경 내역",
   "foot.issues": "문제 신고",
-  "foot.credits": "아이콘: Lucide (ISC). 데모 사진은 이 영상과 사이트를 위해 생성했어요. macOS와 Finder는 Apple Inc.의, Windows는 Microsoft의 상표예요."
+  "foot.credits": "아이콘: Lucide (ISC). 한글 문서 배치: rhwp (MIT). 데모 사진은 이 영상과 사이트를 위해 생성했어요. macOS와 Finder는 Apple Inc.의, Windows는 Microsoft의 상표예요."
  }
 };
 window.SITE_META = {"en":{"title":"Pickverter — every file, one key away","desc":"Pick a file, tap one key, and convert, edit or share it right next to your cursor. Free for Mac and Windows, and 100% on your computer."},"ko":{"title":"Pickverter — 모든 파일을, 키 하나로","desc":"파일을 고르고 키 하나만 누르면 커서 옆에서 변환·편집·공유가 끝나요. Mac·Windows용 무료 앱, 모든 처리는 내 컴퓨터에서."}};
@@ -248,7 +251,7 @@ window.SITE_WIN = {
   "dl.req.v": "Windows 10 (version 2004) or later, Windows 11",
   "dl.chip": "Processors",
   "dl.chip.v": "x64 and Arm64 (Snapdragon)",
-  "faq.2.a": "No. Every conversion and edit runs on your PC with Windows’ own components and, if you add it, ffmpeg. Pickverter only goes online to check GitHub for updates (you can turn that off) and to download what you ask for: ffmpeg, or the model background removal needs the first time.",
+  "faq.2.a": "No. Every conversion and edit runs on your PC with Windows’ own components and, if you add them, ffmpeg and rhwp. Pickverter only goes online to check GitHub for updates (you can turn that off) and to download what you ask for: ffmpeg, rhwp for HWP documents, or the model background removal needs the first time.",
   "faq.3.q": "Does it need special permissions?",
   "faq.3.a": "No. Windows lets Pickverter notice key taps and drags and read File Explorer’s selection without extra permissions. If Windows Security’s controlled folder access is on, the welcome window offers to allow Pickverter so results can be saved next to your files.",
   "faq.4.q": "Why does Windows say “Windows protected your PC”?",
@@ -256,7 +259,7 @@ window.SITE_WIN = {
   "faq.5.a": "No — images, PDFs, documents and MP4, M4A, MP3 and WAV work out of the box with Windows’ own components. ffmpeg adds formats like WebM, MKV, FLAC, OGG and Opus, plus extra video tools. Pickverter downloads it for you in one click and checks it against its published SHA-256; <code>winget install ffmpeg</code> works too.",
   "faq.6.q": "Which PCs are supported?",
   "faq.6.a": "Windows 10 version 2004 or later and Windows 11 — x64 PCs and Arm64 PCs such as Snapdragon laptops, each with its own installer.",
-  "faq.7.a": "Quit Pickverter from the notification area, then open Settings › Apps › Installed apps, find Pickverter and choose Uninstall. The ffmpeg and background model it downloaded go with it."
+  "faq.7.a": "Quit Pickverter from the notification area, then open Settings › Apps › Installed apps, find Pickverter and choose Uninstall. The ffmpeg, rhwp and background model it downloaded go with it."
  },
  "ko": {
   "hero.title": "모든 파일을,<br><span class=\"key word\" aria-label=\"Alt\">Alt</span> 하나로.",
@@ -293,7 +296,7 @@ window.SITE_WIN = {
   "dl.req.v": "Windows 10(2004 버전) 이상, Windows 11",
   "dl.chip": "프로세서",
   "dl.chip.v": "x64·Arm64(스냅드래곤)",
-  "faq.2.a": "아니요. 모든 변환과 편집은 Windows 기본 구성 요소와(추가했다면) ffmpeg로 PC 안에서만 처리돼요. 인터넷은 GitHub에서 업데이트를 확인할 때(끌 수 있어요)와, 원할 때 ffmpeg나 배경 제거 모델을 내려받을 때만 써요.",
+  "faq.2.a": "아니요. 모든 변환과 편집은 Windows 기본 구성 요소와(추가했다면) ffmpeg·rhwp로 PC 안에서만 처리돼요. 인터넷은 GitHub에서 업데이트를 확인할 때(끌 수 있어요)와, 원할 때 ffmpeg·한글 엔진 rhwp·배경 제거 모델을 내려받을 때만 써요.",
   "faq.3.q": "특별한 권한이 필요한가요?",
   "faq.3.a": "아니요. Windows에서는 별도 권한 없이도 키 입력과 드래그를 알아채고 파일 탐색기의 선택을 읽을 수 있어요. Windows 보안의 제어된 폴더 액세스가 켜져 있으면, 결과를 원본 옆에 저장할 수 있게 첫 화면이 Pickverter 허용을 도와줘요.",
   "faq.4.q": "왜 ‘Windows의 PC 보호’ 창이 뜨나요?",
@@ -301,7 +304,7 @@ window.SITE_WIN = {
   "faq.5.a": "아니요. 이미지·PDF·문서와 MP4·M4A·MP3·WAV는 Windows 기본 구성 요소만으로 바로 돼요. ffmpeg를 더하면 WebM·MKV·FLAC·OGG·Opus 같은 형식과 동영상 도구가 늘어나요. 클릭 한 번이면 Pickverter가 직접 내려받아 공개된 SHA-256으로 확인해요. <code>winget install ffmpeg</code>로 설치해도 돼요.",
   "faq.6.q": "어떤 PC에서 쓸 수 있나요?",
   "faq.6.a": "Windows 10(2004 버전) 이상과 Windows 11에서 써요. x64 PC와 스냅드래곤 노트북 같은 Arm64 PC 모두 전용 설치 파일이 있어요.",
-  "faq.7.a": "알림 영역에서 Pickverter를 종료한 뒤, 설정 › 앱 › 설치된 앱에서 Pickverter를 찾아 제거를 누르세요. 내려받은 ffmpeg와 배경 제거 모델도 함께 지워져요."
+  "faq.7.a": "알림 영역에서 Pickverter를 종료한 뒤, 설정 › 앱 › 설치된 앱에서 Pickverter를 찾아 제거를 누르세요. 내려받은 ffmpeg·rhwp·배경 제거 모델도 함께 지워져요."
  }
 };
 // The Windows app's own strings (windows/Resources/i18n.windows.json) for the wheel demo on the Windows page.

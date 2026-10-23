@@ -59,6 +59,8 @@ public static class Converter
             case FileKind.Document:
                 if (ext == "epub") return EpubBuilder.FromDocuments([src], ctx);
                 return DocumentEngine.Convert(src, ext, ctx);
+            case FileKind.Hwp:
+                return HwpEngine.Convert(src, ext, options.Dpi, ctx);
             case FileKind.Office:
                 return OfficeEngine.Convert(src, ext, ctx);
             case FileKind.Table:

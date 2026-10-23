@@ -12,7 +12,7 @@
   <a href="https://github.com/ivLis-Studio/pickverter/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/ivLis-Studio/pickverter/total?style=flat-square&label=downloads&color=1D1D1F&cacheSeconds=3600"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-1D1D1F?style=flat-square&logo=apple&logoColor=white">
   <img alt="Windows 10+" src="https://img.shields.io/badge/Windows-10%2B-1D1D1F?style=flat-square&logo=windows&logoColor=white">
-  <a href="LICENSE"><img alt="License: CC BY-NC-ND 4.0" src="https://img.shields.io/badge/license-CC%20BY--NC--ND%204.0-1D1D1F?style=flat-square"></a>
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-1D1D1F?style=flat-square"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/macos-ci.yml"><img alt="macOS CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/macos-ci.yml?branch=main&style=flat-square&label=macOS%20CI"></a>
   <a href="https://github.com/ivLis-Studio/pickverter/actions/workflows/windows-ci.yml"><img alt="Windows CI" src="https://img.shields.io/github/actions/workflow/status/ivLis-Studio/pickverter/windows-ci.yml?branch=main&style=flat-square&label=Windows%20CI"></a>
 </p>
@@ -50,7 +50,7 @@ https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 
 <table>
   <tr>
-    <td valign="top" width="33%"><b>⇧ Convert</b><br><sub>Images · video · audio · PDF · documents · EPUB · Office &amp; iWork · tables · subtitles · archives</sub></td>
+    <td valign="top" width="33%"><b>⇧ Convert</b><br><sub>Images · video · audio · PDF · documents · HWP &amp; HWPX · EPUB · Office &amp; iWork · tables · subtitles · archives</sub></td>
     <td valign="top" width="33%"><b>⌘ Tools</b><br><sub>Remove background · hide faces &amp; text · compress · resize · crop · OCR · rotate · trim · split &amp; join · PDF pages · lock · info</sub></td>
     <td valign="top" width="33%"><b>⌃ Actions</b><br><sub>AirDrop · Terminal · code editor · copy path · copy file · move · float · share · checksums</sub></td>
   </tr>
@@ -58,6 +58,7 @@ https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 
 - **Convert** images (JPG, PNG, HEIC, WebP, AVIF, TIFF, GIF, BMP, PDF, ICO), video (MP4, MOV, WebM, MKV, GIF, MP3, M4A, WAV),
   audio (MP3, M4A, WAV, FLAC, AIFF, OGG, Opus), PDF (PNG, JPG, TXT, MD, DOCX, RTF, HTML), documents (PDF, DOCX, RTF, TXT, MD, HTML, ODT, **EPUB**),
+  **HWP & HWPX** (PDF, DOCX, HWP ↔ HWPX, PNG, JPG, TXT, MD, HTML — password-protected and distribution documents too),
   Excel/Numbers/Pages/Keynote/PowerPoint, tables (CSV, TSV, JSON, MD, HTML), subtitles (SRT, VTT, TXT), archives (ZIP, TAR.GZ)
 - **Edit** with small, focused editors: trim video and audio, crop with ratio presets, hide areas (mosaic, blur, fill — finds faces and text for you),
   organize PDF pages by drag and drop, edit photo/PDF/media info (losslessly for photos where possible)
@@ -121,6 +122,8 @@ https://github.com/user-attachments/assets/e47fc193-fc9c-48ff-b08b-e94a4da85e0c
    just Desktop, Documents, Downloads and iCloud Drive. Doing it up front means macOS never stops a job halfway to ask.
 4. Optional: [ffmpeg](https://ffmpeg.org) unlocks more video and audio formats. Pickverter downloads it for you in one click —
    in the welcome window, in Settings, or the first time a format needs it (`brew install ffmpeg` works too).
+   HWP and HWPX documents use [rhwp](https://github.com/edwardkim/rhwp), the open-source HWP engine: Pickverter downloads it
+   (about 13 MB) the first time you convert one, or from Settings › Integrations.
    Pages, Keynote, Numbers or LibreOffice, when installed, enable high-quality Office/iWork exports.
 
 Requires macOS 14 or later, Apple silicon or Intel.
@@ -132,6 +135,7 @@ Requires macOS 14 or later, Apple silicon or Intel.
 2. The installer isn't code-signed yet, so SmartScreen may say **"Windows protected your PC"**: click **More info › Run anyway**.
 3. The welcome window checks Windows Security's **controlled folder access** (Pickverter offers to allow itself when it is on),
    downloads **ffmpeg** in one click and starts Pickverter with Windows. Nothing else needs a permission.
+   rhwp, the HWP engine, downloads by itself the first time you convert an HWP or HWPX file.
 
 Requires Windows 10 version 2004 or later, or Windows 11 (x64 or Arm64). Pickverter lives in the notification area;
 keys, engines and build notes are in [windows/README.md](windows/README.md).
@@ -219,7 +223,7 @@ Inside `macos/Sources/Pickverter/`:
 - `Input/` event tap (modifier taps, ⌥-click, drags), Finder selection
 - `Wheel/` the wheel panel, outer option ring, drop target, rendering
 - `Core/` option model, catalog per ring, wheel customization, work queue, localization
-- `Engines/` images (ImageIO, Vision), media (ffmpeg, AVFoundation), PDF (PDFKit), documents, EPUB, Office/iWork, data, archives
+- `Engines/` images (ImageIO, Vision), media (ffmpeg, AVFoundation), PDF (PDFKit), documents, HWP (rhwp), EPUB, Office/iWork, data, archives
 - `UI/` result cards, editors, settings, menu bar, onboarding, update window
 - `App/` app lifecycle, preferences, updater, CLI
 
@@ -227,5 +231,6 @@ Inside `macos/Sources/Pickverter/`:
 
 Pickverter is free: download it and use it as much as you like.
 
-[CC BY-NC-ND 4.0](LICENSE) © ivLis Studio — share it unchanged, for non-commercial purposes, with credit.
-Releases before 0.2.0 were published under the MIT License. Third-party components keep their own licenses.
+[MIT](LICENSE) © ivLis Studio. Third-party components keep their own licenses — among them
+[rhwp](https://github.com/edwardkim/rhwp) (MIT) by Edward Kim, which Pickverter downloads to convert HWP and HWPX documents,
+and ffmpeg, which it downloads when you ask for it.

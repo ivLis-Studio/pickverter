@@ -136,6 +136,18 @@ internal static class Snapshots
         documentCanvas.Thumbnail = Explorer.Thumbnail(pdf, 96);
         document.DemoHighlight(IndexOf(document, "tool.pages"), 2);
         await Save(documentCanvas, Path.Combine(output, "wheel-pdf.png"), side, side, Desk);
+
+        // An HWP document: until rhwp is downloaded, its options offer the download on click.
+        if (files.FirstOrDefault(file => FileKinds.Of(file) == FileKind.Hwp) is { } hwp)
+        {
+            var hangul = new WheelModel();
+            hangul.Present([hwp], WheelModel.WheelOrigin.Selection, WheelMode.Convert, ScreenPoint.Zero);
+            hangul.ForceVisibleForTesting();
+            var hangulCanvas = Canvas(hangul);
+            hangulCanvas.Thumbnail = Explorer.Thumbnail(hwp, 96);
+            hangul.DemoHighlight(IndexOf(hangul, "convert.pdf"));
+            await Save(hangulCanvas, Path.Combine(output, "wheel-hwp.png"), side, side, Desk);
+        }
     }
 
     private static async Task Cards(string output, string photo, string tone)
@@ -197,6 +209,11 @@ internal static class Snapshots
             settings.Select(SettingsPage.Integrations);
             await Take(settings, Path.Combine(output, "settings-ffmpeg-failed.png"), 920, null, keep: true);
             FFmpegSetup.Simulate(FFmpegSetup.SetupPhase.Idle);
+            // The rhwp row while Pickverter downloads it.
+            HwpSetup.Simulate(HwpSetup.SetupPhase.Downloading, 0.42);
+            settings.Select(SettingsPage.Integrations);
+            await Take(settings, Path.Combine(output, "settings-rhwp-downloading.png"), 920, null, keep: true);
+            HwpSetup.Simulate(HwpSetup.SetupPhase.Idle);
             settings.Close();
         }
 
@@ -252,6 +269,12 @@ internal static class Snapshots
         {
             await Take(new PasswordDialog(file("report.pdf")), Path.Combine(output, "dialog-password.png"), 460, null);
             await Take(new RangeDialog(file("report.pdf"), 3), Path.Combine(output, "dialog-range.png"), 460, null);
+            // Opening a locked HWP document: the first question, and the one after a wrong password.
+            if (files.FirstOrDefault(path => FileKinds.Of(path) == FileKind.Hwp) is { } hwp)
+            {
+                await Take(new PasswordDialog(hwp, unlock: true), Path.Combine(output, "dialog-unlock.png"), 460, null);
+                await Take(new PasswordDialog(hwp, unlock: true, retry: true), Path.Combine(output, "dialog-unlock-retry.png"), 460, null);
+            }
         }
     }
 

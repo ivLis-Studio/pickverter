@@ -343,7 +343,7 @@ final class WheelController: ObservableObject {
             switch item {
             case .option(let option):
                 return SegmentData(id: option.id, title: option.title, symbol: option.symbol, isFormat: option.isFormat,
-                                   unavailable: option.unavailable != nil, needsDownload: option.unavailable == Tools.ffmpegHint,
+                                   unavailable: option.unavailable != nil, needsDownload: Tools.isDownload(option.unavailable),
                                    hasVariants: !option.variants.isEmpty)
             case .more(let page, let total):
                 return SegmentData(id: item.id, title: L("wheel.more"), symbol: "ellipsis", isMore: true,
@@ -374,7 +374,7 @@ final class WheelController: ObservableObject {
     var canDropHere: Bool {
         guard let active = activeOption else { return false }
         let reason = active.option.unavailable ?? active.parent?.unavailable
-        return reason == nil || reason == Tools.ffmpegHint
+        return reason == nil || Tools.isDownload(reason)
     }
 
     func setMode(_ newMode: WheelMode) {
@@ -446,7 +446,7 @@ final class WheelController: ObservableObject {
                                items: variants.enumerated().map { position, variant in
                                    SegmentData(id: variant.id, title: variant.title, symbol: variant.symbol,
                                                unavailable: variant.unavailable != nil,
-                                               needsDownload: variant.unavailable == Tools.ffmpegHint,
+                                               needsDownload: Tools.isDownload(variant.unavailable),
                                                isDefault: position == preferred && variants.count > 1)
                                })
         // The tab bar sits under 6 o'clock; fade it when the ring opens over it.
@@ -584,9 +584,9 @@ final class WheelController: ObservableObject {
                 option = parent.variants[WheelLayout.shared.preferredVariant(of: parent)]
             }
             let reason = option.unavailable ?? parent.unavailable
-            // Missing ffmpeg isn't a dead end: the job downloads it first, right on its card.
-            let needsFFmpeg = reason == Tools.ffmpegHint
-            if let reason, !needsFFmpeg {
+            // A missing ffmpeg or rhwp isn't a dead end: the job downloads it first, right on its card.
+            let needsDownload = Tools.isDownload(reason)
+            if let reason, !needsDownload {
                 showFlash(reason)
                 NSSound.beep()
                 return
@@ -594,7 +594,7 @@ final class WheelController: ObservableObject {
             if sub != nil, option.id != parent.id, !isDemo { WheelLayout.shared.noteUsed(slot: parent.id, variant: option.id) }
             let targets = (override?.isEmpty == false) ? override! : files
             var display = Self.display(option, parent: option.id == parent.id ? nil : parent)
-            if needsFFmpeg { display = FFmpegInstaller.preparing(display) }
+            if needsDownload { display = Tools.preparing(display, for: reason) }
             guard let destination = resolveDestination(for: display, flip: flip, forced: forced) else {
                 enterChoice(PendingChoice(option: display, files: targets, mode: mode))
                 return

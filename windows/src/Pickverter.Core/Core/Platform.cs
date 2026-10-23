@@ -249,6 +249,8 @@ public interface IEditors
     Task<MetadataEdit> MetadataAsync(string file, MetaSnapshot snapshot, CancellationToken token);
     Task<string> PasswordAsync(string file, CancellationToken token);
     Task<string> RangeAsync(string file, int pageCount, CancellationToken token);
+    /// The open password of a locked document (HWP, HWPX). retry: the last one didn't match.
+    Task<string> UnlockAsync(string file, bool retry, CancellationToken token);
 }
 
 /// Editors answered through PICKVERTER_EDITOR_<NAME> (JSON, or "cancel"), so tests never open a window.
@@ -295,6 +297,7 @@ public class InjectedEditors : IEditors
     public virtual Task<MetadataEdit> MetadataAsync(string file, MetaSnapshot snapshot, CancellationToken token) => Task.FromResult(Answer<MetadataEdit>("metadata"));
     public virtual Task<string> PasswordAsync(string file, CancellationToken token) => Task.FromResult(Answer<string>("password"));
     public virtual Task<string> RangeAsync(string file, int pageCount, CancellationToken token) => Task.FromResult(Answer<string>("range"));
+    public virtual Task<string> UnlockAsync(string file, bool retry, CancellationToken token) => Task.FromResult(Answer<string>("unlock"));
 }
 
 public interface IActionsService

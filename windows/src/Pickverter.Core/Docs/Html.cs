@@ -108,7 +108,7 @@ public static partial class Html
                     builder.Append("<table>\n");
                     for (var row = 0; row < table.Rows.Count; row++)
                     {
-                        var cell = row == 0 ? "th" : "td";
+                        var cell = row == 0 && table.HeaderRow ? "th" : "td";
                         builder.Append("<tr>");
                         foreach (var runs in table.Rows[row]) builder.Append('<').Append(cell).Append('>').Append(Inline(runs).Replace("<br>", br)).Append("</").Append(cell).Append('>');
                         builder.Append("</tr>\n");

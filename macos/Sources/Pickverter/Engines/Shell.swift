@@ -9,10 +9,36 @@ enum Tools {
 
     static let searchDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin"]
     static var ffmpegHint: String { L("err.ffmpeg") }
+    static var hwpHint: String { L("err.hwp") }
 
     /// The job failed only because ffmpeg is missing (a batch prefixes the message with a file name).
     static func isMissingFFmpeg(_ error: Error) -> Bool {
         ffmpeg == nil && error.localizedDescription.contains(ffmpegHint)
+    }
+
+    // Engines Pickverter downloads itself (ffmpeg, rhwp): options that need one stay clickable, and the job downloads
+    // the engine on its own card before it starts.
+
+    /// The reason only says a downloadable engine is missing.
+    static func isDownload(_ reason: String?) -> Bool {
+        reason != nil && (reason == ffmpegHint || reason == hwpHint)
+    }
+
+    /// The hint under the wheel's hub for such an option.
+    static func downloadPrompt(_ reason: String?) -> String {
+        reason == hwpHint ? L("hwp.click") : L("ffmpeg.click")
+    }
+
+    /// The same option, downloading the engine it needs first.
+    static func preparing(_ option: PickOption, for reason: String?) -> PickOption {
+        reason == hwpHint ? HWPInstaller.preparing(option) : FFmpegInstaller.preparing(option)
+    }
+
+    /// The engine a failed job was missing (its hint), when that is all that went wrong.
+    static func missingEngine(in error: Error) -> String? {
+        if isMissingFFmpeg(error) { return ffmpegHint }
+        if HWPInstaller.executable == nil, error.localizedDescription.contains(hwpHint) { return hwpHint }
+        return nil
     }
 
     static func path(_ name: String) -> String? {
@@ -128,14 +154,16 @@ enum Shell {
     }
 
     /// Runs a process without a shell (no quoting pitfalls). Cancelling the task terminates the process.
+    /// `input` goes to the program's standard input (a password for rhwp's --password-stdin), which is closed after it.
     @discardableResult
     static func run(_ executable: String, _ arguments: [String], cwd: URL? = nil, stdoutTo file: URL? = nil,
-                    onLine: ((String) -> Void)? = nil) async throws -> String {
+                    input: String? = nil, onLine: ((String) -> Void)? = nil) async throws -> String {
         let process = Process()
         process.executableURL = URL(fileURLWithPath: executable)
         process.arguments = arguments
         if let cwd { process.currentDirectoryURL = cwd }
-        process.standardInput = FileHandle.nullDevice
+        let inPipe = input.map { _ in Pipe() }
+        process.standardInput = inPipe ?? FileHandle.nullDevice
         let collector = Collector(onLine: onLine)
         let toolName = (executable as NSString).lastPathComponent
 
@@ -171,6 +199,10 @@ enum Shell {
                     errPipe.fileHandleForReading.readabilityHandler = nil
                     continuation.resume(throwing: PickError(L("err.run_tool", toolName) + " · " + error.localizedDescription))
                     return
+                }
+                if let inPipe, let input {
+                    try? inPipe.fileHandleForWriting.write(contentsOf: Data(input.utf8))
+                    try? inPipe.fileHandleForWriting.close()
                 }
                 group.notify(queue: .global()) {
                     try? outHandle?.close()

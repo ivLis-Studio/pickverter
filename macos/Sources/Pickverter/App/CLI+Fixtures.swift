@@ -20,6 +20,7 @@ extension CLI {
             try "Plain notes.\n\nSecond paragraph with a line\nbreak.\n".write(to: root.appendingPathComponent("notes.txt"),
                                                                                  atomically: true, encoding: .utf8)
             try "name,score\nAlice,92.5\nBob,88\n".write(to: root.appendingPathComponent("people.csv"), atomically: true, encoding: .utf8)
+            try fixtureHWPX(root.appendingPathComponent("report.hwpx"))
         } catch {
             print("ERR \(error.localizedDescription)")
             return 1
@@ -154,6 +155,106 @@ extension CLI {
         }
         try data.write(to: url)
     }
+
+    /// A small HWPX (OWPML in a ZIP): a bold 18 pt title, two paragraphs, a 3×2 table and a closing paragraph — the
+    /// same document the Windows fixtures make. Tests turn it into HWP with rhwp when they need the binary format.
+    static func fixtureHWPX(_ url: URL) throws {
+        let fm = FileManager.default
+        let folder = fm.temporaryDirectory.appendingPathComponent("pickverter-hwpx-\(UUID().uuidString)")
+        defer { try? fm.removeItem(at: folder) }
+        let declaration = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>"
+        let ns = "xmlns:hp=\"http://www.hancom.co.kr/hwpml/2011/paragraph\" xmlns:hc=\"http://www.hancom.co.kr/hwpml/2011/core\""
+        func escape(_ text: String) -> String {
+            text.replacingOccurrences(of: "&", with: "&amp;").replacingOccurrences(of: "<", with: "&lt;").replacingOccurrences(of: ">", with: "&gt;")
+        }
+        func charPr(_ id: Int, _ height: Int, bold: Bool) -> String {
+            "<hh:charPr id=\"\(id)\" height=\"\(height)\" textColor=\"#000000\" shadeColor=\"none\" useFontSpace=\"0\" useKerning=\"0\" symMark=\"NONE\" borderFillIDRef=\"1\">"
+                + "<hh:fontRef hangul=\"0\" latin=\"0\" hanja=\"0\" japanese=\"0\" other=\"0\" symbol=\"0\" user=\"0\"/>"
+                + "<hh:ratio hangul=\"100\" latin=\"100\" hanja=\"100\" japanese=\"100\" other=\"100\" symbol=\"100\" user=\"100\"/>"
+                + "<hh:spacing hangul=\"0\" latin=\"0\" hanja=\"0\" japanese=\"0\" other=\"0\" symbol=\"0\" user=\"0\"/>"
+                + "<hh:relSz hangul=\"100\" latin=\"100\" hanja=\"100\" japanese=\"100\" other=\"100\" symbol=\"100\" user=\"100\"/>"
+                + "<hh:offset hangul=\"0\" latin=\"0\" hanja=\"0\" japanese=\"0\" other=\"0\" symbol=\"0\" user=\"0\"/>"
+                + (bold ? "<hh:bold/>" : "") + "</hh:charPr>"
+        }
+        func border(_ id: Int, _ kind: String) -> String {
+            let sides = ["left", "right", "top", "bottom"].map { "<hh:\($0)Border type=\"\(kind)\" width=\"0.12 mm\" color=\"#000000\"/>" }.joined()
+            return "<hh:borderFill id=\"\(id)\" threeD=\"0\" shadow=\"0\" centerLine=\"NONE\" breakCellSeparateLine=\"0\">"
+                + "<hh:slash type=\"NONE\" Crooked=\"0\" isCounter=\"0\"/><hh:backSlash type=\"NONE\" Crooked=\"0\" isCounter=\"0\"/>" + sides
+                + "<hh:diagonal type=\"NONE\" width=\"0.1 mm\" color=\"#000000\"/></hh:borderFill>"
+        }
+        let header = declaration
+            + "<hh:head xmlns:hh=\"http://www.hancom.co.kr/hwpml/2011/head\" \(ns) version=\"1.4\" secCnt=\"1\"><hh:refList>"
+            + "<hh:fontfaces itemCnt=\"2\">"
+            + "<hh:fontface lang=\"HANGUL\" fontCnt=\"1\"><hh:font id=\"0\" face=\"함초롬바탕\" type=\"TTF\" isEmbedded=\"0\"/></hh:fontface>"
+            + "<hh:fontface lang=\"LATIN\" fontCnt=\"1\"><hh:font id=\"0\" face=\"함초롬바탕\" type=\"TTF\" isEmbedded=\"0\"/></hh:fontface>"
+            + "</hh:fontfaces>"
+            + "<hh:borderFills itemCnt=\"2\">" + border(1, "NONE") + border(2, "SOLID") + "</hh:borderFills>"
+            + "<hh:charProperties itemCnt=\"2\">" + charPr(0, 1000, bold: false) + charPr(1, 1800, bold: true) + "</hh:charProperties>"
+            + "<hh:paraProperties itemCnt=\"1\"><hh:paraPr id=\"0\" tabPrIDRef=\"0\" condense=\"0\" fontLineHeight=\"0\" snapToGrid=\"1\" suppressLineNumbers=\"0\" checked=\"0\">"
+            + "<hh:align horizontal=\"JUSTIFY\" vertical=\"BASELINE\"/><hh:heading type=\"NONE\" idRef=\"0\" level=\"0\"/>"
+            + "<hh:breakSetting breakLatinWord=\"KEEP_WORD\" breakNonLatinWord=\"KEEP_WORD\" widowOrphan=\"0\" keepWithNext=\"0\" keepLines=\"0\" pageBreakBefore=\"0\" lineWrap=\"BREAK\"/>"
+            + "<hh:autoSpacing eAsianEng=\"0\" eAsianNum=\"0\"/><hh:margin><hc:intent value=\"0\" unit=\"HWPUNIT\"/><hc:left value=\"0\" unit=\"HWPUNIT\"/><hc:right value=\"0\" unit=\"HWPUNIT\"/><hc:prev value=\"0\" unit=\"HWPUNIT\"/><hc:next value=\"600\" unit=\"HWPUNIT\"/></hh:margin>"
+            + "<hh:lineSpacing type=\"PERCENT\" value=\"160\" unit=\"HWPUNIT\"/><hh:border borderFillIDRef=\"1\" offsetLeft=\"0\" offsetRight=\"0\" offsetTop=\"0\" offsetBottom=\"0\" connect=\"0\" ignoreMargin=\"0\"/></hh:paraPr></hh:paraProperties>"
+            + "</hh:refList><hh:compatibleDocument targetProgram=\"HWP201X\"><hh:layoutCompatibility/></hh:compatibleDocument></hh:head>"
+        var paragraphID = 0
+        func paragraph(_ text: String, char: Int = 0, inner: String = "") -> String {
+            paragraphID += 1
+            let run = "<hp:run charPrIDRef=\"\(char)\">" + inner + (text.isEmpty ? "" : "<hp:t>\(escape(text))</hp:t>") + "</hp:run>"
+            return "<hp:p id=\"\(paragraphID)\" paraPrIDRef=\"0\" styleIDRef=\"0\" pageBreak=\"0\" columnBreak=\"0\" merged=\"0\">" + run + "</hp:p>"
+        }
+        let section = "<hp:secPr id=\"\" textDirection=\"HORIZONTAL\" spaceColumns=\"1134\" tabStop=\"8000\" tabStopVal=\"4000\" tabStopUnit=\"HWPUNIT\" outlineShapeIDRef=\"1\" memoShapeIDRef=\"0\" textVerticalWidthHead=\"0\" masterPageCnt=\"0\">"
+            + "<hp:grid lineGrid=\"0\" charGrid=\"0\" wonggojiFormat=\"0\" strikeContinue=\"0\"/><hp:startNum pageStartsOn=\"BOTH\" page=\"0\" pic=\"0\" tbl=\"0\" equation=\"0\"/>"
+            + "<hp:visibility hideFirstHeader=\"0\" hideFirstFooter=\"0\" hideFirstMasterPage=\"0\" border=\"SHOW_ALL\" fill=\"SHOW_ALL\" hideFirstPageNum=\"0\" hideFirstEmptyLine=\"0\" showLineNumber=\"0\"/>"
+            + "<hp:lineNumberShape restartType=\"0\" countBy=\"0\" distance=\"0\" startNumber=\"0\"/>"
+            + "<hp:pagePr landscape=\"WIDELY\" width=\"59528\" height=\"84188\" gutterType=\"LEFT_ONLY\"><hp:margin header=\"4252\" footer=\"4252\" gutter=\"0\" left=\"8504\" right=\"8504\" top=\"5668\" bottom=\"4252\"/></hp:pagePr>"
+            + "</hp:secPr><hp:ctrl><hp:colPr id=\"\" type=\"NEWSPAPER\" layout=\"LEFT\" colCount=\"1\" sameSz=\"1\" sameGap=\"0\"/></hp:ctrl>"
+        let width = 21000
+        func cell(_ text: String, column: Int, row: Int) -> String {
+            paragraphID += 1
+            return "<hp:tc name=\"\" header=\"0\" hasMargin=\"0\" protect=\"0\" editable=\"0\" dirty=\"0\" borderFillIDRef=\"2\">"
+                + "<hp:subList id=\"\" textDirection=\"HORIZONTAL\" lineWrap=\"BREAK\" vertAlign=\"CENTER\" linkListIDRef=\"0\" linkListNextIDRef=\"0\" textWidth=\"0\" textHeight=\"0\" hasTextRef=\"0\" hasNumRef=\"0\">"
+                + "<hp:p id=\"\(paragraphID)\" paraPrIDRef=\"0\" styleIDRef=\"0\" pageBreak=\"0\" columnBreak=\"0\" merged=\"0\"><hp:run charPrIDRef=\"0\"><hp:t>\(escape(text))</hp:t></hp:run></hp:p>"
+                + "</hp:subList><hp:cellAddr colAddr=\"\(column)\" rowAddr=\"\(row)\"/><hp:cellSpan colSpan=\"1\" rowSpan=\"1\"/><hp:cellSz width=\"\(width)\" height=\"1800\"/><hp:cellMargin left=\"510\" right=\"510\" top=\"141\" bottom=\"141\"/></hp:tc>"
+        }
+        let rows = [("항목", "Value"), ("사과", "1,200원"), ("Pickverter", "HWP · HWPX")]
+        let opening = paragraph("Pickverter 한글 문서", char: 1, inner: section)
+            + paragraph("이 문서는 HWP·HWPX 변환 테스트에 쓰는 문서예요. The quick brown fox jumps over the lazy dog.")
+            + paragraph("두 번째 문단: 숫자 12345와 기호 % & < > \"따옴표\"도 그대로 남아야 해요.")
+        let table = "<hp:tbl id=\"100\" zOrder=\"0\" numberingType=\"TABLE\" textWrap=\"TOP_AND_BOTTOM\" textFlow=\"BOTH_SIDES\" lock=\"0\" dropcapstyle=\"None\" pageBreak=\"CELL\" repeatHeader=\"1\" "
+            + "rowCnt=\"\(rows.count)\" colCnt=\"2\" cellSpacing=\"0\" borderFillIDRef=\"2\" noAdjust=\"0\">"
+            + "<hp:sz width=\"\(width * 2)\" widthRelTo=\"ABSOLUTE\" height=\"\(1800 * rows.count)\" heightRelTo=\"ABSOLUTE\" protect=\"0\"/>"
+            + "<hp:pos treatAsChar=\"0\" affectLSpacing=\"0\" flowWithText=\"1\" allowOverlap=\"0\" holdAnchorAndSO=\"0\" vertRelTo=\"PARA\" horzRelTo=\"COLUMN\" vertAlign=\"TOP\" horzAlign=\"LEFT\" vertOffset=\"0\" horzOffset=\"0\"/>"
+            + "<hp:outMargin left=\"0\" right=\"0\" top=\"0\" bottom=\"0\"/><hp:inMargin left=\"510\" right=\"510\" top=\"141\" bottom=\"141\"/>"
+            + rows.enumerated().map { "<hp:tr>" + cell($1.0, column: 0, row: $0) + cell($1.1, column: 1, row: $0) + "</hp:tr>" }.joined()
+            + "</hp:tbl>"
+        let document = opening + paragraph("", inner: table) + paragraph("표 다음 문단입니다. 끝.")
+        try writeTree([
+            "mimetype": "application/hwp+zip",
+            "version.xml": declaration + "<hv:HCFVersion xmlns:hv=\"http://www.hancom.co.kr/hwpml/2011/version\" tagetApplication=\"WORDPROCESSOR\" "
+                + "major=\"5\" minor=\"1\" micro=\"1\" buildNumber=\"0\" os=\"1\" xmlVersion=\"1.4\" application=\"Pickverter\" appVersion=\"1, 0, 0, 0\"/>",
+            "META-INF/container.xml": declaration + "<ocf:container xmlns:ocf=\"urn:oasis:names:tc:opendocument:xmlns:container\" xmlns:hpf=\"http://www.hancom.co.kr/schema/2011/hpf\">"
+                + "<ocf:rootfiles><ocf:rootfile full-path=\"Contents/content.hpf\" media-type=\"application/hwpml-package+xml\"/></ocf:rootfiles></ocf:container>",
+            "META-INF/manifest.xml": declaration + "<odf:manifest xmlns:odf=\"urn:oasis:names:tc:opendocument:xmlns:manifest:1.0\"/>",
+            "Contents/content.hpf": declaration + "<opf:package xmlns:opf=\"http://www.idpf.org/2007/opf/\" version=\"\" unique-identifier=\"\" id=\"\">"
+                + "<opf:metadata><opf:title>Pickverter 한글 문서</opf:title><opf:language>ko</opf:language></opf:metadata>"
+                + "<opf:manifest><opf:item id=\"header\" href=\"Contents/header.xml\" media-type=\"application/xml\"/><opf:item id=\"section0\" href=\"Contents/section0.xml\" media-type=\"application/xml\"/></opf:manifest>"
+                + "<opf:spine><opf:itemref idref=\"header\"/><opf:itemref idref=\"section0\"/></opf:spine></opf:package>",
+            "Contents/header.xml": header,
+            "Contents/section0.xml": declaration + "<hs:sec xmlns:hs=\"http://www.hancom.co.kr/hwpml/2011/section\" \(ns)>" + document + "</hs:sec>",
+        ], to: folder)
+        // Like EPUB: "mimetype" first and stored, then everything else.
+        try? fm.removeItem(at: url)
+        for arguments in [["-X0", "-q", url.path, "mimetype"], ["-X", "-r", "-9", "-q", url.path, "version.xml", "META-INF", "Contents"]] {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/zip")
+            process.arguments = arguments
+            process.currentDirectoryURL = folder
+            try process.run()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else { throw PickError("zip failed") }
+        }
+    }
+
 
     static func zipFolder(_ folder: URL, to url: URL) throws {
         try? FileManager.default.removeItem(at: url)

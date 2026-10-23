@@ -324,11 +324,10 @@ public sealed class JobCenter
                 job.FixAction = new NoticeAction(L("access.fix"), "lock.open", Platform.Shell.OpenControlledFolderSettings);
             job.Fail(L("err.no_access", FileNames.Name(folder)));
         }
-        catch (Exception error) when (FFmpegSetup.IsMissing(error))
+        catch (Exception error) when (Tools.MissingEngine(error) is { } hint)
         {
-            // One click downloads ffmpeg on a fresh card and runs the same thing again.
-            job.FixAction = new NoticeAction(L("engine.install_ffmpeg"), "arrow.down.circle",
-                () => RunPrepared(job, FFmpegSetup.Prepare(option)));
+            // One click downloads ffmpeg or rhwp on a fresh card and runs the same thing again.
+            job.FixAction = new NoticeAction(Tools.InstallTitle(hint), "arrow.down.circle", () => RunPrepared(job, Tools.Preparing(option, hint)));
             job.Fail(Errors.Describe(error));
         }
         catch (Exception error)

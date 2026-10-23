@@ -177,6 +177,11 @@ internal static class SelfTest
             ("tool.split", ["report.pdf"]),
             ("convert.m4a", ["tone.wav"]),
             ("convert.mp3", ["tone.wav"]),
+            // HWP through rhwp (skipped until it's downloaded): its own PDF, page images through Windows' renderer, DOCX via DocLang.
+            ("convert.pdf", ["report.hwpx"]),
+            ("convert.png", ["report.hwpx"]),
+            ("convert.docx", ["report.hwpx"]),
+            ("convert.hwp", ["report.hwpx"]),
         };
         foreach (var (id, inputs) in runs)
         {

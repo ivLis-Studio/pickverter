@@ -87,6 +87,7 @@ public static class Catalog
             FileKind.Audio => ["mp3", "m4a", "wav", "flac", "aiff", "ogg", "opus"],
             FileKind.Pdf => ["png", "jpg", "txt", "md", "docx", "rtf", "html"],
             FileKind.Document => ["pdf", "docx", "rtf", "txt", "md", "html", "odt", "epub"],
+            FileKind.Hwp => HwpEngine.Targets(source),
             FileKind.Office => OfficeEngine.Targets(source),
             FileKind.Table => ["csv", "tsv", "json", "md", "html"],
             FileKind.Json => ["csv", "tsv", "md", "html"],
@@ -158,7 +159,7 @@ public static class Catalog
                     ],
                 };
             }
-            if (ext is "png" or "jpg" && kindSet.Count == 1 && kindSet.Contains(FileKind.Pdf))
+            if (ext is "png" or "jpg" && kindSet.Count == 1 && (kindSet.Contains(FileKind.Pdf) || kindSet.Contains(FileKind.Hwp)))
             {
                 option = option with
                 {
@@ -216,6 +217,11 @@ public static class Catalog
                         if (FileKinds.Of(file) != FileKind.Office) continue;
                         if (OfficeEngine.Unavailable(FileNames.NormalizedExt(file), ext) is { } reason) return reason;
                     }
+                    break;
+                case FileKind.Hwp:
+                    // Page images come from Windows' PDF renderer; everything else only needs rhwp (downloaded on first use).
+                    if (ext is "png" or "jpg" && !Platform.Pdf.Available) return L("err.render_page");
+                    if (HwpSetup.Unavailable() is { } missing) return missing;
                     break;
             }
         }
@@ -479,6 +485,15 @@ public static class Catalog
                 if (files.All(file => FileNames.NormalizedExt(file) is "docx" or "odt"))
                     list.Add(Tool("media", "photo.on.rectangle", Batch.PerFile(OfficeEngine.ExtractMedia)));
                 return list;
+            }
+            case FileKind.Hwp:
+            {
+                var unavailable = HwpSetup.Unavailable();
+                return
+                [
+                    Tool("copytext", "doc.on.clipboard", ctx => HwpEngine.CopyText(ctx), files: false, unavailable: unavailable),
+                    Tool("count", "number", ctx => HwpEngine.Count(ctx), files: false, unavailable: unavailable),
+                ];
             }
             case FileKind.Office:
             {

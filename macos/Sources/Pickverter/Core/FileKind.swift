@@ -2,7 +2,7 @@ import Foundation
 import UniformTypeIdentifiers
 
 enum FileKind: String, CaseIterable {
-    case image, video, audio, pdf, document, office, table, json, subtitle, archive, folder, other
+    case image, video, audio, pdf, document, hwp, office, table, json, subtitle, archive, folder, other
 
     static let imageExts: Set<String> = ["jpg", "jpeg", "png", "heic", "heif", "webp", "avif", "tif", "tiff", "gif", "bmp",
                                           "ico", "icns", "svg", "jp2", "psd", "tga", "dng", "cr2", "cr3", "nef", "arw",
@@ -27,6 +27,7 @@ enum FileKind: String, CaseIterable {
         }
         if ext == "pdf" { return .pdf }
         if ext == "json" { return .json }
+        if HWPEngine.exts.contains(ext) { return .hwp }
         if imageExts.contains(ext) { return .image }
         if videoExts.contains(ext) { return .video }
         if audioExts.contains(ext) { return .audio }

@@ -79,11 +79,16 @@ enum DocumentEngine {
         let text = try await MainActor.run { () throws -> String in
             try ctx.files.map { try read($0).string }.joined(separator: "\n")
         }
+        return .note(countMessage(text))
+    }
+
+    /// "1,234 characters · 1,456 with spaces · 321 words · 12 lines" (HWP documents count the same way).
+    static func countMessage(_ text: String) -> String {
         let characters = text.filter { !$0.isWhitespace }.count
         let words = text.split(whereSeparator: { $0.isWhitespace }).count
         let lines = text.split(separator: "\n", omittingEmptySubsequences: true).count
         let format: (Int) -> String = { $0.formatted(.number.locale(Loc.locale)) }
-        return .note(L("msg.count", format(characters), format(text.count), format(words), format(lines)))
+        return L("msg.count", format(characters), format(text.count), format(words), format(lines))
     }
 
     /// Plain text, Markdown or rich text as Markdown (rich text goes through NSAttributedString).
