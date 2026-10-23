@@ -27,6 +27,8 @@
 
   const originals = new Map($$("[data-t]").map((n) => [n, n.innerHTML]));
   const X = (k, ...a) => ((window.SITE_EXTRA[lang] || window.SITE_EXTRA.en)[k] || window.SITE_EXTRA.en[k] || k).replace(/%@/g, () => a.shift());
+  // Chains like "Excel·Numbers·PowerPoint" may break after a dot instead of mid-word on a narrow phone.
+  const dotBreaks = (h) => h.replace(/(<[^>]*>)|·(?=\S)/g, (m, tag) => tag || "·<wbr>");
 
   // English copy lives in index.html, Korean in SITE_I18N; on the Windows page SITE_WIN replaces what differs.
   function applyLang(l) {
@@ -35,7 +37,7 @@
     const dict = window.SITE_I18N[l] || {}, win = os === "win" ? window.SITE_WIN[l] || {} : {};
     for (const [n, en] of originals) {
       const k = n.dataset.t;
-      n.innerHTML = k in win ? win[k] : l === "en" ? en : dict[k] ?? en;
+      n.innerHTML = dotBreaks(k in win ? win[k] : l === "en" ? en : dict[k] ?? en);
     }
     $$("[data-t] [data-i], [data-i]").forEach((n) => { if (!n.firstChild) paint(n); });
     const meta = window.SITE_META[l] || window.SITE_META.en;
@@ -136,20 +138,66 @@
     box.innerHTML = keys.map((k) => '<span class="chip">' + (W[k] || app.strings[k])[i] + "</span>").join("");
   }
 
-  // ---- film: the Mac or the Windows cut, in English or Korean
-  const video = $("#film-video"), player = $("#player");
+  // ---- film: the Mac or the Windows cut, in English or Korean.
+  // While it's on screen it plays muted and looping (not with reduced motion or Data Saver, where the play button stays);
+  // Sound on, or a click on the picture, starts it over with sound and the native controls.
+  const video = $("#film-video"), player = $("#player"), pauseButton = $("#film-pause");
+  const calm = matchMedia("(prefers-reduced-motion: reduce)").matches || !!(navigator.connection && navigator.connection.saveData);
+  let ambient = false, held = false, inView = false;
+  function setPauseButton() {
+    if (!pauseButton) return;
+    const icon = pauseButton.querySelector(".ico");
+    const want = video.paused ? "play" : "pause";
+    if (icon && icon.dataset.i !== want) { icon.dataset.i = want; paint(icon); }
+    pauseButton.setAttribute("aria-label", X(video.paused ? "film.resume" : "film.pause"));
+  }
+  function quietPlay() {
+    const started = video.play();
+    // Autoplay refused (an iPhone in Low Power Mode, a strict browser setting): show the poster and the play button.
+    if (started && started.catch) started.catch((e) => { if (e && e.name === "NotAllowedError") { ambient = false; player.classList.remove("ambient"); } });
+  }
+  function enterAmbient() {
+    ambient = !calm; held = false;
+    video.muted = true; video.loop = true; video.controls = false;
+    player.classList.remove("playing");
+    player.classList.toggle("ambient", ambient);
+    if (ambient && inView) quietPlay();
+    setPauseButton();
+  }
+  function playWithSound() {
+    ambient = false; held = false;
+    player.classList.remove("ambient"); player.classList.add("playing");
+    video.loop = false; video.muted = false; video.controls = true;
+    try { video.currentTime = 0; } catch {}
+    const started = video.play();
+    if (started && started.catch) started.catch(() => {});
+  }
   function setFilm() {
     const name = (os === "win" ? "win-" : "") + (lang === "ko" ? "ko" : "en");
     const want = "assets/media/film-" + name + ".mp4";
     const src = video.querySelector("source");
     if (src.getAttribute("src") !== want) {
       src.setAttribute("src", want); video.poster = "assets/media/poster-" + name + ".webp"; video.load();
-      player.classList.remove("playing"); video.controls = false;
+      enterAmbient();
     }
+    setPauseButton();
   }
-  // Native controls appear once the film starts, so the poster stays clean.
-  $("#play").addEventListener("click", () => { video.controls = true; player.classList.add("playing"); video.play(); });
-  video.addEventListener("play", () => { video.controls = true; player.classList.add("playing"); });
+  new IntersectionObserver(([e]) => {
+    inView = e.isIntersecting;
+    if (!ambient || held) return;
+    if (inView) quietPlay(); else video.pause();
+  }, { threshold: 0.35 }).observe(player);
+  $("#play").addEventListener("click", playWithSound);
+  const soundButton = $("#film-sound");
+  if (soundButton) soundButton.addEventListener("click", playWithSound);
+  video.addEventListener("click", () => { if (ambient) playWithSound(); });
+  if (pauseButton) pauseButton.addEventListener("click", () => {
+    if (video.paused) { held = false; quietPlay(); } else { held = true; video.pause(); }
+  });
+  // Native controls appear once the film plays with sound, so the poster and the muted preview stay clean.
+  video.addEventListener("play", () => { if (!ambient) { video.controls = true; player.classList.add("playing"); } setPauseButton(); });
+  video.addEventListener("pause", setPauseButton);
+  enterAmbient();
 
   // ---- latest release from GitHub: the DMG on the Mac page, the installer on the Windows page (falls back to the releases page)
   let release = null;

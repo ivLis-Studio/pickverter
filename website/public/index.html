@@ -84,10 +84,14 @@
   <div class="wrap reveal">
     <h2 class="sr" id="film-title" data-t="film.title">The Pickverter film</h2>
     <div class="player" id="player">
-      <video id="film-video" preload="none" playsinline poster="assets/media/poster-en.webp">
+      <video id="film-video" preload="none" muted loop playsinline poster="assets/media/poster-en.webp">
         <source src="assets/media/film-en.mp4" type="video/mp4">
       </video>
       <button class="play" id="play" aria-label="Play the film"><span><i class="ico" data-i="play"></i></span></button>
+      <div class="film-ctrl">
+        <button type="button" class="pill" id="film-sound"><i class="ico" data-i="volume-x"></i><span data-t="film.sound">Sound on</span></button>
+        <button type="button" class="round" id="film-pause" aria-label="Pause"><i class="ico" data-i="pause"></i></button>
+      </div>
     </div>
     <div class="player-meta">
       <span data-t="film.meta">35 seconds · turn the sound on</span>

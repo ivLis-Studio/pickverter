@@ -16,7 +16,17 @@ const server = http.createServer((req, res) => {
   if (p.endsWith("/")) p += "index.html";
   const file = path.join(root, p);
   if (!file.startsWith(root) || !fs.existsSync(file) || fs.statSync(file).isDirectory()) { res.writeHead(404); res.end(); return; }
-  res.writeHead(200, { "Content-Type": TYPES[path.extname(file)] || "application/octet-stream" });
+  const type = TYPES[path.extname(file)] || "application/octet-stream", size = fs.statSync(file).size;
+  // Byte ranges, as GitHub Pages serves them, so the film can start and seek.
+  const range = /^bytes=(\d+)-(\d*)$/.exec(req.headers.range || "");
+  if (range) {
+    const start = +range[1], end = range[2] ? Math.min(+range[2], size - 1) : size - 1;
+    if (start >= size) { res.writeHead(416, { "Content-Range": "bytes */" + size }); res.end(); return; }
+    res.writeHead(206, { "Content-Type": type, "Content-Range": "bytes " + start + "-" + end + "/" + size, "Accept-Ranges": "bytes", "Content-Length": end - start + 1 });
+    fs.createReadStream(file, { start, end }).pipe(res);
+    return;
+  }
+  res.writeHead(200, { "Content-Type": type, "Content-Length": size, "Accept-Ranges": "bytes" });
   fs.createReadStream(file).pipe(res);
 });
 await new Promise((r) => server.listen(0, "127.0.0.1", r));
@@ -68,6 +78,28 @@ check("language showcase", (await page.locator("#lang-show").innerText()).includ
 const film = () => page.locator("#film-video source").getAttribute("src");
 check("film: the Mac cut", (await film()) === "assets/media/film-en.mp4", await film());
 
+// The film plays muted on its own once it's on screen; Pause holds it; Sound on starts it over with sound and controls.
+const filmState = () => page.evaluate(() => {
+  const v = document.querySelector("#film-video");
+  return { muted: v.muted, paused: v.paused, controls: v.controls, t: +v.currentTime.toFixed(2), ambient: document.querySelector("#player").classList.contains("ambient") };
+});
+const playing = (after) => page.waitForFunction((t) => { const v = document.querySelector("#film-video"); return !v.paused && v.currentTime > t; }, after, { timeout: 10000 }).catch(() => {});
+await page.locator("#player").scrollIntoViewIfNeeded();
+await playing(0.5);
+let st = await filmState();
+check("film: plays muted on its own", st.ambient && st.muted && !st.paused && st.t > 0.5, JSON.stringify(st));
+await page.locator("#film-pause").click();
+await page.evaluate(() => window.scrollTo(0, 0));
+await page.waitForTimeout(400);
+await page.locator("#player").scrollIntoViewIfNeeded();
+await page.waitForTimeout(700);
+st = await filmState();
+check("film: Pause holds it while scrolling", st.ambient && st.paused, JSON.stringify(st));
+await page.locator("#film-sound").click();
+await playing(0);
+st = await filmState();
+check("film: Sound on starts over with sound", !st.ambient && !st.muted && !st.paused && st.controls && st.t < 4, JSON.stringify(st));
+
 // Links into this repository must point at files that exist.
 const repoLinks = await page.$$eval("a[href]", (as) => as.map((a) => a.href).filter((h) => /github\.com\/ivLis-Studio\/pickverter\/(blob|tree)\/main\//.test(h)));
 for (const href of repoLinks) {
@@ -111,6 +143,25 @@ check("Windows: Korean copy complete", winUntranslated.filter((k) => !allowed.ha
 await page.locator('#os-switch button[data-os="mac"]').click();
 check("switch back to Mac", (await page.locator(".hero .dl-link").innerText()).includes("Mac") && (await page.locator(".wtab").first().innerText()).includes("⇧"));
 check("switch back to Mac: the Mac film", (await film()) === "assets/media/film-ko.mp4", await film());
+
+// Phones: no sideways scrolling on either page, also with the system text size turned up (Android font size, Safari's aA).
+// The release comes from GitHub once and is replayed, so the download card shows real version text.
+const latest = await fetch("https://api.github.com/repos/ivLis-Studio/pickverter/releases/latest").then((r) => (r.ok ? r.text() : null)).catch(() => null);
+for (const width of [320, 390]) {
+  const phone = await browser.newContext({ viewport: { width, height: 760 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+  await phone.route("https://api.github.com/**", (r) => (latest ? r.fulfill({ status: 200, contentType: "application/json", body: latest }) : r.abort()));
+  for (const os of ["win", "mac"]) for (const lang of ["ko", "en"]) for (const size of [100, 130]) {
+    const p = await phone.newPage();
+    p.on("pageerror", (e) => errors.push(e.message));
+    await p.goto(base + "?lang=" + lang + "&os=" + os, { waitUntil: "networkidle" });
+    if (size !== 100) await p.addStyleTag({ content: "html{-webkit-text-size-adjust:" + size + "%!important;text-size-adjust:" + size + "%!important}" });
+    await p.waitForTimeout(150);
+    const m = await p.evaluate(() => ({ W: document.documentElement.clientWidth, S: document.documentElement.scrollWidth }));
+    check("phone " + width + "px, " + os + " " + lang + ", text " + size + "%: no sideways scroll", m.S <= m.W, "page " + m.S + "px wide on a " + m.W + "px screen");
+    await p.close();
+  }
+  await phone.close();
+}
 
 check("no page errors", errors.length === 0, errors.join(" | "));
 await browser.close();

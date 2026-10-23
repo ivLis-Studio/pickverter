@@ -47,10 +47,11 @@ button { font: inherit; color: inherit; }
 .brand img { width: 30px; height: 30px; }
 .nav { display: flex; gap: 22px; margin-left: 18px; }
 .nav a { color: var(--ink-2); font-size: 15px; }
-.bar-end { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-.lang { position: relative; }
+/* On the narrowest screens with big text the language menu gives way (its label clips) before the page would scroll sideways. */
+.bar-end { margin-left: auto; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.lang { position: relative; min-width: 0; }
 .lang select { appearance: none; -webkit-appearance: none; background: var(--surface); border: 1px solid var(--line-2); border-radius: 999px;
-  padding: 6px 30px 6px 32px; font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; }
+  padding: 6px 30px 6px 32px; font: inherit; font-size: 14px; color: var(--ink); cursor: pointer; max-width: 100%; }
 .lang .ico { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--muted); pointer-events: none; }
 .lang::after { content: ""; position: absolute; right: 13px; top: 50%; width: 6px; height: 6px; border-right: 1.6px solid var(--muted); border-bottom: 1.6px solid var(--muted);
   transform: translateY(-70%) rotate(45deg); pointer-events: none; }
@@ -66,10 +67,13 @@ button { font: inherit; color: inherit; }
 .btn.ghost:hover { background: var(--surface-2); }
 .btn.small { height: 36px; padding: 0 15px; font-size: 14px; }
 .btn .ico { font-size: 18px; }
+.btn { max-width: 100%; }
 
 /* ---------- hero */
 .hero { padding: 64px 0 36px; }
-.hero .wrap { display: grid; grid-template-columns: 1.02fr 1fr; gap: 40px; align-items: center; }
+/* Grid tracks are minmax(0, …) throughout: a long word or a bigger system font wraps inside its column instead of
+   widening the column past the screen (plain 1fr can't shrink below its content, which scrolled phones sideways). */
+.hero .wrap { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, 1fr); gap: 40px; align-items: center; }
 .eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--accent-ink); background: var(--accent-soft);
   padding: 5px 12px; border-radius: 999px; }
 .hero h1 { font-size: clamp(44px, 6.4vw, 80px); line-height: 1.02; letter-spacing: -0.035em; margin: 22px 0 18px; font-weight: 750; }
@@ -151,7 +155,8 @@ button { font: inherit; color: inherit; }
   border-radius: 16px; padding: 10px 14px 10px 10px; box-shadow: var(--shadow-lg); font-size: 13.5px; opacity: 0; transform: translateX(16px);
   transition: opacity .25s ease, transform .35s cubic-bezier(.2,.8,.2,1); pointer-events: none; max-width: 70%; }
 .wcard.show { opacity: 1; transform: none; }
-.wcard b { display: block; white-space: nowrap; }
+.wcard > span { min-width: 0; }
+.wcard b { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .wcard small { display: block; color: var(--muted); font-size: 12px; }
 .wthumb { width: 38px; height: 38px; border-radius: 8px; background: url(../media/lisbon.webp) center / cover; flex: none; }
 
@@ -176,18 +181,32 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .player .play svg { fill: #111; }
 .player .play:hover span { transform: scale(1.06); }
 .player.playing .play { display: none; }
+/* Muted, looping preview while the film is on screen: Sound on and Pause sit in the corner instead of the big button. */
+.player.ambient .play { display: none; }
+.player.ambient video { cursor: pointer; }
+.film-ctrl { position: absolute; left: 18px; bottom: 18px; display: none; gap: 8px; align-items: center; }
+.player.ambient .film-ctrl { display: flex; }
+.film-ctrl button { height: 40px; border: 0; border-radius: 999px; background: rgba(0,0,0,0.62); color: #fff; font: inherit; font-size: 14px;
+  font-weight: 600; line-height: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  transition: background .15s ease; }
+.film-ctrl button:hover { background: rgba(0,0,0,0.8); }
+.film-ctrl button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.film-ctrl .pill { padding: 0 16px 0 13px; white-space: nowrap; }
+.film-ctrl .round { width: 40px; }
+.film-ctrl .ico { font-size: 18px; }
+.film-ctrl .round svg { fill: currentColor; stroke-width: 1.5; }
 .player-meta { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 14px; font-size: 14px; color: var(--muted); }
 .player-meta a { display: inline-flex; align-items: center; gap: 6px; }
 
 /* ---------- three steps */
-.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; counter-reset: step; }
+.steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; counter-reset: step; }
 .step { background: var(--bg); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 26px 0; overflow: hidden; display: flex; flex-direction: column; }
 .step .n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--bg); font-size: 14px; font-weight: 700; }
 .step h3 { font-size: 22px; margin: 16px 0 6px; letter-spacing: -0.015em; }
 .step p { margin: 0 0 22px; color: var(--muted); font-size: 16px; }
 .step .art { margin-top: auto; height: 210px; position: relative; border-top: 1px solid var(--line); margin-left: -26px; margin-right: -26px; background: var(--surface);
   display: grid; place-items: center; overflow: hidden; }
-.mini-finder { width: 78%; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+.mini-finder { width: 78%; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;
   box-shadow: var(--shadow); }
 .mini-finder .f { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-2); }
 .mini-finder .f i { width: 54px; height: 40px; border-radius: 4px; background-size: cover; background-position: center; box-shadow: 0 0 0 1px var(--line-2); }
@@ -206,9 +225,10 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .mini-card .pill { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
 
 /* ---------- rings explorer */
-.rings { display: grid; grid-template-columns: 330px 1fr; gap: 40px; align-items: start; }
+.rings { display: grid; grid-template-columns: 330px minmax(0, 1fr); gap: 40px; align-items: start; }
 .ring-tabs { display: flex; flex-direction: column; gap: 8px; position: sticky; top: 90px; }
 .ring-tab { text-align: left; display: flex; gap: 14px; align-items: flex-start; padding: 18px; border-radius: 18px; border: 1px solid transparent; background: transparent; cursor: pointer; }
+.ring-tab > span:last-child { min-width: 0; }
 .ring-tab:hover { background: var(--surface-2); }
 .ring-tab[aria-selected="true"] { background: var(--surface); border-color: var(--line); box-shadow: var(--shadow); }
 .ring-tab .k { flex: none; width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center; font-size: 17px; background: var(--surface-2); border: 1px solid var(--line-2); }
@@ -216,7 +236,7 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .ring-tab b { display: block; font-size: 18px; }
 .ring-tab span { display: block; font-size: 14.5px; color: var(--muted); margin-top: 2px; }
 .ring-panel[hidden] { display: none; }
-.groups { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.groups { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .group { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px 22px; }
 .alt .group { background: var(--bg); }
 .group h3 { display: flex; align-items: center; gap: 10px; font-size: 17px; margin: 0 0 12px; }
@@ -226,12 +246,13 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .group p { margin: 0; color: var(--muted); font-size: 15px; }
 .tool-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .tool-list li { display: flex; gap: 12px; align-items: flex-start; font-size: 15.5px; }
+.tool-list li > span { min-width: 0; }
 .tool-list .ico { color: var(--accent); font-size: 19px; margin-top: 2px; }
 .tool-list b { font-weight: 600; }
 .tool-list span { color: var(--muted); }
 
 /* ---------- before / after */
-.compare { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 40px; align-items: center; }
+.compare { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 40px; align-items: center; }
 /* Transparency checkerboard drawn as two flat squares (no gradients). */
 .ba { position: relative; border-radius: 24px; overflow: hidden; aspect-ratio: 2 / 3; max-height: 640px; margin: 0 auto; width: 100%; max-width: 440px;
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Crect width='14' height='14' fill='%23E9E9EC'/%3E%3Crect x='14' y='14' width='14' height='14' fill='%23E9E9EC'/%3E%3C/svg%3E");
@@ -249,7 +270,7 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .points .ico { color: var(--accent); font-size: 20px; margin-top: 3px; }
 
 /* ---------- destinations */
-.dests { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 8px; }
+.dests { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 8px; }
 .dest { border: 1px solid var(--line); background: var(--surface); border-radius: 18px; padding: 20px; cursor: pointer; text-align: left; transition: border-color .15s, box-shadow .15s; }
 .alt .dest { background: var(--bg); }
 .dest:hover { border-color: var(--line-2); }
@@ -258,7 +279,7 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .dest b { display: block; margin-top: 14px; font-size: 17px; }
 .dest span { display: block; font-size: 14.5px; color: var(--muted); margin-top: 3px; }
 .dest-demo { margin-top: 22px; display: flex; align-items: center; gap: 16px; min-height: 92px; padding: 18px 20px; border-radius: 18px; border: 1px dashed var(--line-2); }
-.dest-demo .card { flex: 1; display: flex; gap: 12px; align-items: center; }
+.dest-demo .card { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: center; overflow-wrap: anywhere; }
 .dest-demo i { width: 50px; height: 50px; border-radius: 9px; background-size: cover; background-position: center; flex: none; background-color: #fff; box-shadow: 0 0 0 1px var(--line); }
 .dest-demo b { display: block; }
 .dest-demo small { color: var(--muted); font-size: 14px; }
@@ -266,7 +287,7 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .dest-demo kbd { font: inherit; font-size: 12.5px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); }
 
 /* ---------- editors gallery */
-.editors { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+.editors { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 18px; }
 .ed { border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: flex; flex-direction: column; }
 .alt .ed { background: var(--bg); }
 .ed .shot { background: var(--surface-2); border-bottom: 1px solid var(--line); padding: 22px 22px 0; display: flex; align-items: flex-end; justify-content: center; overflow: hidden; }
@@ -281,7 +302,7 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .ed.text .ico { font-size: 28px; color: var(--accent); }
 
 /* ---------- details */
-.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
 .feat { padding: 26px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
 .alt .feat { background: var(--bg); }
 .feat .ico { font-size: 24px; color: var(--accent); }
@@ -292,7 +313,7 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .kbd-table tr:last-child td { border-bottom: 0; }
 .kbd-table th { font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; background: var(--surface-2); }
 .kbd-table td:first-child { white-space: nowrap; width: 1%; }
-.kbd-table kbd { font: inherit; font-size: 13.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--line-2); background: var(--bg); box-shadow: 0 1px 0 var(--line-2); margin-right: 3px; }
+.kbd-table kbd { font: inherit; font-size: 13.5px; padding: 2px 8px; border-radius: 7px; border: 1px solid var(--line-2); background: var(--bg); box-shadow: 0 1px 0 var(--line-2); margin-right: 3px; white-space: nowrap; }
 
 /* ---------- languages */
 .langs { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 8px; }
@@ -302,23 +323,25 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .lang-show .chip { font-size: 15px; padding: 7px 14px; background: var(--surface); border: 1px solid var(--line); }
 
 /* ---------- install */
-.install { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+.install { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 40px; align-items: start; }
 .install ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 14px; counter-reset: i; }
 .install li { display: flex; gap: 16px; padding: 20px 22px; border-radius: 18px; background: var(--surface); border: 1px solid var(--line); }
+.install li > div { min-width: 0; overflow-wrap: anywhere; }
 .install li::before { counter-increment: i; content: counter(i); flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--accent); color: #fff;
   display: grid; place-items: center; font-weight: 700; font-size: 14px; }
 .install li b { display: block; font-size: 17px; }
 .install li span { display: block; color: var(--muted); font-size: 15.5px; margin-top: 3px; }
 .install code, .faq code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.88em; background: var(--surface-2); padding: 2px 6px; border-radius: 6px; }
 .dl-card { padding: 30px; border-radius: 26px; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); position: sticky; top: 90px; }
-.dl-card .top { display: flex; gap: 16px; align-items: center; }
+.dl-card .top { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+.dl-card .top > div { min-width: 0; }
 .dl-card img { width: 76px; height: 76px; margin: -6px; }
 .dl-card h3 { margin: 0; font-size: 24px; letter-spacing: -0.015em; }
 .dl-card .ver { color: var(--muted); font-size: 15px; }
 .dl-card .btn { width: 100%; margin-top: 22px; }
-.dl-card dl { display: grid; grid-template-columns: auto 1fr; gap: 8px 18px; margin: 22px 0 0; font-size: 14.5px; }
+.dl-card dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 18px; margin: 22px 0 0; font-size: 14.5px; }
 .dl-card dt { color: var(--muted); }
-.dl-card dd { margin: 0; }
+.dl-card dd { margin: 0; overflow-wrap: anywhere; }
 
 /* ---------- faq */
 .faq { max-width: 820px; margin: 0 auto; display: grid; gap: 10px; }
@@ -362,7 +385,8 @@ html[data-os="win"] { --accent: #005FB8; --accent-ink: #005FB8; --accent-soft: r
 .os button[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
 .hero h1 .key.word { font-size: 0.6em; height: 1.43em; min-width: 1.43em; padding: 0 0.32em; border-radius: 0.27em; font-weight: 600; letter-spacing: -0.01em; vertical-align: 0.1em; }
 .kcap.word b { right: auto; left: 12px; top: 10px; font-size: 20px; font-weight: 500; }
-html[data-os="win"] .ring-tab .k { width: auto; min-width: 34px; padding: 0 9px; font-size: 13px; font-weight: 600; }
+/* Shift, Ctrl and Alt share one width, so the ring names line up. */
+html[data-os="win"] .ring-tab .k { width: 3.9em; padding: 0; font-size: 13px; font-weight: 600; }
 .dl-alt { margin: 12px 0 0; font-size: 14px; text-align: center; color: var(--muted); }
 .fine .os-other { font-weight: 600; }
 @media (max-width: 520px) {
@@ -375,34 +399,62 @@ html[data-os="win"] .ring-tab .k { width: auto; min-width: 34px; padding: 0 9px;
 /* ---------- responsive */
 @media (max-width: 1000px) {
   .nav { display: none; }
-  .hero .wrap { grid-template-columns: 1fr; }
+  /* A word that can't fit (bigger system fonts, long file names) breaks instead of widening the page.
+     break-word, not anywhere: it leaves intrinsic widths alone, so key caps and buttons never shrink to one letter. */
+  body { overflow-wrap: break-word; }
+  .hero .wrap { grid-template-columns: minmax(0, 1fr); }
   .stagebox { margin: 10px auto 0; max-width: 480px; }
-  .steps { grid-template-columns: 1fr; }
-  .rings { grid-template-columns: 1fr; }
-  .ring-tabs { position: static; flex-direction: row; overflow-x: auto; }
-  .ring-tab { min-width: 220px; }
-  .compare, .install { grid-template-columns: 1fr; }
-  .dests { grid-template-columns: repeat(2, 1fr); }
-  .editors { grid-template-columns: 1fr; }
+  .steps { grid-template-columns: minmax(0, 1fr); }
+  .rings { grid-template-columns: minmax(0, 1fr); }
+  /* Three equal tabs side by side that wrap their text (no sideways scrolling inside the row). */
+  .ring-tabs { position: static; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .ring-tab { min-width: 0; }
+  .compare, .install { grid-template-columns: minmax(0, 1fr); }
+  .dests { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .editors { grid-template-columns: minmax(0, 1fr); }
   .ed.w7, .ed.w5, .ed.w6, .ed.w4 { grid-column: auto; }
-  .grid-3 { grid-template-columns: 1fr; }
+  .grid-3 { grid-template-columns: minmax(0, 1fr); }
   .dl-card { position: static; }
 }
 @media (max-width: 640px) {
   section { padding: 68px 0; }
+  /* Long labels ("Download for Windows", bigger system fonts) wrap onto a second line instead of running off the screen. */
+  .btn:not(.small) { white-space: normal; height: auto; min-height: 48px; padding-top: 11px; padding-bottom: 11px; line-height: 1.25; text-align: center; }
+  .dl-card { padding: 22px; }
   .player .play span { width: 64px; height: 64px; }
   .player .play span .ico { font-size: 24px; margin-left: 3px; }
-  .ring-tabs { flex-direction: column; overflow: visible; }
-  .ring-tab { min-width: 0; padding: 14px; }
+  .film-ctrl { left: 12px; bottom: 12px; gap: 6px; }
+  .film-ctrl button { height: 34px; font-size: 13px; gap: 6px; }
+  .film-ctrl .pill { padding: 0 13px 0 11px; }
+  .film-ctrl .round { width: 34px; }
+  .film-ctrl .ico { font-size: 16px; }
+  .ring-tabs { grid-template-columns: minmax(0, 1fr); }
+  .ring-tab { padding: 14px; }
   .wheel-hint { position: static; margin-top: 4px; }
   .wrap { width: calc(100% - 32px); }
   .hero { padding-top: 36px; }
   .lede { font-size: 18px; }
-  .groups { grid-template-columns: 1fr; }
+  .groups { grid-template-columns: minmax(0, 1fr); }
   .bar-end .btn.small { display: none; }
   .kbd-table th:nth-child(2), .kbd-table td { display: block; width: auto; border: 0; padding: 6px 16px; }
+  /* Stacked rows: the gesture cell gets the full width (not the desktop 1% column) and wraps between key caps. */
+  .kbd-table td:first-child { white-space: normal; width: auto; }
   .kbd-table tr { display: block; border-bottom: 1px solid var(--line); padding: 8px 0; }
   .kbd-table thead { display: none; }
+}
+@media (max-width: 380px) {
+  /* Small phones, or bigger system text: the brand icon, the platform switch and the language menu still share one row. */
+  .bar .wrap { gap: 10px; }
+  .bar-end { gap: 6px; }
+  .os button { padding: 5px 8px; }
+  .lang select { padding: 6px 24px 6px 12px; }
+  .lang .ico { display: none; }
+  .lang::after { right: 10px; }
+}
+@media (max-width: 340px) {
+  /* The narrowest phones, or a zoomed-in page: the download card's specs stack, label over value. */
+  .dl-card dl { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+  .dl-card dd + dt { margin-top: 10px; }
 }
 
 
