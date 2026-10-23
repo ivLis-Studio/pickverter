@@ -505,6 +505,18 @@
       "Tab",
       "Tab"
     ],
+    "kind.office": [
+      "Office files",
+      "오피스 파일",
+      "Office ファイル",
+      "Office 文件",
+      "Office 檔案",
+      "Archivos de Office",
+      "Fichiers Office",
+      "Office-Dateien",
+      "Файлы Office",
+      "Arquivos do Office"
+    ],
     "menu.more": [
       "More",
       "더 보기",
@@ -1044,18 +1056,6 @@
       "Die Taste, die du im Explorer tippst",
       "Клавиша, которую нажимаете в Проводнике",
       "A tecla que você toca no Explorador"
-    ],
-    "set.wheel.custom": [
-      "Customized",
-      "사용자 설정",
-      "カスタマイズ",
-      "已自定义",
-      "已自訂",
-      "Personalizado",
-      "Personnalisé",
-      "Angepasst",
-      "Настроено",
-      "Personalizado"
     ],
     "term.cmd": [
       "Command Prompt",

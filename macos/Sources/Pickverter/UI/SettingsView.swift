@@ -9,6 +9,19 @@ enum SettingsTab: String, Hashable {
 final class SettingsRouter: ObservableObject {
     static let shared = SettingsRouter()
     @Published var tab: SettingsTab = .general
+
+    /// Which ring and file type Settings › Wheel shows ("Edit Wheel Layout…" in the wheel sets it).
+    struct LayoutRequest: Equatable {
+        let mode: WheelMode
+        let kind: FileKind?
+        let id = UUID()
+    }
+
+    @Published private(set) var layoutRequest: LayoutRequest?
+
+    func showLayout(mode: WheelMode, kind: FileKind?) {
+        layoutRequest = LayoutRequest(mode: mode, kind: kind)
+    }
 }
 
 struct SettingsView: View {
@@ -24,7 +37,7 @@ struct SettingsView: View {
             UpdateSettings().tabItem { Label(L("tab.updates"), systemImage: "arrow.down.circle") }.tag(SettingsTab.updates)
             AboutSettings().tabItem { Label(L("tab.about"), systemImage: "info.circle") }.tag(SettingsTab.about)
         }
-        .frame(width: 600, height: 540)
+        .frame(width: 640, height: 560)
         .id(prefs.language)
     }
 }
@@ -360,52 +373,48 @@ enum EngineInstaller {
 
 struct WheelSettings: View {
     @ObservedObject var layout = WheelLayout.shared
+    @StateObject private var editor = WheelLayoutEditor()
 
     var body: some View {
-        Form {
-            Section {
+        VStack(alignment: .leading, spacing: 12) {
+            WheelLayoutSection(editor: editor)
+            Divider()
+            VStack(alignment: .leading, spacing: 3) {
                 Toggle(L("set.wheel.remember"), isOn: $layout.remembersLast)
-            } footer: {
-                Text(L("set.wheel.remember.d")).font(.caption).foregroundStyle(.secondary)
+                Text(L("set.wheel.remember.d"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 20)
             }
-            Section(L("set.wheel.hidden")) {
-                if layout.hidden.isEmpty {
-                    Text(L("set.wheel.none")).foregroundStyle(.secondary)
-                }
-                ForEach(layout.hidden.keys.sorted(), id: \.self) { id in
-                    HStack {
-                        Text(layout.title(for: id, fallback: layout.hidden[id]))
-                        Spacer()
-                        Button(L("set.wheel.show")) { layout.unhide(id) }
+            // Slots hidden in every ring by earlier versions (removing now works one ring at a time).
+            if !layout.hidden.isEmpty {
+                HStack {
+                    Text(L("set.wheel.hidden"))
+                    Text(layout.hidden.keys.sorted().map { layout.title(for: $0, fallback: layout.hidden[$0]) }.joined(separator: ", "))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Spacer()
+                    Menu(L("set.wheel.show")) {
+                        ForEach(layout.hidden.keys.sorted(), id: \.self) { id in
+                            Button(layout.title(for: id, fallback: layout.hidden[id])) { layout.unhide(id) }
+                        }
                     }
+                    .fixedSize()
                 }
             }
-            Section(L("set.wheel.pinned")) {
-                if layout.pinnedList.isEmpty {
-                    Text(L("set.wheel.none")).foregroundStyle(.secondary)
-                }
-                ForEach(layout.pinnedList, id: \.id) { entry in
-                    HStack {
-                        Text(entry.title)
-                        Spacer()
-                        Button(L("ctx.unpin")) { layout.unpin(entry.id) }
-                    }
-                }
-            }
-            Section {
-                LabeledContent(L("set.wheel.custom_order")) {
-                    Text(LP("set.wheel.rings", layout.orders.count)).foregroundStyle(.secondary)
-                }
-                LabeledContent(L("set.wheel.defaults")) {
-                    Text(LP("set.wheel.slots", layout.defaults.count)).foregroundStyle(.secondary)
-                }
+            HStack(alignment: .firstTextBaseline, spacing: 16) {
+                Text(L("set.wheel.footer"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
                 Button(L("set.wheel.reset_all"), role: .destructive) { layout.resetAll() }
                     .disabled(!layout.isCustomized && layout.lastUsed.isEmpty)
-            } footer: {
-                Text(L("set.wheel.footer")).font(.caption).foregroundStyle(.secondary)
             }
         }
-        .formStyle(.grouped)
+        .padding(20)
     }
 }
 

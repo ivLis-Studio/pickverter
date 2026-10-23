@@ -290,6 +290,7 @@ enum CLI {
         expect("esc hides", wheel.isVisible ? "visible" : "hidden", "hidden")
         failures += pointerTests(files)
         failures += layoutTests(files)
+        failures += editorTests()
         return failures == 0 ? 0 : 1
     }
 

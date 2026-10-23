@@ -136,14 +136,21 @@ public sealed class WheelModel
         Announce(L("a11y.wheel_open", Mode.Title(), LP("a11y.slots", Segments.Count), FilesTitle));
     }
 
-    /// Catalog options with the user's wheel customization applied (demo wheels stay stock).
+    /// Catalog options with the user's wheel customization applied (demo wheels stay stock). Each ring can take slots
+    /// from the other two, so all three are read before any is arranged.
     private void LoadOptions()
     {
+        var native = new Dictionary<WheelMode, List<PickOption>>();
+        foreach (var mode in WheelModes.All) native[mode] = Catalog.Options(Files, mode);
         var counts = new Dictionary<WheelMode, int>();
         foreach (var mode in WheelModes.All)
         {
-            var options = Catalog.Options(Files, mode);
-            if (!IsDemo) options = WheelLayout.Shared.Arrange(options, WheelLayout.Key(mode, Files));
+            var options = native[mode];
+            if (!IsDemo)
+            {
+                var pool = WheelModes.All.Where(other => other != mode).SelectMany(other => native[other]).ToList();
+                options = WheelLayout.Shared.Arrange(options, WheelLayout.Key(mode, Files), pool);
+            }
             optionsByMode[mode] = options;
             counts[mode] = options.Count;
         }
@@ -619,8 +626,9 @@ public sealed class WheelModel
 
     // Customizing (right-click)
 
-    /// Hide, reorder, pin and pick defaults right where the slot is. Returns null when there is no slot there.
-    public (IReadOnlyList<MenuEntry> Entries, string? Keep)? ContextMenu(double dx, double dy, Action openSettings)
+    /// Remove, reorder, pin and pick defaults right where the slot is (this ring, this file type). Returns null when
+    /// there is no slot there. openSettings gets the ring and the selection's file type (null when it mixes types).
+    public (IReadOnlyList<MenuEntry> Entries, string? Keep)? ContextMenu(double dx, double dy, Action<WheelMode, FileKind?> openSettings)
     {
         if (!IsVisible || Choice != null) return null;
         var distance = Math.Sqrt(dx * dx + dy * dy);
@@ -639,14 +647,21 @@ public sealed class WheelModel
         string? keep = parent.Id;
         if (variant != null)
         {
-            var pinned = layout.IsPinned(variant.Id, key);
+            // An option of a slot brought in from another ring can't hang under it: it comes over as a slot of its own.
+            var borrowed = layout.IsAdded(parent.Id, key);
+            var pinned = borrowed ? layout.IsAdded(variant.Id, key) : layout.IsPinned(variant.Id, key);
             entries.Add(new MenuEntry
             {
                 Title = pinned ? L("ctx.unpin") : L("ctx.pin"),
                 Symbol = pinned ? "pin.slash" : "pin",
                 Run = () =>
                 {
-                    if (pinned) layout.Unpin(variant.Id, key);
+                    if (borrowed)
+                    {
+                        if (pinned) layout.Remove(variant.Id, key);
+                        else layout.AddFromRing(variant.Id, key);
+                    }
+                    else if (pinned) layout.Unpin(variant.Id, key);
                     else layout.Pin(variant.Id, Display(variant, parent).Title, key);
                 },
             });
@@ -668,7 +683,8 @@ public sealed class WheelModel
             }
             else
             {
-                entries.Add(new MenuEntry { Title = L("ctx.hide"), Symbol = "eye.slash", Run = () => layout.Hide(parent.Id, parent.Title) });
+                // Out of this ring for this file type only; Settings › Wheel › Add Slot brings it back.
+                entries.Add(new MenuEntry { Title = L("ctx.hide"), Symbol = "minus.circle", Run = () => layout.Remove(parent.Id, key) });
                 keep = null;
             }
             var position = Math.Max(0, visible.IndexOf(parent.Id));
@@ -705,6 +721,9 @@ public sealed class WheelModel
         }
         entries.Add(MenuEntry.Separator);
         if (layout.IsCustomizedKey(key)) entries.Add(new MenuEntry { Title = L("ctx.reset_ring"), Symbol = "arrow.uturn.backward", Run = () => layout.Reset(key) });
+        var kinds = Files.Select(FileKinds.Of).Distinct().ToList();
+        FileKind? kind = kinds.Count == 1 ? kinds[0] : null;
+        var ring = Mode;
         entries.Add(new MenuEntry
         {
             Title = L("ctx.settings"),
@@ -712,7 +731,7 @@ public sealed class WheelModel
             Run = () =>
             {
                 Dismiss();
-                openSettings();
+                openSettings(ring, kind);
             },
         });
         return (entries, keep);
@@ -975,4 +994,63 @@ public sealed class WheelModel
     }
 
     public void ForceVisibleForTesting() => IsVisible = true;
+
+    // Settings preview
+
+    /// Settings › Wheel: shows rings that are already arranged (every slot of one file type) without opening anything.
+    /// The page stays when the ring does.
+    public void ShowLayout(IReadOnlyList<string> files, WheelMode mode, IReadOnlyDictionary<WheelMode, List<PickOption>> rings)
+    {
+        var sameRing = mode == Mode && files.SequenceEqual(Files);
+        Files = files;
+        Origin = WheelOrigin.Selection;
+        Choice = null;
+        var counts = new Dictionary<WheelMode, int>();
+        foreach (var ring in WheelModes.All)
+        {
+            optionsByMode[ring] = rings.TryGetValue(ring, out var list) ? [.. list] : [];
+            counts[ring] = optionsByMode[ring].Count;
+        }
+        Counts = counts;
+        Mode = mode;
+        if (!sameRing) Page = 0;
+        RebuildItems();
+        Highlighted = null;
+        SubHighlighted = null;
+        SubRing = null;
+        TabsHidden = false;
+        HoveredTab = null;
+        PointerAngle = null;
+        Flash = null;
+        Notify(WheelChange.All);
+    }
+
+    /// Highlights one slot of the whole ring, turning to its page, without opening its outer ring (null: none).
+    public void PreviewHighlight(int? index)
+    {
+        SubRing = null;
+        SubHighlighted = null;
+        TabsHidden = false;
+        var count = OptionsFor(Mode).Count;
+        if (index is not { } slot || slot < 0 || slot >= count || Choice != null)
+        {
+            Highlighted = null;
+            PointerAngle = null;
+            Notify(WheelChange.All);
+            return;
+        }
+        if (count > MaxPerPage)
+        {
+            var perPage = MaxPerPage - 1;
+            if (Page != slot / perPage)
+            {
+                Page = slot / perPage;
+                RebuildItems();
+            }
+            slot %= perPage;
+        }
+        Highlighted = slot;
+        PointerAngle = slot * Geometry.MainSpan(Items.Count);
+        Notify(WheelChange.All);
+    }
 }

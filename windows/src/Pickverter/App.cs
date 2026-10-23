@@ -175,13 +175,27 @@ internal static class WindowManager
 
     public static void ShowSettings(SettingsPage page = SettingsPage.General)
     {
+        var window = Settings();
+        window.Select(page);
+        Bring(window);
+    }
+
+    /// Settings › Wheel on a ring and, when the files were all of one type, that file type ("Edit Wheel Layout…").
+    public static void ShowWheelLayout(WheelMode ring, FileKind? kind)
+    {
+        var window = Settings();
+        window.ShowLayout(ring, kind);
+        Bring(window);
+    }
+
+    private static SettingsWindow Settings()
+    {
         if (settings == null)
         {
             settings = new SettingsWindow();
             settings.Closed += (_, _) => settings = null;
         }
-        settings.Select(page);
-        Bring(settings);
+        return settings;
     }
 
     public static void ShowOnboarding()

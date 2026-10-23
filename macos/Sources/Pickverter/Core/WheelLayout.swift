@@ -1,17 +1,25 @@
 import AppKit
 
 /// The user's own wheel: hidden slots, custom order, variants pinned to the main ring and which
-/// option a slot runs by default. Order and pins are kept per ring and file type ("tools|image").
+/// option a slot runs by default. Order, pins, removed slots and slots brought in from the other rings are kept per
+/// ring and file type (key "1|image": WheelMode raw value and FileKind).
 @MainActor
 final class WheelLayout: ObservableObject {
-    static let shared = WheelLayout()
+    private(set) static var shared = WheelLayout()
     private let store: UserDefaults
 
-    /// id -> title at the time it was hidden (used when the id has no localized name).
+    /// Snapshots: a layout kept in its own defaults suite, so the user's wheel stays as it is.
+    static func useScratch(_ store: UserDefaults) { shared = WheelLayout(store: store) }
+
+    /// id -> title at the time it was hidden, in every ring (from earlier versions; slots now leave one ring at a time).
     @Published private(set) var hidden: [String: String]
     @Published private(set) var orders: [String: [String]]
     @Published private(set) var pinned: [String: [String]]
     @Published private(set) var pinnedTitles: [String: String]
+    /// key -> slots taken out of that ring for that file type.
+    @Published private(set) var removed: [String: [String]]
+    /// key -> slots (or options of slots) brought in from the other two rings, in the order they were added.
+    @Published private(set) var added: [String: [String]]
     /// slot id -> variant id chosen with "Use as default".
     @Published private(set) var defaults: [String: String]
     @Published private(set) var lastUsed: [String: String]
@@ -24,6 +32,8 @@ final class WheelLayout: ObservableObject {
         orders = store.dictionary(forKey: "wheel.orders") as? [String: [String]] ?? [:]
         pinned = store.dictionary(forKey: "wheel.pinned") as? [String: [String]] ?? [:]
         pinnedTitles = store.dictionary(forKey: "wheel.pinnedTitles") as? [String: String] ?? [:]
+        removed = store.dictionary(forKey: "wheel.removed") as? [String: [String]] ?? [:]
+        added = store.dictionary(forKey: "wheel.added") as? [String: [String]] ?? [:]
         defaults = store.dictionary(forKey: "wheel.defaults") as? [String: String] ?? [:]
         lastUsed = store.dictionary(forKey: "wheel.lastUsed") as? [String: String] ?? [:]
         remembersLast = store.bool(forKey: "wheel.remember")
@@ -34,6 +44,8 @@ final class WheelLayout: ObservableObject {
         store.set(orders, forKey: "wheel.orders")
         store.set(pinned, forKey: "wheel.pinned")
         store.set(pinnedTitles, forKey: "wheel.pinnedTitles")
+        store.set(removed, forKey: "wheel.removed")
+        store.set(added, forKey: "wheel.added")
         store.set(defaults, forKey: "wheel.defaults")
         store.set(lastUsed, forKey: "wheel.lastUsed")
     }
@@ -43,9 +55,13 @@ final class WheelLayout: ObservableObject {
         return "\(mode.rawValue)|\(kinds)"
     }
 
-    var isCustomized: Bool { !hidden.isEmpty || !orders.isEmpty || !pinned.isEmpty || !defaults.isEmpty }
+    static func key(mode: WheelMode, kind: FileKind) -> String { "\(mode.rawValue)|\(kind.rawValue)" }
 
-    func isCustomized(_ key: String) -> Bool { orders[key] != nil || pinned[key] != nil }
+    var isCustomized: Bool {
+        !hidden.isEmpty || !orders.isEmpty || !pinned.isEmpty || !defaults.isEmpty || !removed.isEmpty || !added.isEmpty
+    }
+
+    func isCustomized(_ key: String) -> Bool { orders[key] != nil || pinned[key] != nil || removed[key] != nil || added[key] != nil }
 
     /// Localized name for an id when one exists, so lists in Settings follow the UI language.
     func title(for id: String, fallback: String?) -> String {
@@ -56,7 +72,9 @@ final class WheelLayout: ObservableObject {
 
     // MARK: Applying
 
-    func arrange(_ options: [PickOption], key: String) -> [PickOption] {
+    /// The ring as the wheel shows it. pool: the other two rings' options for the same files, where slots brought in
+    /// from them come from.
+    func arrange(_ options: [PickOption], key: String, pool: [PickOption] = []) -> [PickOption] {
         let pins = pinned[key] ?? []
         var list: [PickOption] = []
         for option in options {
@@ -67,7 +85,11 @@ final class WheelLayout: ObservableObject {
                 list.append(promoted)
             }
         }
-        list = list.filter { hidden[$0.id] == nil }
+        for id in added[key] ?? [] where !list.contains(where: { $0.id == id }) {
+            if let option = Self.find(id, in: pool) { list.append(option) }
+        }
+        let out = Set(removed[key] ?? [])
+        list = list.filter { hidden[$0.id] == nil && !out.contains($0.id) }
         guard let order = orders[key], !order.isEmpty else { return list }
         var rank: [String: Int] = [:]
         for (index, id) in order.enumerated() where rank[id] == nil { rank[id] = index }
@@ -80,6 +102,15 @@ final class WheelLayout: ObservableObject {
             result.insert(option, at: position)
         }
         return result
+    }
+
+    /// A slot as it is, or one of a slot's options shown as a slot of its own ("Rotate · Left").
+    static func find(_ id: String, in options: [PickOption]) -> PickOption? {
+        if let option = options.first(where: { $0.id == id }) { return option }
+        for parent in options {
+            if let variant = parent.variants.first(where: { $0.id == id }) { return WheelController.display(variant, parent: parent) }
+        }
+        return nil
     }
 
     /// Index of the variant a click on the slot runs.
@@ -105,6 +136,52 @@ final class WheelLayout: ObservableObject {
 
     func unhide(_ id: String) {
         hidden[id] = nil
+        save()
+    }
+
+    func isAdded(_ id: String, key: String) -> Bool { added[key]?.contains(id) == true }
+
+    /// Takes a slot out of one ring for one file type: a slot brought in from another ring goes back, a pinned option
+    /// is unpinned, and any other slot is set aside ("Add Slot" in Settings brings it back).
+    func remove(_ id: String, key: String) {
+        if var list = added[key], let index = list.firstIndex(of: id) {
+            list.remove(at: index)
+            added[key] = list.isEmpty ? nil : list
+            save()
+        } else if isPinned(id, key: key) {
+            unpin(id, key: key)
+        } else {
+            var list = removed[key] ?? []
+            guard !list.contains(id) else { return }
+            list.append(id)
+            removed[key] = list
+            save()
+        }
+    }
+
+    /// Puts a removed slot back.
+    func restore(_ id: String, key: String) {
+        guard var list = removed[key], let index = list.firstIndex(of: id) else { return }
+        list.remove(at: index)
+        removed[key] = list.isEmpty ? nil : list
+        save()
+    }
+
+    /// Brings a slot, or one of its options, from another ring into this one (the other ring keeps it too).
+    func addFromRing(_ id: String, key: String) {
+        if var list = removed[key], let index = list.firstIndex(of: id) {
+            list.remove(at: index)
+            removed[key] = list.isEmpty ? nil : list
+        }
+        var list = added[key] ?? []
+        if !list.contains(id) { list.append(id) }
+        added[key] = list
+        save()
+    }
+
+    /// The whole ring in a new order (ids as the wheel shows them).
+    func setOrder(_ ids: [String], key: String) {
+        orders[key] = ids
         save()
     }
 
@@ -148,6 +225,23 @@ final class WheelLayout: ObservableObject {
         orders[key] = nil
         for variant in pinned[key] ?? [] { unpin(variant, key: key) }
         pinned[key] = nil
+        removed[key] = nil
+        added[key] = nil
+        save()
+    }
+
+    /// Gives the same ring of every other file type in kinds this ring's order, pins, removed and added slots. Ids a
+    /// file type doesn't have are simply skipped when its wheel opens.
+    func applyToAllKinds(from key: String, kinds: [FileKind]) {
+        guard let ring = key.split(separator: "|").first.map(String.init) else { return }
+        for kind in kinds {
+            let other = "\(ring)|\(kind.rawValue)"
+            guard other != key else { continue }
+            orders[other] = orders[key]
+            pinned[other] = pinned[key]
+            removed[other] = removed[key]
+            added[other] = added[key]
+        }
         save()
     }
 
@@ -156,14 +250,11 @@ final class WheelLayout: ObservableObject {
         orders = [:]
         pinned = [:]
         pinnedTitles = [:]
+        removed = [:]
+        added = [:]
         defaults = [:]
         lastUsed = [:]
         save()
-    }
-
-    /// Every pinned variant with the rings it appears on, for Settings.
-    var pinnedList: [(id: String, title: String)] {
-        Set(pinned.values.flatMap { $0 }).sorted().map { ($0, pinnedTitles[$0] ?? $0) }
     }
 }
 

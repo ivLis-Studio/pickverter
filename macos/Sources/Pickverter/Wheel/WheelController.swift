@@ -171,12 +171,17 @@ final class WheelController: ObservableObject {
     private var typeResetTask: Task<Void, Never>?
     private var scrollAccumulator: Double = 0
     private let isDemo: Bool
+    /// A demo wheel that still shows the user's layout (the preview in Settings › Wheel).
+    private let showsLayout: Bool
+    /// Where a demo wheel's options come from instead of the catalog (Settings shows every format of a file type).
+    var optionSource: ((WheelMode) -> [PickOption])?
     /// Tests: capture what would run instead of starting a job, and pretend a destination preference.
     var onLaunch: ((PickOption, ResultDestination) -> Void)?
     var destinationOverride: ResultDestination?
 
-    init(demo: Bool = false) {
+    init(demo: Bool = false, showsLayout: Bool = false) {
         isDemo = demo
+        self.showsLayout = showsLayout
     }
 
     // MARK: Presenting
@@ -228,12 +233,18 @@ final class WheelController: ObservableObject {
         Speech.announce(L("a11y.wheel_open", mode.title, LP("a11y.slots", segments.count), filesTitle))
     }
 
-    /// Catalog options with the user's wheel customization applied (demo wheels stay stock).
+    /// Catalog options with the user's wheel customization applied (demo wheels stay stock). Each ring can take slots
+    /// from the other two, so all three are read before any is arranged.
     private func loadOptions() {
+        var native: [WheelMode: [PickOption]] = [:]
+        for mode in WheelMode.allCases { native[mode] = optionSource?(mode) ?? Catalog.options(for: files, mode: mode) }
         var newCounts: [WheelMode: Int] = [:]
         for mode in WheelMode.allCases {
-            var options = Catalog.options(for: files, mode: mode)
-            if !isDemo { options = WheelLayout.shared.arrange(options, key: WheelLayout.key(mode: mode, files: files)) }
+            var options = native[mode] ?? []
+            if !isDemo || showsLayout {
+                let pool = WheelMode.allCases.filter { $0 != mode }.flatMap { native[$0] ?? [] }
+                options = WheelLayout.shared.arrange(options, key: WheelLayout.key(mode: mode, files: files), pool: pool)
+            }
             optionsByMode[mode] = options
             newCounts[mode] = options.count
         }
@@ -365,7 +376,7 @@ final class WheelController: ObservableObject {
         guard let parent = highlightedItem?.option else { return nil }
         if let sub = subHighlighted, parent.variants.indices.contains(sub) { return (parent.variants[sub], parent, false) }
         if parent.variants.count > 1 {
-            let preferred = isDemo ? 0 : WheelLayout.shared.preferredVariant(of: parent)
+            let preferred = isDemo && !showsLayout ? 0 : WheelLayout.shared.preferredVariant(of: parent)
             return (parent.variants[preferred], parent, true)
         }
         return (parent, nil, false)
@@ -440,7 +451,7 @@ final class WheelController: ObservableObject {
         if subRing?.parentIndex == index { return }
         guard let parent = items[index].option else { return }
         let variants = parent.variants
-        let preferred = isDemo ? 0 : WheelLayout.shared.preferredVariant(of: parent)
+        let preferred = isDemo && !showsLayout ? 0 : WheelLayout.shared.preferredVariant(of: parent)
         let ring = SubRingData(parentIndex: index, centerAngle: Double(index) * geometry.mainSpan(items.count),
                                span: geometry.subSpan(variants.count),
                                items: variants.enumerated().map { position, variant in
@@ -733,7 +744,8 @@ final class WheelController: ObservableObject {
                 add(L("ctx.unpin"), symbol: "pin.slash") { layout.unpin(parent.id, key: key) }
                 keep = source
             } else {
-                add(L("ctx.hide"), symbol: "eye.slash") { layout.hide(parent.id, title: parent.title) }
+                // Out of this ring for this file type only; Settings › Wheel › Add Slot brings it back.
+                add(L("ctx.hide"), symbol: "minus.circle") { layout.remove(parent.id, key: key) }
                 keep = nil
             }
             let position = visible.firstIndex(of: parent.id) ?? 0
@@ -764,8 +776,11 @@ final class WheelController: ObservableObject {
         if layout.isCustomized(key) {
             add(L("ctx.reset_ring"), symbol: "arrow.uturn.backward") { layout.reset(key: key) }
         }
-        add(L("ctx.settings"), symbol: "gearshape") { [weak self] in
+        let kinds = Set(files.map { FileKind.of($0) })
+        let ring = mode
+        add(L("ctx.settings"), symbol: "slider.horizontal.3") { [weak self] in
             self?.dismiss()
+            SettingsRouter.shared.showLayout(mode: ring, kind: kinds.count == 1 ? kinds.first : nil)
             WindowManager.shared.showSettings(tab: .wheel)
         }
         menuOpen = true
@@ -967,5 +982,49 @@ final class WheelController: ObservableObject {
 
     func forceVisibleForTesting() {
         isVisible = true
+    }
+
+    // MARK: Settings preview
+
+    /// Settings › Wheel: shows newMode for newFiles with the user's layout, without animating. The page stays when
+    /// the ring does.
+    func preview(files newFiles: [URL], mode newMode: WheelMode) {
+        let sameRing = newMode == mode && newFiles == files
+        if newFiles != files {
+            files = newFiles
+            loadThumbnail()
+        }
+        origin = .selection
+        choice = nil
+        loadOptions()
+        mode = newMode
+        if !sameRing { page = 0 }
+        rebuildItems()
+        setExpanded(nil)
+        highlighted = nil
+        subHighlighted = nil
+        pointer.angle = nil
+        tabsHidden = false
+        appeared = true
+    }
+
+    /// Highlights slot index of the whole ring (turning to its page), or nothing.
+    func previewHighlight(_ index: Int?) {
+        guard let index, let options = optionsByMode[mode], options.indices.contains(index) else {
+            highlighted = nil
+            pointer.angle = nil
+            return
+        }
+        if options.count > Self.maxPerPage {
+            let perPage = Self.maxPerPage - 1
+            if page != index / perPage {
+                page = index / perPage
+                rebuildItems()
+            }
+            highlighted = index % perPage
+        } else {
+            highlighted = index
+        }
+        if let slot = highlighted { pointer.angle = Double(slot) * geometry.mainSpan(items.count) }
     }
 }

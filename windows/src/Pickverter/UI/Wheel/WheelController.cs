@@ -209,13 +209,13 @@ internal sealed class WheelController
         Model.DragSessionEnded();
     }
 
-    // Right-click menu: hide, move, pin and pick defaults right where the slot is
+    // Right-click menu: remove, move, pin and pick defaults right where the slot is
 
     public void ShowContextMenu(Native.POINT point)
     {
         if (!Model.IsVisible || window == null) return;
         var offset = Offset(point);
-        var result = Model.ContextMenu(offset.X, offset.Y, () => WindowManager.ShowSettings(SettingsPage.Wheel));
+        var result = Model.ContextMenu(offset.X, offset.Y, WindowManager.ShowWheelLayout);
         if (result is not { } menu)
         {
             Model.Dismiss();

@@ -4,6 +4,7 @@ using System.Windows.Automation;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Threading;
 using Pickverter.Input;
 using Pickverter.Services;
 
@@ -17,6 +18,8 @@ internal sealed class SettingsWindow : AppWindow
     private readonly SpacedStack navigation = new() { Spacing = 2, Margin = new Thickness(12, 8, 8, 12) };
     private readonly ScrollViewer scroller = new() { VerticalScrollBarVisibility = ScrollBarVisibility.Auto, HorizontalScrollBarVisibility = ScrollBarVisibility.Disabled };
     private readonly SpacedStack body = new() { Spacing = 4, Margin = new Thickness(28, 4, 28, 28), MaxWidth = 860 };
+    private readonly FocusRegistry focus = new();
+    private readonly WheelLayoutEditor layoutEditor;
 
     public SettingsWindow()
     {
@@ -24,6 +27,7 @@ internal sealed class SettingsWindow : AppWindow
         Height = 660;
         MinWidth = 720;
         MinHeight = 480;
+        layoutEditor = new WheelLayoutEditor(focus, QueueRebuild);
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(244) });
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var side = new DockPanel();
@@ -72,7 +76,21 @@ internal sealed class SettingsWindow : AppWindow
 
     private void OnLayout(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
-        if (page == SettingsPage.Wheel && !building) Rebuild();
+        if (page == SettingsPage.Wheel && !building) QueueRebuild();
+    }
+
+    private bool rebuildQueued;
+
+    /// One new page for a burst of changes (Reset touches several things), once the control that made them is done.
+    private void QueueRebuild()
+    {
+        if (rebuildQueued) return;
+        rebuildQueued = true;
+        Dispatcher.BeginInvoke(DispatcherPriority.Normal, () =>
+        {
+            rebuildQueued = false;
+            Rebuild();
+        });
     }
 
     private void OnUpdater(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
@@ -102,8 +120,19 @@ internal sealed class SettingsWindow : AppWindow
         Rebuild();
     }
 
+    /// Settings › Wheel on a ring and, when given, a file type and slot ("Edit Wheel Layout…" in the wheel).
+    public void ShowLayout(WheelMode ring, FileKind? kind, string? slot = null)
+    {
+        layoutEditor.Open(ring, kind, slot);
+        Select(SettingsPage.Wheel);
+        scroller.ScrollToTop();
+    }
+
     protected override void Rebuild()
     {
+        // The page is built anew: the keyboard focus goes back to the same control afterwards.
+        var restore = focus.Take(IsKeyboardFocusWithin);
+        focus.Clear();
         building = true;
         try
         {
@@ -127,6 +156,7 @@ internal sealed class SettingsWindow : AppWindow
         {
             building = false;
         }
+        if (restore != null) focus.Restore(restore, Dispatcher);
     }
 
     private static string PageName(SettingsPage page) => page switch
@@ -297,31 +327,43 @@ internal sealed class SettingsWindow : AppWindow
     private void Wheel()
     {
         var layout = WheelLayout.Shared;
-        Add(Ui.SettingRow(L("set.wheel.remember"), L("set.wheel.remember.d"),
-            Ui.Toggle(layout.RemembersLast, value => layout.RemembersLast = value, L("set.wheel.remember")), "clock"));
+        Header(L("set.layout"));
+        Add(layoutEditor.Build());
 
-        Header(L("set.wheel.hidden"));
-        if (layout.Hidden.Count == 0) Add(Ui.SettingRow(L("set.wheel.none"), null, null));
-        foreach (var id in layout.Hidden.Keys.OrderBy(key => key, StringComparer.Ordinal))
+        var remember = Ui.SettingRow(L("set.wheel.remember"), L("set.wheel.remember.d"),
+            focus.Register(Ui.Toggle(layout.RemembersLast, value => layout.RemembersLast = value, L("set.wheel.remember")), "wheel.remember"), "clock",
+            keepWords: true);
+        remember.Margin = new Thickness(0, 12, 0, 0);
+        Add(remember);
+
+        // Slots hidden in every ring by earlier versions (removing now works one ring and file type at a time).
+        if (layout.Hidden.Count > 0)
         {
-            var target = id;
-            Add(Ui.SettingRow(layout.Title(id, layout.Hidden[id]), null, Ui.Button(L("set.wheel.show"), () => layout.Unhide(target)), "eye.slash"));
+            var hidden = layout.Hidden.Keys.OrderBy(key => key, StringComparer.Ordinal).ToList();
+            var show = Ui.DropDown(L("set.wheel.show"), null, () =>
+            {
+                var menu = new ContextMenu();
+                foreach (var id in hidden) menu.Items.Add(TrayFlyout.MenuItem(layout.Title(id, layout.Hidden[id]), null, () => layout.Unhide(id)));
+                return menu;
+            });
+            focus.Register(show, "wheel.hidden");
+            Add(Ui.SettingRow(L("set.wheel.hidden"), string.Join(", ", hidden.Select(id => layout.Title(id, layout.Hidden[id]))), show, "eye.slash",
+                keepWords: true));
         }
 
-        Header(L("set.wheel.pinned"));
-        if (layout.PinnedList.Count == 0) Add(Ui.SettingRow(L("set.wheel.none"), null, null));
-        foreach (var (id, title) in layout.PinnedList)
-        {
-            var target = id;
-            Add(Ui.SettingRow(title, null, Ui.Button(L("ctx.unpin"), () => layout.Unpin(target)), "pin"));
-        }
-
-        Header(L("set.wheel.custom"));
-        Add(Ui.SettingRow(L("set.wheel.custom_order"), null, Ui.Text(LP("set.wheel.rings", layout.Orders.Count), 14, brush: Theme.TextSecondary)));
-        Add(Ui.SettingRow(L("set.wheel.defaults"), null, Ui.Text(LP("set.wheel.slots", layout.Defaults.Count), 14, brush: Theme.TextSecondary)));
-        var reset = Ui.Button(L("set.wheel.reset_all"), () => layout.ResetAll());
+        var footer = new Grid { Margin = new Thickness(2, 10, 0, 0) };
+        footer.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        footer.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        var note = Ui.Paragraph(L("set.wheel.footer"), 12, Theme.TextSecondary);
+        note.VerticalAlignment = VerticalAlignment.Center;
+        footer.Children.Add(note);
+        var reset = Ui.Button(L("set.wheel.reset_all"), layout.ResetAll);
         reset.IsEnabled = layout.IsCustomized || layout.LastUsed.Count > 0;
-        Add(Ui.SettingRow(L("set.wheel.reset_all"), L("set.wheel.footer"), reset, "arrow.uturn.backward"));
+        reset.Margin = new Thickness(16, 0, 0, 0);
+        reset.VerticalAlignment = VerticalAlignment.Top;
+        Grid.SetColumn(reset, 1);
+        footer.Children.Add(focus.Register(reset, "wheel.reset_all"));
+        Add(footer);
     }
 
     // Integrations

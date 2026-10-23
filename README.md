@@ -71,7 +71,9 @@ https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 **Results where you want them** — a file, the clipboard, both, or the wheel asks every time (Settings › General).
 ⌥-click / ⌘C sends one result to the clipboard, ⌘S to a file. Originals are never overwritten.
 
-**Make it yours** — right-click a slot to hide it, move it, pin one of its options to the main ring, or choose what a plain click runs.
+**Make it yours** — Settings › Wheel lays out each ring per file type with a live preview: drag slots into order, remove the ones
+you never use, give an option its own slot (Rotate · Left) or bring in a slot from another ring (AirDrop next to Compress),
+then use the layout for every file type. Right-click a slot in the wheel for the same moves on the spot.
 
 <p align="center">
   <img src="docs/screenshots/wheel-tools.png" width="400" alt="The tools ring with the rotate options fanned out">

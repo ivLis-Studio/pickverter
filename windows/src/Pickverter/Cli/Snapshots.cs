@@ -200,6 +200,7 @@ internal static class Snapshots
                 settings.Select(page);
                 await Take(settings, Path.Combine(output, "settings-" + page.ToString().ToLowerInvariant() + ".png"), 920, null, keep: true);
             }
+            await WheelLayouts(settings, output);
             // The ffmpeg row while Pickverter downloads it, and after a failed download.
             settings.Select(SettingsPage.Integrations);
             FFmpegSetup.Simulate(FFmpegSetup.SetupPhase.Downloading, 0.42);
@@ -285,6 +286,26 @@ internal static class Snapshots
         await Save(content, path, width, height, window.Background);
         if (keep) window.Content = content;
         else window.Close();
+    }
+
+    /// Settings › Wheel with one ring changed: image Tools without OCR, Rotate · Left 90° pinned, Copy Path brought in
+    /// from Actions (selected, so the preview shows where it sits) and Resize fixed to 1920 px. Then the same at the
+    /// window's narrowest, where the preview moves above the list.
+    private static async Task WheelLayouts(SettingsWindow settings, string output)
+    {
+        var layout = WheelLayout.Shared;
+        var key = WheelLayout.Key(WheelMode.Tools, FileKind.Image);
+        layout.Remove("tool.ocr", key);
+        layout.Pin("tool.rotate.left", L("tool.rotate") + " · " + L("rot.left"), key);
+        layout.AddFromRing("action.copypath", key);
+        layout.SetDefault("tool.resize", "tool.resize.1920");
+        settings.ShowLayout(WheelMode.Tools, FileKind.Image, "action.copypath");
+        await Task.Delay(50);
+        await Take(settings, Path.Combine(output, "settings-wheel-custom.png"), 920, null, keep: true);
+        await Take(settings, Path.Combine(output, "settings-wheel-narrow.png"), 720, null, keep: true);
+        layout.ResetAll();
+        settings.ShowLayout(WheelMode.Convert, FileKind.Image);
+        await Task.Delay(50);
     }
 
     // Real windows on the desktop

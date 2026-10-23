@@ -155,6 +155,8 @@ extension CLI {
         layout.hide("tool.ocr", title: "OCR")
         var ids = layout.arrange(options, key: key).map(\.id)
         check("hide a slot", ids.contains("tool.ocr") ? "shown" : "hidden", "hidden", &failures)
+        layout.unhide("tool.ocr")
+        ids = layout.arrange(options, key: key).map(\.id)
         let before = ids.firstIndex(of: "tool.rotate") ?? -1
         layout.move("tool.rotate", by: -1, visible: ids, key: key)
         ids = layout.arrange(options, key: key).map(\.id)
@@ -170,8 +172,113 @@ extension CLI {
             layout.noteUsed(slot: rotate.id, variant: "tool.rotate.half")
             check("remembers the last option", rotate.variants[layout.preferredVariant(of: rotate)].id, "tool.rotate.half", &failures)
         }
+        failures += ringLayoutTests(layout, files: files)
         layout.resetAll()
         check("reset restores the stock wheel", layout.arrange(options, key: key).map(\.id) == natural ? "stock" : "custom", "stock", &failures)
+        return failures
+    }
+
+    /// Removing, restoring and borrowing slots per ring and file type (Settings › Wheel).
+    static func ringLayoutTests(_ layout: WheelLayout, files: [URL]) -> Int {
+        var failures = 0
+        let key = WheelLayout.key(mode: .tools, files: files)
+        let tools = Catalog.options(for: files, mode: .tools)
+        let pdf = [URL(fileURLWithPath: "/tmp/pickverter-layout/a.pdf")]
+        let pdfKey = WheelLayout.key(mode: .tools, kind: .pdf)
+        let pdfTools = Catalog.options(for: pdf, mode: .tools)
+        func has(_ id: String, _ options: [PickOption], _ key: String, pool: [PickOption] = []) -> String {
+            layout.arrange(options, key: key, pool: pool).contains { $0.id == id } ? "in" : "out"
+        }
+        layout.remove("tool.zip", key: key)
+        check("remove a slot from one ring", has("tool.zip", tools, key), "out", &failures)
+        check("other file types keep it", has("tool.zip", pdfTools, pdfKey), "in", &failures)
+        layout.restore("tool.zip", key: key)
+        check("put a removed slot back", has("tool.zip", tools, key), "in", &failures)
+
+        // Slots from the other rings: a whole slot and one option of a slot, in the order they were added.
+        let actionsKey = WheelLayout.key(mode: .actions, files: files)
+        let actions = Catalog.options(for: files, mode: .actions)
+        let pool = tools + Catalog.options(for: files, mode: .convert)
+        layout.addFromRing("tool.resize", key: actionsKey)
+        layout.addFromRing("tool.rotate.left", key: actionsKey)
+        let borrowed = layout.arrange(actions, key: actionsKey, pool: pool).suffix(2).map(\.id)
+        check("bring slots in from another ring", borrowed.joined(separator: " "), "tool.resize tool.rotate.left", &failures)
+        if let native = actions.first?.id {
+            layout.addFromRing(native, key: actionsKey)
+            let count = layout.arrange(actions, key: actionsKey, pool: pool).filter { $0.id == native }.count
+            check("a slot never shows twice", "\(count)", "1", &failures)
+        }
+        layout.remove("tool.rotate.left", key: actionsKey)
+        check("removing a borrowed slot sends it back", has("tool.rotate.left", actions, actionsKey, pool: pool), "out", &failures)
+        check("…without setting it aside", "\(layout.removed[actionsKey]?.contains("tool.rotate.left") == true)", "false", &failures)
+        layout.reset(key: actionsKey)
+        check("reset one ring", layout.arrange(actions, key: actionsKey, pool: pool).map(\.id) == actions.map(\.id) ? "stock" : "custom",
+              "stock", &failures)
+
+        // One ring's layout for every file type.
+        layout.remove("tool.zip", key: key)
+        layout.applyToAllKinds(from: key, kinds: WheelLayoutEditor.kinds)
+        check("use a ring for every file type", has("tool.zip", pdfTools, pdfKey), "out", &failures)
+        check("other rings stay", has(actions.first?.id ?? "", actions, actionsKey), "in", &failures)
+        layout.reset(key: key)
+        layout.reset(key: pdfKey)
+
+        // Settings lists every slot a file type can have once (GIF-only formats join the image ring).
+        let image = WheelLayoutEditor.nativeOptions(.image, .convert).map(\.id)
+        check("image ring lists every format once", "\(Set(image).count == image.count && image.contains("convert.mp4"))", "true", &failures)
+        let office = WheelLayoutEditor.nativeOptions(.office, .convert).map(\.id)
+        check("office ring lists every format once", "\(Set(office).count == office.count && office.count > 3)", "true", &failures)
+        return failures
+    }
+
+    /// Settings › Wheel's editor, on a scratch layout (the user's wheel stays as it is): what the list shows is what
+    /// the wheel shows.
+    static func editorTests() -> Int {
+        var failures = 0
+        let suite = "com.pickverter.selftest.editor"
+        guard let store = UserDefaults(suiteName: suite) else { return 1 }
+        store.removePersistentDomain(forName: suite)
+        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        WheelLayout.useScratch(store)
+        let editor = WheelLayoutEditor()
+        editor.kind = .image
+        editor.mode = .tools
+        let stock = editor.rows.map(\.id)
+        check("editor lists the stock ring", "\(stock == WheelLayoutEditor.nativeOptions(.image, .tools).map(\.id))", "true", &failures)
+        guard stock.count > 3 else { return failures + 1 }
+        editor.move(from: IndexSet(integer: 2), to: 0)
+        editor.reload()
+        check("drag a slot to the top", editor.rows.first?.id ?? "", stock[2], &failures)
+        check("the preview follows", editor.preview.items.first?.id ?? "", stock[2], &failures)
+        if let first = editor.rows.first {
+            editor.remove(first)
+            editor.reload()
+            check("remove a slot in Settings", "\(editor.rows.contains { $0.id == first.id })", "false", &failures)
+            check("Add Slot offers it back", "\(editor.removedCandidates.contains { $0.id == first.id })", "true", &failures)
+            if let back = editor.removedCandidates.first(where: { $0.id == first.id }) { editor.restore(back) }
+            editor.reload()
+            check("put it back", "\(editor.rows.contains { $0.id == first.id })", "true", &failures)
+        }
+        if let parent = editor.optionCandidates.first, let option = parent.children.first {
+            editor.pin(option)
+            editor.reload()
+            let origin = editor.rows.first { $0.id == option.id }?.origin
+            check("an option as a slot of its own", "\(origin == .pinned(parent: parent.title))", "true", &failures)
+        }
+        if let ring = editor.ringCandidates.first(where: { $0.mode == .actions }),
+           let item = ring.items.first(where: { $0.children.isEmpty }) {
+            editor.addFromRing(item)
+            editor.reload()
+            let origin = editor.rows.first { $0.id == item.id }?.origin
+            check("a slot from the Actions ring", "\(origin == .added(.actions))", "true", &failures)
+            check("the wheel pages past ten", "\(editor.preview.items.count <= WheelController.maxPerPage)", "true", &failures)
+        }
+        editor.applyToAllKinds()
+        check("one layout for every file type", "\(WheelLayout.shared.isCustomized(WheelLayout.key(mode: .tools, kind: .video)))",
+              "true", &failures)
+        editor.reset()
+        editor.reload()
+        check("reset the ring in Settings", "\(editor.rows.map(\.id) == stock)", "true", &failures)
         return failures
     }
 
@@ -193,7 +300,8 @@ extension CLI {
         let ui = ["circle.circle", "arrow.down.circle", "arrow.down.circle.fill", "pin", "pin.slash", "minus.square",
                   "person.crop.square", "text.viewfinder", "rotate.left", "rotate.right", "plus.square.on.square", "trash",
                   "arrow.up.arrow.down", "ellipsis.circle", "checkmark.circle", "eye.slash", "arrow.counterclockwise",
-                  "arrow.clockwise", "arrow.uturn.backward", "gearshape", "list.bullet", "info.circle"]
+                  "arrow.clockwise", "arrow.uturn.backward", "gearshape", "list.bullet", "info.circle", "minus.circle",
+                  "minus.circle.fill", "slider.horizontal.3", "plus", "circle.dashed", "pin.fill"]
         for symbol in ui where NSImage(systemSymbolName: symbol, accessibilityDescription: nil) == nil { missing.insert(symbol) }
         for item in missing.sorted() { print("MISSING \(item)") }
         print(missing.isEmpty ? "OK all symbols exist" : "FAIL \(missing.count) missing")
@@ -294,16 +402,43 @@ extension CLI {
                 case "integrations-failed":
                     FFmpegInstaller.shared.preview(.failed(L("ffmpeg.err.download", "The Internet connection appears to be offline.")))
                     return (AnyView(IntegrationSettings()), CGSize(width: 600, height: 760))
+                case "wheel", "wheel-custom":
+                    // A scratch layout, so the user's own wheel stays as it is.
+                    if let store = UserDefaults(suiteName: snapshotSuite) {
+                        store.removePersistentDomain(forName: snapshotSuite)
+                        WheelLayout.useScratch(store)
+                    }
+                    if kind == "wheel-custom" {
+                        let key = WheelLayout.key(mode: .tools, kind: .image)
+                        let layout = WheelLayout.shared
+                        layout.remove("tool.collage", key: key)
+                        layout.pin("tool.rotate.left", title: "Rotate · Left", key: key)
+                        layout.addFromRing("action.airdrop", key: key)
+                        layout.setDefault(slot: "tool.resize", variant: "tool.resize.1920")
+                        SettingsRouter.shared.showLayout(mode: .tools, kind: .image)
+                    }
+                    // PICKVERTER_LAYOUT=0|folder opens another ring and file type.
+                    if let request = ProcessInfo.processInfo.environment["PICKVERTER_LAYOUT"]?.split(separator: "|"), request.count == 2,
+                       let ring = Int(request[0]).flatMap(WheelMode.init(rawValue:)), let fileKind = FileKind(rawValue: String(request[1])) {
+                        SettingsRouter.shared.showLayout(mode: ring, kind: fileKind)
+                    }
+                    // The whole Settings window, tabs included, as people see it.
+                    SettingsRouter.shared.tab = .wheel
+                    return (AnyView(SettingsView().background(Color(nsColor: .windowBackgroundColor))), CGSize(width: 640, height: 560))
                 default:
                     return (AnyView(UpdateView(close: {})), CGSize(width: 500, height: 200))
                 }
             }
-            return snapshotWindow(built.0, size: built.1, dark: dark, to: args[2])
+            let status = snapshotWindow(built.0, size: built.1, dark: dark, to: args[2])
+            if kind.hasPrefix("wheel") { UserDefaults.standard.removePersistentDomain(forName: snapshotSuite) }
+            return status
         } catch {
             print("ERR \(error.localizedDescription)")
             return 1
         }
     }
+
+    private static let snapshotSuite = "com.pickverter.snapshot"
 
     static func snapshotWindow(_ view: AnyView, size: CGSize, dark: Bool, to path: String) -> Int32 {
         let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable],
@@ -314,8 +449,11 @@ extension CLI {
         window.contentView = host
         pump(1.2)
         host.layoutSubtreeIfNeeded()
-        guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return 1 }
-        host.cacheDisplay(in: host.bounds, to: rep)
+        // PICKVERTER_SNAPSHOT_CHROME=1: the whole window, title bar and toolbar included.
+        let target: NSView = ProcessInfo.processInfo.environment["PICKVERTER_SNAPSHOT_CHROME"] == "1"
+            ? (host.superview ?? host) : host
+        guard let rep = target.bitmapImageRepForCachingDisplay(in: target.bounds) else { return 1 }
+        target.cacheDisplay(in: target.bounds, to: rep)
         guard let data = rep.representation(using: .png, properties: [:]), (try? data.write(to: URL(fileURLWithPath: path))) != nil else {
             print("write failed")
             return 1

@@ -87,6 +87,7 @@ internal sealed class FlatButton : Button
     private static readonly ControlTemplate Chrome = BuildTemplate();
     private readonly TextBlock? label;
     private readonly TextBlock? glyph;
+    private readonly TextBlock? trailing;
     private Brush? tint;
 
     public bool Prominent { get; }
@@ -99,7 +100,9 @@ internal sealed class FlatButton : Button
         Update();
     }
 
-    public FlatButton(string? title, string? icon = null, bool prominent = false, bool subtle = false, bool compact = false, double iconSize = 0)
+    /// trailingIcon: a small glyph after the title (the arrow of a button that opens a menu).
+    public FlatButton(string? title, string? icon = null, bool prominent = false, bool subtle = false, bool compact = false, double iconSize = 0,
+                      string? trailingIcon = null)
     {
         Prominent = prominent;
         Subtle = subtle;
@@ -135,6 +138,12 @@ internal sealed class FlatButton : Button
             };
             row.Children.Add(label);
             AutomationProperties.SetName(this, title);
+        }
+        if (trailingIcon != null)
+        {
+            trailing = Glyphs.Icon(trailingIcon, compact ? 10 : 11);
+            trailing.Margin = new Thickness(compact ? 6 : 8, 1, 0, 0);
+            row.Children.Add(trailing);
         }
         Content = row;
         if (title == null && icon != null) ToolTip = null;
@@ -189,6 +198,7 @@ internal sealed class FlatButton : Button
         Foreground = foreground;
         if (label != null) label.Foreground = foreground;
         if (glyph != null) glyph.Foreground = foreground;
+        if (trailing != null) trailing.Foreground = foreground;
         if (label != null && tint != null) label.TextDecorations = IsMouseOver ? TextDecorations.Underline : null;
     }
 
@@ -303,6 +313,390 @@ internal sealed class ViewThatFits : Panel
         }
         return final;
     }
+}
+
+/// Children side by side; the one at Trim gives way (its text ends in "…") when the row runs out of room. The one at
+/// Optional, if any, is left out first.
+internal sealed class TrimRow : Panel
+{
+    private bool dropped;
+
+    public double Gap { get; set; } = 6;
+    public int Trim { get; set; }
+    public int Optional { get; set; } = -1;
+
+    private bool Shown(int index) => !(dropped && index == Optional);
+
+    protected override Size MeasureOverride(Size available)
+    {
+        double fixedWidth = 0, height = 0;
+        var count = InternalChildren.Count;
+        for (var index = 0; index < count; index++)
+        {
+            if (index == Trim) continue;
+            var child = InternalChildren[index];
+            child.Measure(new Size(double.PositiveInfinity, available.Height));
+            fixedWidth += child.DesiredSize.Width;
+            height = Math.Max(height, child.DesiredSize.Height);
+        }
+        var gaps = Gap * Math.Max(0, count - 1);
+        dropped = false;
+        if (Optional >= 0 && Optional < count && Optional != Trim && Trim >= 0 && Trim < count && !double.IsInfinity(available.Width))
+        {
+            InternalChildren[Trim].Measure(new Size(double.PositiveInfinity, available.Height));
+            if (fixedWidth + gaps + InternalChildren[Trim].DesiredSize.Width > available.Width)
+            {
+                dropped = true;
+                fixedWidth -= InternalChildren[Optional].DesiredSize.Width;
+                gaps -= Gap;
+            }
+        }
+        var flexible = 0.0;
+        if (Trim >= 0 && Trim < count)
+        {
+            var room = double.IsInfinity(available.Width) ? double.PositiveInfinity : Math.Max(0, available.Width - fixedWidth - gaps);
+            var child = InternalChildren[Trim];
+            child.Measure(new Size(room, available.Height));
+            flexible = child.DesiredSize.Width;
+            height = Math.Max(height, child.DesiredSize.Height);
+        }
+        return new Size(fixedWidth + gaps + flexible, height);
+    }
+
+    protected override Size ArrangeOverride(Size final)
+    {
+        var count = InternalChildren.Count;
+        var fixedWidth = 0.0;
+        var shown = 0;
+        for (var index = 0; index < count; index++)
+        {
+            if (!Shown(index)) continue;
+            shown++;
+            if (index != Trim) fixedWidth += InternalChildren[index].DesiredSize.Width;
+        }
+        var gaps = Gap * Math.Max(0, shown - 1);
+        var x = 0.0;
+        for (var index = 0; index < count; index++)
+        {
+            var child = InternalChildren[index];
+            // A child left out is clipped away entirely (an element arranged smaller than its text could still draw it).
+            child.ClipToBounds = !Shown(index);
+            if (!Shown(index))
+            {
+                child.Arrange(new Rect(0, 0, 0, 0));
+                continue;
+            }
+            var width = index == Trim ? Math.Max(0, Math.Min(child.DesiredSize.Width, final.Width - fixedWidth - gaps)) : child.DesiredSize.Width;
+            var height = Math.Min(child.DesiredSize.Height, final.Height);
+            child.Arrange(new Rect(x, (final.Height - height) / 2, width, height));
+            x += width + Gap;
+        }
+        return final;
+    }
+}
+
+/// Children in a row, all as wide as the widest one, narrower together when the row has less room.
+internal sealed class UniformRow : Panel
+{
+    public double Spacing { get; set; } = 2;
+
+    private double Each(double available, double widest)
+    {
+        var count = InternalChildren.Count;
+        if (double.IsInfinity(available) || count == 0) return widest;
+        return Math.Max(0, Math.Min(widest, (available - Spacing * (count - 1)) / count));
+    }
+
+    protected override Size MeasureOverride(Size available)
+    {
+        var count = InternalChildren.Count;
+        if (count == 0) return default;
+        double widest = 0, tallest = 0;
+        foreach (UIElement child in InternalChildren)
+        {
+            child.Measure(new Size(double.PositiveInfinity, available.Height));
+            widest = Math.Max(widest, child.DesiredSize.Width);
+            tallest = Math.Max(tallest, child.DesiredSize.Height);
+        }
+        var each = Each(available.Width, widest);
+        foreach (UIElement child in InternalChildren) child.Measure(new Size(each, available.Height));
+        return new Size(each * count + Spacing * (count - 1), tallest);
+    }
+
+    protected override Size ArrangeOverride(Size final)
+    {
+        var count = InternalChildren.Count;
+        if (count == 0) return final;
+        var each = Math.Max(0, (final.Width - Spacing * (count - 1)) / count);
+        var x = 0.0;
+        foreach (UIElement child in InternalChildren)
+        {
+            child.Arrange(new Rect(x, 0, each, final.Height));
+            x += each + Spacing;
+        }
+        return final;
+    }
+}
+
+/// One option of a SegmentPicker (a radio button drawn like the wheel's ring tabs).
+internal sealed class Segment : RadioButton
+{
+    private static readonly ControlTemplate Chrome = BuildTemplate();
+    private readonly TextBlock title;
+
+    public Segment(string? key, string text)
+    {
+        Template = Chrome;
+        Cursor = Cursors.Hand;
+        FocusVisualStyle = Ui.FocusRing(4);
+        Padding = new Thickness(12, 0, 12, 0);
+        MinHeight = 32;
+        BorderThickness = new Thickness(1);
+        HorizontalContentAlignment = HorizontalAlignment.Center;
+        VerticalContentAlignment = VerticalAlignment.Center;
+        title = Ui.Text(text, 14);
+        // Short of room the key name goes first ("Werkzeuge" rather than "Strg Werkz…"); its name still says both.
+        var line = new TrimRow { Gap = 5, Trim = key == null ? 0 : 1, Optional = key == null ? -1 : 0 };
+        if (key != null) line.Children.Add(Ui.Text(key, 12, FontWeights.Medium, Theme.TextSecondary));
+        line.Children.Add(title);
+        Content = line;
+        AutomationProperties.SetName(this, key == null ? text : key + " " + text);
+        Update();
+    }
+
+    private static ControlTemplate BuildTemplate()
+    {
+        var border = new FrameworkElementFactory(typeof(Border));
+        border.SetValue(Border.BackgroundProperty, new TemplateBindingExtension(BackgroundProperty));
+        border.SetValue(Border.BorderBrushProperty, new TemplateBindingExtension(BorderBrushProperty));
+        border.SetValue(Border.BorderThicknessProperty, new TemplateBindingExtension(BorderThicknessProperty));
+        border.SetValue(Border.PaddingProperty, new TemplateBindingExtension(PaddingProperty));
+        border.SetValue(Border.CornerRadiusProperty, new CornerRadius(4));
+        border.SetValue(Border.SnapsToDevicePixelsProperty, true);
+        var presenter = new FrameworkElementFactory(typeof(ContentPresenter));
+        presenter.SetValue(ContentPresenter.HorizontalAlignmentProperty, new TemplateBindingExtension(HorizontalContentAlignmentProperty));
+        presenter.SetValue(ContentPresenter.VerticalAlignmentProperty, new TemplateBindingExtension(VerticalContentAlignmentProperty));
+        presenter.SetValue(ContentPresenter.RecognizesAccessKeyProperty, false);
+        border.AppendChild(presenter);
+        return new ControlTemplate(typeof(Segment)) { VisualTree = border };
+    }
+
+    protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
+    {
+        base.OnPropertyChanged(e);
+        if (e.Property == IsMouseOverProperty || e.Property == IsPressedProperty || e.Property == IsCheckedProperty || e.Property == IsEnabledProperty)
+            Update();
+    }
+
+    private void Update()
+    {
+        var on = IsChecked == true;
+        Background = on ? Theme.SelectedTab : IsPressed ? Theme.SubtlePressed : IsMouseOver ? Theme.SubtleHover : Brushes.Transparent;
+        BorderBrush = on ? Theme.Hairline : Brushes.Transparent;
+        title.FontWeight = on ? FontWeights.SemiBold : FontWeights.Normal;
+        title.Foreground = IsEnabled ? Theme.TextPrimary : Theme.TextDisabled;
+    }
+}
+
+/// Segmented control, Windows 11 style: options side by side, one selected (drawn like the wheel's ring tabs). Arrow
+/// keys move the selection and only the selected segment is a tab stop; screen readers get a group of radio buttons.
+internal sealed class SegmentPicker<T> : Border
+{
+    private readonly List<(T Value, Segment Button)> segments = [];
+    private bool updating;
+
+    public event Action<T>? Changed;
+    public T Value { get; private set; }
+    public IReadOnlyList<(T Value, Segment Button)> Segments => segments;
+
+    public SegmentPicker(IEnumerable<(T Value, string? Key, string Title)> items, T selected, string name)
+    {
+        Value = selected;
+        Background = Theme.Tile;
+        CornerRadius = new CornerRadius(6);
+        Padding = new Thickness(2);
+        HorizontalAlignment = HorizontalAlignment.Left;
+        VerticalAlignment = VerticalAlignment.Center;
+        AutomationProperties.SetName(this, name);
+        var row = new UniformRow { Spacing = 2 };
+        KeyboardNavigation.SetTabNavigation(row, KeyboardNavigationMode.Once);
+        Child = row;
+        foreach (var (value, key, title) in items)
+        {
+            var button = new Segment(key, title);
+            var target = value;
+            button.Checked += (_, _) =>
+            {
+                if (!updating) Select(target, notify: true);
+            };
+            button.PreviewKeyDown += (_, args) => Step(args);
+            segments.Add((value, button));
+            row.Children.Add(button);
+        }
+        Refresh();
+    }
+
+    public void Select(T value, bool notify = false)
+    {
+        var changed = !EqualityComparer<T>.Default.Equals(value, Value);
+        Value = value;
+        Refresh();
+        if (notify && changed) Changed?.Invoke(value);
+    }
+
+    private void Step(KeyEventArgs args)
+    {
+        var index = segments.FindIndex(segment => EqualityComparer<T>.Default.Equals(segment.Value, Value));
+        var next = args.Key switch
+        {
+            Key.Left or Key.Up => index - 1,
+            Key.Right or Key.Down => index + 1,
+            Key.Home => 0,
+            Key.End => segments.Count - 1,
+            _ => int.MinValue,
+        };
+        if (next == int.MinValue) return;
+        args.Handled = true;
+        next = Math.Clamp(next, 0, segments.Count - 1);
+        if (next == index) return;
+        segments[next].Button.Focus();
+        Select(segments[next].Value, notify: true);
+    }
+
+    private void Refresh()
+    {
+        updating = true;
+        foreach (var (value, button) in segments)
+        {
+            var on = EqualityComparer<T>.Default.Equals(value, Value);
+            button.IsChecked = on;
+            button.IsTabStop = on;
+        }
+        updating = false;
+    }
+
+    protected override AutomationPeer OnCreateAutomationPeer() => new GroupPeer(this);
+}
+
+/// A plain container that screen readers announce as a named group (or list).
+internal sealed class GroupPeer(FrameworkElement owner, AutomationControlType type = AutomationControlType.Group) : FrameworkElementAutomationPeer(owner)
+{
+    protected override AutomationControlType GetAutomationControlTypeCore() => type;
+    protected override string GetClassNameCore() => Owner.GetType().Name;
+}
+
+/// Wrapping text that keeps Korean words whole. Korean puts spaces between words, but WPF breaks Hangul between any two
+/// syllables ("받/고"); such text is broken at its spaces instead, as the wheel does for its labels. A single word wider
+/// than the line still breaks where WPF puts it. Other text wraps as usual.
+internal sealed class WordWrapText : Decorator
+{
+    private readonly TextBlock block;
+    private readonly string text;
+    private readonly bool hangul;
+    private double laidOut = double.NaN;
+
+    public WordWrapText(TextBlock block)
+    {
+        this.block = block;
+        text = block.Text;
+        hangul = text.Any(IsHangul);
+        block.TextWrapping = TextWrapping.Wrap;
+        block.TextTrimming = TextTrimming.None;
+        Child = block;
+    }
+
+    public TextBlock Block => block;
+
+    protected override Size MeasureOverride(Size constraint)
+    {
+        if (hangul && !constraint.Width.Equals(laidOut))
+        {
+            laidOut = constraint.Width;
+            // A hair of slack, so WPF's own measuring never finds a line one pixel too long and breaks it again.
+            block.Text = double.IsInfinity(constraint.Width) ? text : Broken(constraint.Width - 2);
+        }
+        block.Measure(constraint);
+        return block.DesiredSize;
+    }
+
+    private string Broken(double width)
+    {
+        var face = new Typeface(block.FontFamily, block.FontStyle, block.FontWeight, block.FontStretch);
+        var dip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+        double Measure(string value) =>
+            new FormattedText(value, Loc.Culture, FlowDirection.LeftToRight, face, block.FontSize, Brushes.Black, dip).WidthIncludingTrailingWhitespace;
+        var lines = new List<string>();
+        foreach (var paragraph in text.Split('\n'))
+        {
+            var line = "";
+            foreach (var word in paragraph.Split(' '))
+            {
+                var longer = line.Length == 0 ? word : line + " " + word;
+                if (line.Length > 0 && Measure(longer) > width)
+                {
+                    lines.Add(line);
+                    line = word;
+                }
+                else
+                {
+                    line = longer;
+                }
+            }
+            lines.Add(line);
+        }
+        return string.Join("\n", lines);
+    }
+
+    private static bool IsHangul(char c) => c is >= '\uAC00' and <= '\uD7A3' or >= '\u1100' and <= '\u11FF' or >= '\u3130' and <= '\u318F';
+}
+
+/// Settings pages are rebuilt after every change. Controls register under a stable key, so the keyboard focus can go
+/// back to the same control (or to one an action chose in advance) once the new page is built.
+internal sealed class FocusRegistry
+{
+    private static readonly DependencyProperty KeyProperty =
+        DependencyProperty.RegisterAttached("FocusKey", typeof(string), typeof(FocusRegistry), new PropertyMetadata(null));
+
+    private readonly Dictionary<string, UIElement> elements = new();
+    private string? preferred;
+
+    public T Register<T>(T element, string key) where T : UIElement
+    {
+        element.SetValue(KeyProperty, key);
+        elements[key] = element;
+        return element;
+    }
+
+    public void Clear() => elements.Clear();
+
+    /// Focus this control after the next rebuild instead of the one that has the focus now.
+    public void Prefer(string key) => preferred = key;
+
+    /// What to focus after a rebuild: the preferred control, else the focused one (nothing when the focus was elsewhere).
+    public string? Take(bool focusWithin)
+    {
+        var key = preferred ?? Current();
+        preferred = null;
+        return focusWithin ? key : null;
+    }
+
+    private static string? Current()
+    {
+        for (var node = Keyboard.FocusedElement as DependencyObject; node != null; node = Parent(node))
+        {
+            if (node.GetValue(KeyProperty) is string key) return key;
+        }
+        return null;
+    }
+
+    private static DependencyObject? Parent(DependencyObject node) =>
+        node is Visual or System.Windows.Media.Media3D.Visual3D ? VisualTreeHelper.GetParent(node) ?? LogicalTreeHelper.GetParent(node) : LogicalTreeHelper.GetParent(node);
+
+    public void Restore(string key, System.Windows.Threading.Dispatcher dispatcher) =>
+        dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () =>
+        {
+            if (elements.TryGetValue(key, out var element) && element.IsVisible && element.Focusable && element.IsEnabled) element.Focus();
+        });
 }
 
 /// Circular progress around a job's icon (indeterminate when the fraction is unknown).
@@ -454,6 +848,11 @@ internal static class Ui
 
     public static TextBlock Caption(string text, bool wrap = true) => Text(text, 12, brush: Theme.TextSecondary, wrap: wrap);
 
+    /// Wrapping text that keeps Korean words whole (see WordWrapText).
+    public static WordWrapText Paragraph(string text, double size, Brush? brush = null, TextAlignment alignment = TextAlignment.Left,
+                                         FontWeight? weight = null) =>
+        new(Text(text, size, weight, brush, wrap: true, alignment: alignment));
+
     public static SpacedStack Stack(Orientation orientation, double spacing, params UIElement[] children)
     {
         var stack = new SpacedStack { Orientation = orientation, Spacing = spacing };
@@ -468,6 +867,21 @@ internal static class Ui
     {
         var button = new FlatButton(title, icon, prominent, subtle, compact);
         button.Click += (_, _) => click();
+        return button;
+    }
+
+    /// A button that opens a menu under itself (its arrow says so). The menu is built when it opens.
+    public static FlatButton DropDown(string title, string? icon, Func<ContextMenu> menu)
+    {
+        var button = new FlatButton(title, icon, trailingIcon: "chevron.down");
+        button.Click += (_, _) =>
+        {
+            var context = menu();
+            context.FontFamily = Theme.TextFont;
+            context.PlacementTarget = button;
+            context.Placement = PlacementMode.Bottom;
+            context.IsOpen = true;
+        };
         return button;
     }
 
@@ -508,8 +922,9 @@ internal static class Ui
         Child = content,
     };
 
-    /// A Settings row: icon, title and description on the left, the control on the right.
-    public static Border SettingRow(string title, string? detail, UIElement? control, string? icon = null)
+    /// A Settings row: icon, title and description on the left, the control on the right. keepWords: Korean wraps
+    /// at its spaces (see WordWrapText).
+    public static Border SettingRow(string title, string? detail, UIElement? control, string? icon = null, bool keepWords = false)
     {
         var grid = new Grid();
         grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
@@ -521,8 +936,8 @@ internal static class Ui
             glyph.Margin = new Thickness(0, 0, 16, 0);
             grid.Children.Add(glyph);
         }
-        var texts = Column(2, Text(title, 14, wrap: true));
-        if (!string.IsNullOrEmpty(detail)) texts.Children.Add(Caption(detail));
+        var texts = Column(2, keepWords ? Paragraph(title, 14) : Text(title, 14, wrap: true));
+        if (!string.IsNullOrEmpty(detail)) texts.Children.Add(keepWords ? Paragraph(detail, 12, Theme.TextSecondary) : Caption(detail));
         texts.VerticalAlignment = VerticalAlignment.Center;
         Grid.SetColumn(texts, 1);
         grid.Children.Add(texts);
