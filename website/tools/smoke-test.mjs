@@ -65,6 +65,8 @@ await page.locator('.dest[data-dest="clipboard"]').click();
 check("destinations", (await page.locator("#dest-sub-out").innerText()) === "On the clipboard");
 await page.locator('#langs button[data-l="ja"]').click();
 check("language showcase", (await page.locator("#lang-show").innerText()).includes("変換"));
+const film = () => page.locator("#film-video source").getAttribute("src");
+check("film: the Mac cut", (await film()) === "assets/media/film-en.mp4", await film());
 
 // Links into this repository must point at files that exist.
 const repoLinks = await page.$$eval("a[href]", (as) => as.map((a) => a.href).filter((h) => /github\.com\/ivLis-Studio\/pickverter\/(blob|tree)\/main\//.test(h)));
@@ -89,6 +91,12 @@ check("Windows: title key", (await page.locator(".hero h1").innerText()).include
 check("Windows: wheel keys", (await page.locator(".wtab").first().innerText()).includes("Shift"));
 check("Windows: install steps", (await page.locator("ol.only-win").isVisible()) && !(await page.locator("ol.only-mac").isVisible()));
 check("Windows: ffmpeg in one click", (await page.locator('ol.only-win [data-t="instw.4.d"]').innerText()).includes("one click"));
+check("Windows: the Windows film", (await film()) === "assets/media/film-win-en.mp4", await film());
+check("Windows: its poster", (await page.locator("#film-video").getAttribute("poster")) === "assets/media/poster-win-en.webp");
+for (const name of ["film-win-en.mp4", "film-win-ko.mp4", "poster-win-en.webp", "poster-win-ko.webp"]) {
+  const response = await page.request.get(base + "assets/media/" + name);
+  check("Windows: " + name + " is served", response.ok() && (await response.body()).length > 10000);
+}
 await page.mouse.move(10, 10);
 await page.locator("#wheel").focus();
 await page.keyboard.press("Control");
@@ -97,10 +105,12 @@ const winMissing = await page.evaluate(() => Object.keys(window.SITE_WIN.en).fil
 check("Windows: Korean wording complete", winMissing.length === 0, winMissing.join(", "));
 await page.locator("#lang-select").selectOption("ko");
 check("Windows: Korean download button", (await page.locator(".hero .dl-link").innerText()).includes("Windows용"));
+check("Windows: Korean film", (await film()) === "assets/media/film-win-ko.mp4", await film());
 const winUntranslated = await page.$$eval("[data-t]", (ns) => ns.filter((n) => n.offsetParent && /[A-Za-z]{4,}/.test(n.textContent) && !/[가-힣]/.test(n.textContent)).map((n) => n.dataset.t));
 check("Windows: Korean copy complete", winUntranslated.filter((k) => !allowed.has(k) && !/^(g\.|t\.|a\.|ring\.k\.)/.test(k)).length === 0, winUntranslated.join(", "));
 await page.locator('#os-switch button[data-os="mac"]').click();
 check("switch back to Mac", (await page.locator(".hero .dl-link").innerText()).includes("Mac") && (await page.locator(".wtab").first().innerText()).includes("⇧"));
+check("switch back to Mac: the Mac film", (await film()) === "assets/media/film-ko.mp4", await film());
 
 check("no page errors", errors.length === 0, errors.join(" | "));
 await browser.close();

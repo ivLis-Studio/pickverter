@@ -29,7 +29,7 @@
 <!-- 영상은 GitHub 첨부 파일이라 README에서 바로 재생돼요. 원본: promo/ -->
 https://github.com/user-attachments/assets/f2b6a1cc-2df3-4cb4-a95c-205937050f43
 
-<p align="center"><sub>35초 · 소리를 켜고 보세요</sub></p>
+<p align="center"><sub>35초 · 소리를 켜고 보세요 · <a href="#windows에서는">Windows 영상 보기 ↓</a></sub></p>
 
 ## 사용법
 
@@ -78,6 +78,11 @@ https://github.com/user-attachments/assets/f2b6a1cc-2df3-4cb4-a95c-205937050f43
 같은 휠을 Windows 방식으로 써요. 파일 탐색기(또는 바탕 화면)에서 파일을 고르고 **Alt 톡**, 파일을 **Alt+클릭**,
 파일을 끄는 동안 **Shift / Ctrl / Alt 톡**. Enter로 실행, Esc로 닫기, Ctrl+C / Ctrl+S로 이번 결과만 클립보드나 파일로 보내요.
 AirDrop 자리는 Windows 공유가, 실행 취소는 휴지통이 맡고, 강조 색과 라이트·다크 모드를 그대로 따라가요.
+
+<!-- Windows판 영상도 GitHub 첨부 파일이에요. 원본: promo/win.html -->
+https://github.com/user-attachments/assets/49415c57-42f0-4318-bb77-774c99dfaae4
+
+<p align="center"><sub>Windows용 Pickverter · 35초 · 소리를 켜고 보세요</sub></p>
 
 <p align="center">
   <img src="docs/screenshots/windows-wheel.png" width="400" alt="회전 옵션이 펼쳐진 Windows 휠">

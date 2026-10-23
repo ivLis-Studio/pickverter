@@ -29,7 +29,7 @@
 <!-- The film is a GitHub attachment, so it plays inline here. Source: promo/ -->
 https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 
-<p align="center"><sub>35 seconds · turn the sound on</sub></p>
+<p align="center"><sub>35 seconds · turn the sound on · <a href="#on-windows">Watch the Windows film ↓</a></sub></p>
 
 ## How it works
 
@@ -80,6 +80,11 @@ https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 The same wheel, made for Windows: **tap Alt** with files selected in File Explorer or on the desktop, **Alt+click** a file,
 or **tap Shift / Ctrl / Alt** while dragging. Enter runs, Esc closes, Ctrl+C / Ctrl+S send one result to the clipboard or a file.
 Share takes AirDrop's place, Undo uses the Recycle Bin, and everything follows your accent color and light or dark mode.
+
+<!-- The Windows cut of the film, also a GitHub attachment. Source: promo/win.html -->
+https://github.com/user-attachments/assets/e47fc193-fc9c-48ff-b08b-e94a4da85e0c
+
+<p align="center"><sub>Pickverter for Windows · 35 seconds · turn the sound on</sub></p>
 
 <p align="center">
   <img src="docs/screenshots/windows-wheel.png" width="400" alt="The Windows wheel with the rotate options fanned out">

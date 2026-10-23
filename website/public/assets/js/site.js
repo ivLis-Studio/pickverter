@@ -136,13 +136,14 @@
     box.innerHTML = keys.map((k) => '<span class="chip">' + (W[k] || app.strings[k])[i] + "</span>").join("");
   }
 
-  // ---- film
+  // ---- film: the Mac or the Windows cut, in English or Korean
   const video = $("#film-video"), player = $("#player");
   function setFilm() {
-    const want = "assets/media/film-" + (lang === "ko" ? "ko" : "en") + ".mp4";
+    const name = (os === "win" ? "win-" : "") + (lang === "ko" ? "ko" : "en");
+    const want = "assets/media/film-" + name + ".mp4";
     const src = video.querySelector("source");
     if (src.getAttribute("src") !== want) {
-      src.setAttribute("src", want); video.poster = "assets/media/poster-" + (lang === "ko" ? "ko" : "en") + ".webp"; video.load();
+      src.setAttribute("src", want); video.poster = "assets/media/poster-" + name + ".webp"; video.load();
       player.classList.remove("playing"); video.controls = false;
     }
   }

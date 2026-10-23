@@ -4,6 +4,11 @@ The Windows version of Pickverter: pick files in File Explorer, tap one key, and
 that opens right at your cursor. Same features, rings and languages as the [Mac app](../macos), adapted to Windows keys,
 icons and conventions.
 
+<!-- The Windows film is a GitHub attachment, so it plays inline here. Source: promo/win.html -->
+https://github.com/user-attachments/assets/e47fc193-fc9c-48ff-b08b-e94a4da85e0c
+
+<p align="center"><sub>35 seconds · turn the sound on · <a href="../README.ko.md#windows에서는">한국어 영상</a></sub></p>
+
 ## Install
 
 1. Download **Pickverter-x.y.z-win-x64-setup.exe** (or **win-arm64** for Snapdragon PCs) from

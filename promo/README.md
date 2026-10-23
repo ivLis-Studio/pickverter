@@ -45,6 +45,16 @@ How it works:
 
 Where the outputs are used: the README banners and walkthrough images live in `docs/readme/`, and the film, poster and
 social card on the website live in `website/public/assets/media/` — copy new renders there.
+The website plays `film-<lang>.mp4` (Mac) and `film-win-<lang>.mp4` (Windows), each with a `poster-…webp` of its last frame.
+They are the 1080p renders re-encoded to stay under GitHub's 10 MB attachment limit, and the same files are attached to
+issue #1, which is where the README films play from:
+
+```sh
+ffmpeg -i out/Pickverter-promo-windows-en-1080p.mp4 -c:v libx264 -preset slow -crf 26 -profile:v high -pix_fmt yuv420p \
+  -c:a aac -b:a 160k -movflags +faststart ../website/public/assets/media/film-win-en.mp4
+ffmpeg -sseof -0.05 -i out/Pickverter-promo-windows-en-1080p.mp4 -frames:v 1 -c:v libwebp -quality 82 \
+  ../website/public/assets/media/poster-win-en.webp
+```
 
 ## The Windows cut
 
