@@ -145,8 +145,10 @@ extension CLI {
         if let desktop = ProtectedFolder.desktop.url {
             check("blocked place is named", FileAccess.placeName(for: desktop.appendingPathComponent("a/b.png")), L("folder.desktop"), &failures)
         }
-        let suite = "com.pickverter.selftest.\(UUID().uuidString)"
+        // One fixed scratch domain: cfprefsd keeps an empty file per domain even after it is removed.
+        let suite = "com.pickverter.selftest"
         guard let store = UserDefaults(suiteName: suite) else { return 1 }
+        store.removePersistentDomain(forName: suite)
         defer { store.removePersistentDomain(forName: suite) }
         let layout = WheelLayout(store: store)
         let key = WheelLayout.key(mode: .tools, files: files)
