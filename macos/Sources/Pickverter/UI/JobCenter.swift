@@ -45,6 +45,8 @@ final class Job: ObservableObject, Identifiable {
     @Published private(set) var copied = false
     private(set) var undoable = false
     private(set) var silent = false
+    /// One picture in, one picture out: the card offers a before/after view.
+    private(set) var comparable = false
     private var sourceBytes: Int64 = 0
     private var outputBytes: Int64 = 0
     var task: Task<Void, Never>?
@@ -90,6 +92,7 @@ final class Job: ObservableObject, Identifiable {
         undoable = result.undoable && !result.outputs.isEmpty
         silent = result.silent
         inCache = outputs.contains { ClipboardStore.contains($0) }
+        comparable = files.count == 1 && outputs.count == 1 && CompareWindow.canCompare(source: files[0], output: outputs[0])
         if !outputs.isEmpty {
             sourceBytes = files.reduce(0) { $0 + FileNames.size(of: $1) }
             outputBytes = outputs.reduce(0) { $0 + FileNames.size(of: $1) }
@@ -159,6 +162,11 @@ final class Job: ObservableObject, Identifiable {
 
     func open() {
         if let first = outputs.first { NSWorkspace.shared.open(first) }
+    }
+
+    func compare() {
+        guard comparable, let source = files.first, let output = outputs.first else { return }
+        CompareWindow.show(before: source, after: output)
     }
 
     func copyToClipboard() {
@@ -533,6 +541,9 @@ struct JobCard: View {
                 CardButton(title: L("card.reveal"), symbol: "folder", prominent: true) { job.reveal() }
             }
             CardButton(title: L("card.open"), symbol: "arrow.up.forward.app", iconOnly: compact) { job.open() }
+            if job.comparable {
+                CardButton(title: L("card.compare"), symbol: "rectangle.split.2x1", iconOnly: compact) { job.compare() }
+            }
             if !job.copied {
                 CardButton(title: L("card.copy"), symbol: "doc.on.clipboard", iconOnly: compact) { job.copyToClipboard() }
             }

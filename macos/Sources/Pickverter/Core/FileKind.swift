@@ -14,7 +14,7 @@ enum FileKind: String, CaseIterable {
     static let documentExts: Set<String> = ["docx", "doc", "rtf", "rtfd", "txt", "text", "md", "markdown", "html", "htm",
                                              "odt", "webarchive", "wordml"]
     static let tableExts: Set<String> = ["csv", "tsv"]
-    static let subtitleExts: Set<String> = ["srt", "vtt"]
+    static let subtitleExts: Set<String> = ["srt", "vtt", "smi", "sami"]
     static let archiveExts: Set<String> = ["zip", "tar", "gz", "tgz", "bz2", "tbz", "tbz2", "xz", "txz", "rar", "7z"]
 
     static func of(_ url: URL) -> FileKind {

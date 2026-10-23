@@ -25,6 +25,18 @@
       "Открыть «Безопасность Windows»…",
       "Abrir Segurança do Windows…"
     ],
+    "action.nfc.d": [
+      "Fixes names from Macs that look like ㅎㅏㄴ",
+      "맥에서 와서 ㅎㅏㄴ처럼 보이는 이름을 고쳐요",
+      "Macから来て「か゛」と分かれる名前を結合",
+      "修正来自Mac、字母分开的名称",
+      "修正來自Mac、字母分開的名稱",
+      "Arregla nombres de equipos Apple que se ven como ㅎㅏㄴ",
+      "Répare les noms venus d'Apple affichés en ㅎㅏㄴ",
+      "Repariert Namen von Macs, die als ㅎㅏㄴ erscheinen",
+      "Исправляет имена с компьютеров Apple, видные как ㅎㅏㄴ",
+      "Corrige nomes vindos de Macs que aparecem como ㅎㅏㄴ"
+    ],
     "action.openwith": [
       "Open With…",
       "다른 앱으로 열기…",
@@ -1070,16 +1082,16 @@
       "Prompt de Comando"
     ],
     "tool.zip.d": [
-      "Same as File Explorer's Compress to ZIP",
-      "탐색기 ZIP 압축과 같아요",
-      "エクスプローラーのZIP圧縮と同じ",
-      "与文件资源管理器的压缩相同",
-      "與檔案總管的壓縮相同",
-      "Igual que en el Explorador",
-      "Comme dans l'Explorateur",
-      "Wie im Explorer",
-      "Как сжатие в Проводнике",
-      "Igual ao Explorador"
+      "Names stay readable on Macs too",
+      "맥에서도 이름이 안 깨지는 ZIP",
+      "Macでも名前が文字化けしないZIP",
+      "在Mac上文件名也不会乱码的 ZIP",
+      "在Mac上檔名也不會亂碼的 ZIP",
+      "Los nombres también se leen bien en equipos Apple",
+      "Noms lisibles aussi sur un ordinateur Apple",
+      "Namen bleiben auch auf Macs lesbar",
+      "Имена читаются и на компьютерах Apple",
+      "Nomes legíveis também em Macs"
     ],
     "trigger.rctrl": [
       "Right Ctrl",

@@ -418,6 +418,12 @@ internal static class Native
     [DllImport("shell32.dll")]
     public static extern void ILFree(IntPtr pidl);
 
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode)]
+    public static extern void SHChangeNotify(int eventId, uint flags, string? item1, string? item2);
+
+    public const int SHCNE_UPDATEDIR = 0x00001000;
+    public const uint SHCNF_PATHW = 0x0005, SHCNF_FLUSHNOWAIT = 0x3000;
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     public struct OPENASINFO
     {

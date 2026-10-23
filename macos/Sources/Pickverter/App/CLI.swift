@@ -190,6 +190,16 @@ enum CLI {
         } else {
             wheel.demoHighlight(slot >= 0 ? slot : nil, sub: sub >= 0 ? sub : nil)
         }
+        // PICKVERTER_SNAPSHOT_ESTIMATE=1 sizes the highlighted option for real; any other text is shown as it is.
+        if let estimate = ProcessInfo.processInfo.environment["PICKVERTER_SNAPSHOT_ESTIMATE"], let active = wheel.activeOption {
+            if estimate == "1" {
+                wheel.estimator.follow(active.option, parent: active.parent, files: files)
+                let deadline = Date(timeIntervalSinceNow: 20)
+                while Date() < deadline, wheel.estimator.state == .none || wheel.estimator.state == .working { pump(0.1) }
+            } else {
+                wheel.estimator.show(estimate == "working" ? .working : estimate == "small" ? .small : .result(estimate))
+            }
+        }
         pump(0.8)
         let size = wheel.geometry.windowSize
         let view = ZStack {
@@ -291,6 +301,7 @@ enum CLI {
         failures += pointerTests(files)
         failures += layoutTests(files)
         failures += editorTests()
+        failures += crossPlatformTests(files)
         return failures == 0 ? 0 : 1
     }
 

@@ -24,7 +24,8 @@ public static class FileKinds
     /// Hangul Word Processor documents (Hancom Office), read and written by rhwp.
     public static readonly HashSet<string> HwpExts = new(StringComparer.OrdinalIgnoreCase) { "hwp", "hwpx" };
     public static readonly HashSet<string> TableExts = new(StringComparer.OrdinalIgnoreCase) { "csv", "tsv" };
-    public static readonly HashSet<string> SubtitleExts = new(StringComparer.OrdinalIgnoreCase) { "srt", "vtt" };
+    /// SubRip, WebVTT and SAMI (.smi, the format Korean subtitles long came in).
+    public static readonly HashSet<string> SubtitleExts = new(StringComparer.OrdinalIgnoreCase) { "srt", "vtt", "smi", "sami" };
     public static readonly HashSet<string> ArchiveExts = new(StringComparer.OrdinalIgnoreCase)
     {
         "zip", "tar", "gz", "tgz", "bz2", "tbz", "tbz2", "xz", "txz", "rar", "7z",
@@ -223,54 +224,14 @@ public static class FileSystem
         return folder;
     }
 
-    /// Plain text, whatever its encoding (UTF-8 with or without BOM, UTF-16, or the legacy code page).
+    /// Plain text, whatever its encoding (see TextEncodings.Decode).
     public static string ReadText(string path)
     {
         var bytes = File.ReadAllBytes(path);
         return DecodeText(bytes);
     }
 
-    public static string DecodeText(byte[] bytes)
-    {
-        if (bytes.Length >= 3 && bytes[0] == 0xEF && bytes[1] == 0xBB && bytes[2] == 0xBF) return Encoding.UTF8.GetString(bytes, 3, bytes.Length - 3);
-        if (bytes.Length >= 2 && bytes[0] == 0xFF && bytes[1] == 0xFE) return Encoding.Unicode.GetString(bytes, 2, bytes.Length - 2);
-        if (bytes.Length >= 2 && bytes[0] == 0xFE && bytes[1] == 0xFF) return Encoding.BigEndianUnicode.GetString(bytes, 2, bytes.Length - 2);
-        try
-        {
-            return new UTF8Encoding(false, true).GetString(bytes);
-        }
-        catch (DecoderFallbackException)
-        {
-            foreach (var codePage in LegacyCodePages())
-            {
-                try
-                {
-                    return Encoding.GetEncoding(codePage, EncoderFallback.ExceptionFallback, DecoderFallback.ExceptionFallback).GetString(bytes);
-                }
-                catch (Exception)
-                {
-                }
-            }
-            return Encoding.UTF8.GetString(bytes);
-        }
-    }
-
-    private static IEnumerable<int> LegacyCodePages()
-    {
-        EnsureCodePages();
-        var preferred = Loc.Language switch
-        {
-            "ko" => 949,
-            "ja" => 932,
-            "zh-Hans" => 936,
-            "zh-Hant" => 950,
-            "ru" => 1251,
-            _ => 1252,
-        };
-        yield return preferred;
-        if (preferred != 949) yield return 949;
-        if (preferred != 1252) yield return 1252;
-    }
+    public static string DecodeText(byte[] bytes) => TextEncodings.Decode(bytes);
 
     private static bool codePagesRegistered;
 
@@ -281,5 +242,20 @@ public static class FileSystem
         try { Encoding.RegisterProvider(CodePagesEncodingProvider.Instance); } catch (Exception) { }
     }
 
-    public static void WriteText(string path, string text) => File.WriteAllText(path, text, new UTF8Encoding(false));
+    /// UTF-8 text. A CSV starts with a byte order mark: without one Excel reads it in the PC's legacy code page and
+    /// Korean (or any non-English) text comes out broken.
+    public static void WriteText(string path, string text)
+    {
+        var csv = string.Equals(Path.GetExtension(path), ".csv", StringComparison.OrdinalIgnoreCase);
+        if (csv && text.StartsWith('\uFEFF')) text = text[1..];
+        File.WriteAllText(path, text, new UTF8Encoding(encoderShouldEmitUTF8Identifier: csv));
+    }
+
+    /// A CSV another program wrote (Excel, LibreOffice): saved again as UTF-8 with a byte order mark when it has none.
+    public static void EnsureCsvBom(string path)
+    {
+        var bytes = File.ReadAllBytes(path);
+        if (bytes.AsSpan().StartsWith(TextEncodings.Utf8Bom)) return;
+        WriteText(path, DecodeText(bytes));
+    }
 }

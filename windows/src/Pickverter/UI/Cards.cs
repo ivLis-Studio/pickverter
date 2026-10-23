@@ -346,6 +346,12 @@ internal sealed class CardWindow : Window
             row.Children.Add(Ui.Button(L("card.reveal"), Job.Reveal, prominent: true, icon: "folder", compact: true));
         }
         row.Children.Add(Secondary(L("card.open"), "arrow.up.forward.app", Job.Open, compact));
+        if (Job.CanCompare)
+        {
+            var before = Job.Files[0];
+            var after = Job.Outputs[0];
+            row.Children.Add(Secondary(L("card.compare"), "square.split.2x1", () => CompareWindow.Open(before, after), compact));
+        }
         if (!Job.Copied) row.Children.Add(Secondary(L("card.copy"), "doc.on.clipboard", () => _ = Job.CopyToClipboard(), compact));
         if (Job.Undoable && !Job.InCache) row.Children.Add(Secondary(L("card.undo"), "arrow.uturn.backward", () => _ = Job.Undo(), compact));
         return row;

@@ -116,6 +116,24 @@ enum ImageEngine {
         }
     }
 
+    /// An alpha channel that is actually used: some pixel isn't fully opaque (checked on a copy of at most 512 px,
+    /// where a thin transparent edge still shows up as partly transparent).
+    static func usesAlpha(_ image: CGImage) -> Bool {
+        guard hasAlpha(image) else { return false }
+        let scale = min(1, 512 / Double(max(image.width, image.height)))
+        let width = max(1, Int(Double(image.width) * scale)), height = max(1, Int(Double(image.height) * scale))
+        guard let context = CGContext(data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: width * 4,
+                                      space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return true }
+        context.interpolationQuality = .medium
+        context.clear(CGRect(x: 0, y: 0, width: width, height: height))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        guard let data = context.data else { return true }
+        let pixels = data.bindMemory(to: UInt8.self, capacity: width * height * 4)
+        for index in 0..<(width * height) where pixels[index * 4 + 3] < 255 { return true }
+        return false
+    }
+
     static func rgbSpace(_ image: CGImage) -> CGColorSpace {
         if let space = image.colorSpace, space.model == .rgb { return space }
         return CGColorSpace(name: CGColorSpace.sRGB)!

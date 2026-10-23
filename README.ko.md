@@ -51,23 +51,39 @@ https://github.com/user-attachments/assets/f2b6a1cc-2df3-4cb4-a95c-205937050f43
 <table>
   <tr>
     <td valign="top" width="33%"><b>⇧ 변환</b><br><sub>이미지 · 동영상 · 오디오 · PDF · 문서 · 한글(HWP·HWPX) · EPUB · 오피스·iWork · 표 · 자막 · 압축 파일</sub></td>
-    <td valign="top" width="33%"><b>⌘ 도구</b><br><sub>배경 제거 · 얼굴·글자 가리기 · 압축 · 크기 조절 · 자르기 · OCR · 회전 · 구간 자르기 · 나누기·합치기 · PDF 페이지 · 암호 · 정보</sub></td>
-    <td valign="top" width="33%"><b>⌃ 액션</b><br><sub>AirDrop · 터미널 · 코드 편집기 · 경로 복사 · 파일 복사 · 이동 · 띄워두기 · 공유 · 체크섬</sub></td>
+    <td valign="top" width="33%"><b>⌘ 도구</b><br><sub>배경 제거 · 얼굴·글자 가리기 · 압축(목표 크기로도) · 크기 조절 · 자르기 · OCR · 회전 · 구간 자르기 · 나누기·합치기 · PDF 페이지 · 암호 · 정보 · 인코딩 고치기</sub></td>
+    <td valign="top" width="33%"><b>⌃ 액션</b><br><sub>AirDrop · 터미널 · 코드 편집기 · 경로 복사 · 파일 복사 · 이동 · 띄워두기 · 공유 · 체크섬 · 이름 자소 합치기</sub></td>
   </tr>
 </table>
 
 - **변환** 이미지(JPG·PNG·HEIC·WebP·AVIF·TIFF·GIF·BMP·PDF·ICO), 동영상(MP4·MOV·WebM·MKV·GIF·MP3·M4A·WAV),
   오디오(MP3·M4A·WAV·FLAC·AIFF·OGG·Opus), PDF(PNG·JPG·TXT·MD·DOCX·RTF·HTML), 문서(PDF·DOCX·RTF·TXT·MD·HTML·ODT·**EPUB**),
   **한글 HWP·HWPX**(PDF·DOCX·HWP ↔ HWPX·PNG·JPG·TXT·MD·HTML — 암호 문서와 배포용 문서도),
-  엑셀·Numbers·Pages·Keynote·파워포인트, 표(CSV·TSV·JSON·MD·HTML), 자막(SRT·VTT·TXT), 압축(ZIP·TAR.GZ)
+  엑셀·Numbers·Pages·Keynote·파워포인트, 표(CSV·TSV·JSON·MD·HTML), 자막(SRT·VTT·TXT — SMI 자막도), 압축(ZIP·TAR.GZ)
 - **편집 창** 동영상·오디오 구간 자르기, 비율 프리셋이 있는 자르기, 가리기(모자이크·흐림·채우기 — 얼굴과 글자 자동 찾기),
   끌어서 정리하는 PDF 페이지, 사진·PDF·미디어 정보 편집(사진은 가능하면 재압축 없이)
-- **도구** 압축, 크기 조절, 배경 제거, 텍스트 추출(OCR), 회전·반전, 콜라주, 그림책 EPUB · 동영상 압축·해상도·속도·음소거·스냅샷·나누기·합치기 ·
-  오디오 음량 맞추기·무음 자르기·모노·시각화 영상 · PDF 합치기·나누기·쪽 추출·역순·빈 쪽 지우기·암호 · 오피스/iWork 파일 속 이미지 꺼내기 · ZIP/TAR.GZ
-- **액션** AirDrop, 터미널·코드 편집기로 열기, 경로 복사(전체·~·이름·셸 따옴표), 클립보드, 최근 폴더로 이동·복사, 항상 위 미리보기, 공유, 체크섬(SHA-256·SHA-1·MD5)
+- **도구** 압축(화질로, 또는 500KB·1MB·2MB·5MB·직접 정한 크기 이하로), 크기 조절, 배경 제거, 텍스트 추출(OCR), 회전·반전, 콜라주, 그림책 EPUB ·
+  동영상 압축(화질로, 또는 10·25·50·100MB·직접 정한 크기 이하로)·해상도·속도·음소거·스냅샷·나누기·합치기 · 오디오 음량 맞추기·무음 자르기·모노·시각화 영상 ·
+  PDF 합치기·나누기·쪽 추출·역순·빈 쪽 지우기·암호 · 오피스/iWork 파일 속 이미지 꺼내기 · 텍스트 인코딩 고치기(EUC-KR → UTF-8) · ZIP/TAR.GZ
+- **액션** AirDrop, 터미널·코드 편집기로 열기, 경로 복사(전체·~·이름·셸 따옴표), 클립보드, 최근 폴더로 이동·복사, 항상 위 미리보기, 공유, 체크섬(SHA-256·SHA-1·MD5),
+  맥에서 만든 이름의 자소 합치기
 
 **결과는 원하는 곳으로** — 파일로, 클립보드로, 둘 다, 또는 매번 묻기(설정 › 일반).
 ⌥-클릭이나 ⌘C는 이번 결과만 클립보드로, ⌘S는 파일로 보내요. 원본은 절대 덮어쓰지 않아요.
+
+**누르기 전에 미리** — 압축·크기 조절·다른 이미지 형식 칸을 가리키면 휠 가운데에 결과 크기가 먼저 떠요: "≈ 509KB · −40%".
+압축은 목표 크기로도 맞춰요 — 사진은 500KB·1MB·2MB·5MB 이하, 동영상은 10~100MB 이하, 아니면 직접 정한 크기까지, 화질은
+들어가는 만큼 최대한 지켜요. 사진 작업이 끝나면 카드의 **비교**로 원본과 결과를 가운데 선을 끌면서 나란히 볼 수 있어요.
+
+<p align="center">
+  <img src="docs/screenshots/wheel-estimate.png" height="400" alt="압축 · 균형에서 휠 가운데에 ≈ 509KB · −40%가 보이는 모습">
+  <img src="docs/screenshots/compare.webp" height="400" alt="배경 제거 전후를 가운데 선으로 나눠 보는 비교 창">
+</p>
+
+**Mac과 Windows 사이에서도** — Pickverter로 만든 ZIP은 Windows에서도 이름이 안 깨지고(.DS_Store·__MACOSX는 빼요), Windows에서
+만든 ZIP은 한글 이름 그대로 풀려요. 한글 Windows에서 저장한 EUC-KR 텍스트도 제대로 읽고, **인코딩 고치기**로 UTF-8로 바꿔 줘요.
+SMI 자막은 SRT·VTT로 바뀌고, CSV는 엑셀에서 글자가 안 깨지게 저장돼요. 맥에서 ㅎㅏㄴ처럼 자소가 갈라져 저장된 이름은
+**이름 자소 합치기**로 Windows와 웹에서도 제대로 보이게 고쳐요.
 
 **내 맘대로** — 설정 › 휠에서 파일 종류마다 링 구성을 미리보기로 보며 바꿀 수 있어요. 칸을 끌어서 순서를 바꾸고, 안 쓰는 칸은
 빼고, 옵션 하나를 칸으로 꺼내거나(회전 · 왼쪽 90°) 다른 링의 칸을 가져오세요(압축 옆에 AirDrop). 다 되면 모든 파일 종류에

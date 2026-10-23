@@ -194,7 +194,7 @@ public static class ActionCatalog
             return Task.FromResult(PickResult.Quiet);
         };
 
-        return
+        List<PickOption> list =
         [
             Action("share", L("action.share"), L("action.share.d"), "square.and.arrow.up", perform: async ctx =>
             {
@@ -225,5 +225,8 @@ public static class ActionCatalog
             Action("hash", L("action.hash"), L("action.hash.d"), "number",
                    variants: HashAlgorithms.All.Select(algorithm => Sub("hash", algorithm.Raw(), algorithm.Name(), ctx => FileActions.CopyChecksums(ctx, algorithm))).ToList()),
         ];
+        // Only when a name (or one directly inside a selected folder) has letters a Mac stored apart.
+        if (NameRepair.Offered(files)) list.Add(Action("nfc", L("action.nfc"), L("action.nfc.d"), "wand", perform: NameRepair.Join));
+        return list;
     }
 }

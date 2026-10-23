@@ -19,7 +19,7 @@ internal static class Snapshots
     private static readonly string[] Everyone = Loc.Languages.Select(language => language.Code).ToArray();
     private static HashSet<string>? only;
 
-    /// --only wheels,cards,flyout,settings,onboarding,update,crop,redact,trim,pages,metadata,dialogs
+    /// --only wheels,cards,flyout,settings,onboarding,update,crop,redact,trim,pages,metadata,dialogs,compare
     private static bool On(string section) => only == null || only.Contains(section);
 
     public static async Task<int> Run(string[] args)
@@ -148,6 +148,38 @@ internal static class Snapshots
             hangul.DemoHighlight(IndexOf(hangul, "convert.pdf"));
             await Save(hangulCanvas, Path.Combine(output, "wheel-hwp.png"), side, side, Desk);
         }
+
+        // The size preview: Compress (its preferred option, under the option's name), a size the photo is under
+        // already, and a conversion (in place of the hint at the bottom).
+        var sized = new WheelModel();
+        sized.Present([photo], WheelModel.WheelOrigin.Selection, WheelMode.Tools, ScreenPoint.Zero);
+        sized.ForceVisibleForTesting();
+        var sizedCanvas = Canvas(sized);
+        sizedCanvas.Thumbnail = Explorer.Thumbnail(photo, 96);
+        var compress = IndexOf(sized, "tool.compress");
+        sized.DemoHighlight(compress);
+        await sized.EstimateNowAsync();
+        await Save(sizedCanvas, Path.Combine(output, "wheel-estimate.png"), side, side, Desk);
+        sized.DemoHighlight(compress, sized.Items[compress].Variants.ToList().FindIndex(variant => variant.Id == "tool.compress.max5m"));
+        await sized.EstimateNowAsync();
+        await Save(sizedCanvas, Path.Combine(output, "wheel-estimate-small.png"), side, side, Desk);
+        sized.DemoSetMode(WheelMode.Convert);
+        sized.DemoHighlight(IndexOf(sized, "convert.webp"));
+        await sized.EstimateNowAsync();
+        await Save(sizedCanvas, Path.Combine(output, "wheel-estimate-convert.png"), side, side, Desk);
+    }
+
+    private static readonly Dictionary<string, string> Results = new();
+
+    /// A file an option makes from a fixture (made once per run).
+    private static async Task<string> Result(string file, string optionId)
+    {
+        var key = file + "\n" + optionId;
+        if (Results.TryGetValue(key, out var known) && File.Exists(known)) return known;
+        var option = Catalog.AllOptions([file]).First(candidate => candidate.Id == optionId);
+        var made = (await JobCenter.RunDirect(option, [file], ResultDestination.File)).Outputs[0];
+        Results[key] = made;
+        return made;
     }
 
     private static async Task Cards(string output, string photo, string tone)
@@ -276,6 +308,18 @@ internal static class Snapshots
                 await Take(new PasswordDialog(hwp, unlock: true), Path.Combine(output, "dialog-unlock.png"), 460, null);
                 await Take(new PasswordDialog(hwp, unlock: true, retry: true), Path.Combine(output, "dialog-unlock-retry.png"), 460, null);
             }
+            await Take(new SizeDialog(photo, FileNames.Size(photo)), Path.Combine(output, "dialog-size.png"), 460, null);
+        }
+        if (On("compare"))
+        {
+            // A photo against its half-size copy, then a transparent picture against its WebP (the checkerboard).
+            var resized = new CompareWindow(photo, await Result(photo, "tool.resize.50"));
+            await resized.Ready;
+            await Take(resized, Path.Combine(output, "compare.png"), 980, 720);
+            var logo = file("logo.png");
+            var transparent = new CompareWindow(logo, await Result(logo, "convert.webp"));
+            await transparent.Ready;
+            await Take(transparent, Path.Combine(output, "compare-transparent.png"), 980, 720);
         }
     }
 

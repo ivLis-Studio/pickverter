@@ -215,10 +215,13 @@ public sealed class PickContext
     private readonly Action<double?, string?> sink;
     private readonly double offset;
     private readonly double scale;
+    /// Set for the size preview: results go here, nothing waits for the work queue, nothing reports progress.
+    private readonly string? scratch;
 
     public PickContext(IReadOnlyList<string> files, OutputLocation location, ResultDestination destination = ResultDestination.File,
                        ScreenPoint anchor = default, Guid? jobId = null, StartSignal? started = null,
-                       CancellationToken token = default, Action<double?, string?>? sink = null, double offset = 0, double scale = 1)
+                       CancellationToken token = default, Action<double?, string?>? sink = null, double offset = 0, double scale = 1,
+                       string? scratch = null)
     {
         Files = files;
         Location = location;
@@ -230,7 +233,15 @@ public sealed class PickContext
         this.sink = sink ?? ((_, _) => { });
         this.offset = offset;
         this.scale = scale;
+        this.scratch = scratch;
     }
+
+    /// The size preview's run: results go into a private folder (the caller deletes it), no work-queue wait, no
+    /// progress, no cards.
+    public static PickContext Scratch(IReadOnlyList<string> files, string folder, CancellationToken token) =>
+        new(files, OutputLocation.SameFolder, ResultDestination.File, token: token, scratch: folder);
+
+    public bool IsScratch => scratch != null;
 
     public IReadOnlyList<string> Files { get; }
     public OutputLocation Location { get; }
@@ -242,7 +253,7 @@ public sealed class PickContext
 
     /// The same job (progress, output policy, cancellation) working on other files.
     public PickContext With(IReadOnlyList<string> files) =>
-        new(files, Location, Destination, Anchor, JobId, Started, Token, sink, offset, scale);
+        new(files, Location, Destination, Anchor, JobId, Started, Token, sink, offset, scale, scratch);
 
     public void Report(double? fraction, string? note = null)
     {
@@ -259,16 +270,16 @@ public sealed class PickContext
     public PickContext Slice(int index, int count)
     {
         var width = scale / Math.Max(count, 1);
-        return new PickContext(Files, Location, Destination, Anchor, JobId, Started, Token, sink, offset + width * index, width);
+        return new PickContext(Files, Location, Destination, Anchor, JobId, Started, Token, sink, offset + width * index, width, scratch);
     }
 
     /// A child context whose 0…1 maps into start…end of this one (a download before the work itself).
     public PickContext Portion(double start, double end) =>
-        new(Files, Location, Destination, Anchor, JobId, Started, Token, sink, offset + start * scale, (end - start) * scale);
+        new(Files, Location, Destination, Anchor, JobId, Started, Token, sink, offset + start * scale, (end - start) * scale, scratch);
 
     /// Clipboard-only results are written to a private cache folder instead of next to the original.
-    public string DirectoryFor(string source) =>
-        Destination == ResultDestination.Clipboard ? ClipboardStore.Folder(JobId) : Location.DirectoryFor(source);
+    public string DirectoryFor(string source) => scratch ??
+        (Destination == ResultDestination.Clipboard ? ClipboardStore.Folder(JobId) : Location.DirectoryFor(source));
 
     /// "photo.heic" + "png" -> "photo.png"; with a suffix -> "photo compressed.png". Never overwrites.
     public string DestinationFor(string source, string? ext, string? suffix = null)
@@ -284,7 +295,7 @@ public sealed class PickContext
     public async Task<string> Produce(string destination, Func<string, Task> body)
     {
         BeginWork();
-        if (WorkQueue.IsHoldingSlot) return await Stage(destination, body);
+        if (WorkQueue.IsHoldingSlot || scratch != null) return await Stage(destination, body);
         var queue = WorkQueue.Shared;
         if (queue.IsFull) sink(null, L("job.queued"));
         await queue.AcquireAsync(Token);
@@ -329,7 +340,9 @@ public sealed class PickContext
             await body(staged);
             Check();
             if (!File.Exists(staged) && !Directory.Exists(staged)) throw new PickException(L("err.no_result"));
-            var final = FileNames.Unique(destination);
+            // Results read right everywhere: names in NFC (an original's split letters joined), inside a folder too.
+            if (Directory.Exists(staged)) NameRepair.ComposeInside(staged);
+            var final = FileNames.Unique(Path.Combine(folder, NameRepair.Nfc(FileNames.Name(destination))));
             try
             {
                 FileSystem.Move(staged, final);

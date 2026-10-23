@@ -18,13 +18,9 @@ enum DocumentEngine {
         }
     }
 
+    /// UTF-8, UTF-16 with a byte-order mark, or CP949 from Korean Windows.
     static func readText(_ url: URL) throws -> String {
-        var encoding = String.Encoding.utf8
-        if let text = try? String(contentsOf: url, usedEncoding: &encoding) { return text }
-        let data = try Data(contentsOf: url)
-        let korean = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(CFStringEncoding(CFStringEncodings.EUC_KR.rawValue)))
-        if let text = String(data: data, encoding: korean) { return text }
-        return String(decoding: data, as: UTF8.self)
+        try TextCodec.read(url)
     }
 
     @MainActor
@@ -40,6 +36,12 @@ enum DocumentEngine {
                                           documentAttributes: nil)
         case "txt":
             return NSAttributedString(string: try readText(url), attributes: body)
+        case "html":
+            // A page without a charset would be read as Latin-1: say what it really is.
+            let data = try Data(contentsOf: url)
+            var options: [NSAttributedString.DocumentReadingOptionKey: Any] = [.documentType: NSAttributedString.DocumentType.html]
+            if let encoding = TextCodec.htmlEncoding(data) { options[.characterEncoding] = encoding.rawValue }
+            return try NSAttributedString(data: data, options: options, documentAttributes: nil)
         default:
             return try NSAttributedString(url: url, options: [:], documentAttributes: nil)
         }

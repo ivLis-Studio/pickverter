@@ -303,7 +303,8 @@ extension CLI {
                   "person.crop.square", "text.viewfinder", "rotate.left", "rotate.right", "plus.square.on.square", "trash",
                   "arrow.up.arrow.down", "ellipsis.circle", "checkmark.circle", "eye.slash", "arrow.counterclockwise",
                   "arrow.clockwise", "arrow.uturn.backward", "gearshape", "list.bullet", "info.circle", "minus.circle",
-                  "minus.circle.fill", "slider.horizontal.3", "plus", "circle.dashed", "pin.fill"]
+                  "minus.circle.fill", "slider.horizontal.3", "plus", "circle.dashed", "pin.fill", "rectangle.split.2x1",
+                  "arrow.left.and.right", "text.badge.checkmark", "character.textbox"]
         for symbol in ui where NSImage(systemSymbolName: symbol, accessibilityDescription: nil) == nil { missing.insert(symbol) }
         for item in missing.sorted() { print("MISSING \(item)") }
         print(missing.isEmpty ? "OK all symbols exist" : "FAIL \(missing.count) missing")
@@ -391,6 +392,14 @@ extension CLI {
                     model.start = duration * 0.2
                     model.end = duration * 0.7
                     return (AnyView(TrimEditorView(url: file, model: model, finish: { _ in })), CGSize(width: 640, height: 250))
+                case "compare":
+                    // PICKVERTER_COMPARE_AFTER: the result to compare with (the same file otherwise).
+                    let after = ProcessInfo.processInfo.environment["PICKVERTER_COMPARE_AFTER"].map { URL(fileURLWithPath: $0) } ?? file
+                    guard let model = CompareModel(before: file, after: after) else { throw PickError(L("err.read_image")) }
+                    if let split = ProcessInfo.processInfo.environment["PICKVERTER_COMPARE_SPLIT"].flatMap(Double.init) {
+                        model.position = CGFloat(split)
+                    }
+                    return (AnyView(CompareView(model: model, close: {})), CompareWindow.windowSize(for: model.frameAspect))
                 case "onboarding":
                     return (AnyView(OnboardingView()), CGSize(width: 871, height: 664))
                 case "onboarding-progress":
@@ -431,7 +440,7 @@ extension CLI {
                     return (AnyView(UpdateView(close: {})), CGSize(width: 500, height: 200))
                 }
             }
-            let status = snapshotWindow(built.0, size: built.1, dark: dark, to: args[2])
+            let status = snapshotWindow(built.0, size: built.1, dark: dark, to: args[2], title: kind == "compare" ? L("compare.title") : "")
             if kind.hasPrefix("wheel") { UserDefaults.standard.removePersistentDomain(forName: snapshotSuite) }
             return status
         } catch {
@@ -442,9 +451,10 @@ extension CLI {
 
     private static let snapshotSuite = "com.pickverter.snapshot"
 
-    static func snapshotWindow(_ view: AnyView, size: CGSize, dark: Bool, to path: String) -> Int32 {
+    static func snapshotWindow(_ view: AnyView, size: CGSize, dark: Bool, to path: String, title: String = "") -> Int32 {
         let window = NSWindow(contentRect: CGRect(origin: .zero, size: size), styleMask: [.titled, .closable],
                               backing: .buffered, defer: false)
+        window.title = title
         window.appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
         let host = NSHostingView(rootView: view.environmentObject(Preferences.shared).environmentObject(Permissions.shared))
         host.frame = CGRect(origin: .zero, size: size)

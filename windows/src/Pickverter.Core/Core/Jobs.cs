@@ -105,6 +105,12 @@ public sealed class Job : INotifyPropertyChanged
     public bool IsNotice => Option == null;
     public bool HasFiles => Outputs.Count > 0 && !Undone;
 
+    /// One picture in, one picture out (on disk or in the clipboard cache): the card offers a before-and-after view.
+    public bool CanCompare =>
+        State == JobState.Succeeded && !Undone && Files.Count == 1 && Outputs.Count == 1 &&
+        FileKinds.Of(Files[0]) == FileKind.Image && FileKinds.Of(Outputs[0]) == FileKind.Image &&
+        File.Exists(Files[0]) && File.Exists(Outputs[0]);
+
     public async Task Complete(PickResult result)
     {
         message = result.Message;

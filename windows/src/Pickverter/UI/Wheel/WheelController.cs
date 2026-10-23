@@ -22,6 +22,7 @@ internal sealed class WheelController
 
     private WheelController()
     {
+        Model.Estimates = true;
         Model.Changed += OnChanged;
         Model.Launched += (option, mode, files, destination, anchor) =>
         {

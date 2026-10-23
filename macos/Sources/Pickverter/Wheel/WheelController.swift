@@ -136,14 +136,16 @@ final class WheelController: ObservableObject {
 
     let geometry = WheelGeometry()
     let pointer = PointerModel()
+    /// The hub's "≈ 420 KB · −71%" line.
+    let estimator = SizeEstimator()
 
     @Published private(set) var isVisible = false
     @Published private(set) var origin: Origin = .selection
     @Published private(set) var mode: WheelMode = .convert
     @Published private(set) var files: [URL] = []
     @Published private(set) var segments: [SegmentData] = []
-    @Published private(set) var highlighted: Int?
-    @Published private(set) var subHighlighted: Int?
+    @Published private(set) var highlighted: Int? { didSet { if highlighted != oldValue { followEstimate() } } }
+    @Published private(set) var subHighlighted: Int? { didSet { if subHighlighted != oldValue { followEstimate() } } }
     @Published private(set) var subRing: SubRingData?
     @Published private(set) var tabsHidden = false
     @Published private(set) var hoveredTab: WheelMode?
@@ -152,7 +154,7 @@ final class WheelController: ObservableObject {
     @Published private(set) var flash: String?
     @Published private(set) var page = 0
     @Published private(set) var pageCount = 1
-    @Published private(set) var choice: PendingChoice?
+    @Published private(set) var choice: PendingChoice? { didSet { followEstimate() } }
     @Published var appeared = false
     /// While the right-click menu tracks, the event tap must leave the mouse alone.
     private(set) var menuOpen = false
@@ -178,6 +180,8 @@ final class WheelController: ObservableObject {
     /// Tests: capture what would run instead of starting a job, and pretend a destination preference.
     var onLaunch: ((PickOption, ResultDestination) -> Void)?
     var destinationOverride: ResultDestination?
+    /// Tests: a demo wheel that sizes results like a live one.
+    var previewsSizes = false
 
     init(demo: Bool = false, showsLayout: Bool = false) {
         isDemo = demo
@@ -271,6 +275,7 @@ final class WheelController: ObservableObject {
         guard isVisible else { return }
         Debug.log("dismiss")
         isVisible = false
+        estimator.cancel()
         springTask?.cancel()
         springKey = nil
         withAnimation(.easeOut(duration: 0.12)) { appeared = false }
@@ -911,6 +916,16 @@ final class WheelController: ObservableObject {
     }
 
     // MARK: Hub text
+
+    /// Sizes the highlighted result while the wheel is open (live wheels only: demos and Settings stay still).
+    private func followEstimate() {
+        let live = !isDemo || previewsSizes
+        guard live, isVisible, choice == nil, let active = activeOption else {
+            if live { estimator.cancel() }
+            return
+        }
+        estimator.follow(active.option, parent: active.parent, files: files)
+    }
 
     var filesTitle: String {
         guard let first = files.first else { return "" }

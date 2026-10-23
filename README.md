@@ -51,25 +51,41 @@ https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 <table>
   <tr>
     <td valign="top" width="33%"><b>⇧ Convert</b><br><sub>Images · video · audio · PDF · documents · HWP &amp; HWPX · EPUB · Office &amp; iWork · tables · subtitles · archives</sub></td>
-    <td valign="top" width="33%"><b>⌘ Tools</b><br><sub>Remove background · hide faces &amp; text · compress · resize · crop · OCR · rotate · trim · split &amp; join · PDF pages · lock · info</sub></td>
-    <td valign="top" width="33%"><b>⌃ Actions</b><br><sub>AirDrop · Terminal · code editor · copy path · copy file · move · float · share · checksums</sub></td>
+    <td valign="top" width="33%"><b>⌘ Tools</b><br><sub>Remove background · hide faces &amp; text · compress (to a size, too) · resize · crop · OCR · rotate · trim · split &amp; join · PDF pages · lock · info · fix encoding</sub></td>
+    <td valign="top" width="33%"><b>⌃ Actions</b><br><sub>AirDrop · Terminal · code editor · copy path · copy file · move · float · share · checksums · join split letters</sub></td>
   </tr>
 </table>
 
 - **Convert** images (JPG, PNG, HEIC, WebP, AVIF, TIFF, GIF, BMP, PDF, ICO), video (MP4, MOV, WebM, MKV, GIF, MP3, M4A, WAV),
   audio (MP3, M4A, WAV, FLAC, AIFF, OGG, Opus), PDF (PNG, JPG, TXT, MD, DOCX, RTF, HTML), documents (PDF, DOCX, RTF, TXT, MD, HTML, ODT, **EPUB**),
   **HWP & HWPX** (PDF, DOCX, HWP ↔ HWPX, PNG, JPG, TXT, MD, HTML — password-protected and distribution documents too),
-  Excel/Numbers/Pages/Keynote/PowerPoint, tables (CSV, TSV, JSON, MD, HTML), subtitles (SRT, VTT, TXT), archives (ZIP, TAR.GZ)
+  Excel/Numbers/Pages/Keynote/PowerPoint, tables (CSV, TSV, JSON, MD, HTML), subtitles (SRT, VTT, TXT — from SAMI .smi too), archives (ZIP, TAR.GZ)
 - **Edit** with small, focused editors: trim video and audio, crop with ratio presets, hide areas (mosaic, blur, fill — finds faces and text for you),
   organize PDF pages by drag and drop, edit photo/PDF/media info (losslessly for photos where possible)
-- **Tools** compress, resize, remove background, extract text (OCR), rotate and flip, collage, picture-book EPUB · video compress, resolution,
-  speed, mute, snapshot, split, join · audio loudness, silence trim, mono, visualizer video · PDF merge, split, extract pages, reverse,
-  remove blank pages, lock · images and media out of Office/iWork files · ZIP / TAR.GZ
+- **Tools** compress (by quality, or under 500 KB / 1 MB / 2 MB / 5 MB / your size), resize, remove background, extract text (OCR), rotate and
+  flip, collage, picture-book EPUB · video compress (by quality, or under 10 / 25 / 50 / 100 MB / your size), resolution, speed, mute, snapshot,
+  split, join · audio loudness, silence trim, mono, visualizer video · PDF merge, split, extract pages, reverse, remove blank pages, lock ·
+  images and media out of Office/iWork files · fix text encoding (EUC-KR → UTF-8) · ZIP / TAR.GZ
 - **Actions** AirDrop, open in Terminal or your code editor, copy path (full, ~, name, shell-quoted), copy, move/copy to recent folders,
-  float as an always-on-top preview, share, checksums (SHA-256, SHA-1, MD5)
+  float as an always-on-top preview, share, checksums (SHA-256, SHA-1, MD5), join split letters in names made on a Mac
 
 **Results where you want them** — a file, the clipboard, both, or the wheel asks every time (Settings › General).
 ⌥-click / ⌘C sends one result to the clipboard, ⌘S to a file. Originals are never overwritten.
+
+**See it before you click** — point at Compress, Resize or another picture format and the wheel's center works out the result's
+size first: "≈ 509 KB · −40%". Compress can also aim for a size — under 500 KB, 1 MB, 2 MB or 5 MB for pictures, 10 to 100 MB for
+video, or a number of your own — keeping as much quality as fits. When a picture is done, **Compare** on its card shows the original
+and the result under one divider you drag.
+
+<p align="center">
+  <img src="docs/screenshots/wheel-estimate.png" height="400" alt="The wheel's center showing ≈ 509 KB · −40% for Compress · Balanced">
+  <img src="docs/screenshots/compare.webp" height="400" alt="Before and after a background removal, split by a divider">
+</p>
+
+**Between Mac and Windows** — ZIPs from Pickverter keep their names readable on Windows (and leave .DS_Store and __MACOSX out),
+and ZIPs made on Windows unpack with readable Korean names. Text saved on Korean Windows (EUC-KR) reads right, and **Fix Encoding**
+rewrites it as UTF-8. SMI subtitles convert to SRT and VTT, CSVs open in Excel with every letter intact, and **Join Split Letters**
+repairs names a Mac stored as separate jamo (ㅎㅏㄴ instead of 한), so they look right on Windows and the web.
 
 **Make it yours** — Settings › Wheel lays out each ring per file type with a live preview: drag slots into order, remove the ones
 you never use, give an option its own slot (Rotate · Left) or bring in a slot from another ring (AirDrop next to Compress),

@@ -103,7 +103,7 @@ enum ActionCatalog {
             }
         }
 
-        return [
+        var list = [
             action("airdrop", "AirDrop", L("action.airdrop.d"), "dot.radiowaves.left.and.right") { ctx in
                 try await MainActor.run { try FileActions.airDrop(ctx.files) }
                 return .quiet
@@ -153,5 +153,12 @@ enum ActionCatalog {
                 }
             }),
         ]
+        // Names made on a Mac that would show up with split letters on Windows or the web.
+        if NameFixer.needsFix(files) {
+            list.append(action("nfc", L("action.nfc"), L("action.nfc.d"), "character.textbox") { ctx in
+                try await NameFixer.fix(ctx)
+            })
+        }
+        return list
     }
 }

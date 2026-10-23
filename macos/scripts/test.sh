@@ -46,6 +46,10 @@ if [ "$QUICK" = 0 ] && command -v ffmpeg >/dev/null 2>&1; then
   ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc=duration=6:size=640x360:rate=30 \
     -f lavfi -i sine=frequency=330:duration=6 -shortest -c:v libx264 -pix_fmt yuv420p -c:a aac "$FIX/talk.mp4"
   ffmpeg -hide_banner -loglevel error -i "$FIX/tone.wav" -c:a libmp3lame -q:a 4 "$FIX/tone.mp3"
+  # Film grain doesn't compress: about 30 MB for six seconds, so "Under 10 MB" has real work to do.
+  ffmpeg -hide_banner -loglevel error -f lavfi -i testsrc2=duration=6:size=1280x720:rate=30 \
+    -f lavfi -i sine=frequency=220:duration=6 -shortest -vf noise=alls=25:allf=t -c:v libx264 -crf 16 \
+    -pix_fmt yuv420p -c:a aac "$FIX/grain.mp4"
 fi
 
 HAS_RHWP=0
@@ -60,6 +64,8 @@ fi
 
 # t <name> <check> <option-id> <fixture…>   (optional: E='VAR=value' for the editor answer)
 # checks: ext:<ext> · dir:<count> · msg · fact:<key>=<value> · near:<key>=<value> · epub · clip · fail
+#         text:<words> (in the UTF-8 result) · has:<name> (stored composed in the result folder) · max:<bytes>
+#         bom (UTF-8 byte-order mark) · zipnames (composed, flagged UTF-8, no Mac clutter)
 t() {
   local name="$1" check="$2" option="$3"; shift 3
   local dir="$WORK/$name"
@@ -103,6 +109,23 @@ t() {
                 xmllint --noout "$f" 2>>"$log" || { ok=0; why="invalid XML in ${f#$x/}"; }
               done
             fi ;;
+      text:*) python3 -c 'import sys; sys.exit(0 if sys.argv[2] in open(sys.argv[1], "rb").read().decode("utf-8") else 1)' \
+                "$out" "${check#text:}" 2>>"$log" || { ok=0; why="no “${check#text:}” in UTF-8"; } ;;
+      has:*) python3 -c 'import os, sys; sys.exit(0 if sys.argv[2].encode() in os.listdir(sys.argv[1].encode()) else 1)' \
+               "$out" "${check#has:}" || { ok=0; why="no composed “${check#has:}” in $(ls "$out" 2>/dev/null | tr '\n' ' ')"; } ;;
+      max:*) local bytes; bytes=$(stat -f %z "$out")
+             [ "$bytes" -le "${check#max:}" ] || { ok=0; why="$bytes bytes > ${check#max:}"; } ;;
+      bom) [ "$(head -c 3 "$out" | xxd -p)" = "efbbbf" ] || { ok=0; why="no byte-order mark"; } ;;
+      zipnames) python3 - "$out" <<'PY' 2>>"$log" || { ok=0; why="names not composed UTF-8 or clutter inside"; }
+import sys, unicodedata, zipfile
+entries = zipfile.ZipFile(sys.argv[1]).infolist()
+names = [e.filename for e in entries]
+assert names, "empty"
+assert all(unicodedata.is_normalized("NFC", n) for n in names), names
+assert all(e.flag_bits & 0x800 for e in entries if not e.filename.isascii()), names
+assert not any(".DS_Store" in n or "__MACOSX" in n or "/._" in n for n in names), names
+PY
+             ;;
     esac
   fi
   if [ "$ok" = 1 ]; then
@@ -154,6 +177,19 @@ t pptx-media dir:1 tool.media deck.pptx
 t pptx-text msg tool.copytext deck.pptx
 t csv-json ext:json convert.json people.csv
 
+echo "— Mac ↔ Windows"
+t txt-utf8 text:똠방각하 tool.utf8 notes-cp949.txt
+t smi-srt text:자막 convert.srt movie.smi
+t smi-vtt text:반갑습니다 convert.vtt movie.smi
+t zip-from-windows has:결과.txt tool.extract windows.zip
+t zip-from-mac has:메모.txt tool.extract mac.zip
+t zip-for-windows zipnames tool.zip names
+t names-join msg action.nfc names
+t csv-bom bom convert.csv people.json
+t img-under-500k max:500000 tool.compress.max500k noise.jpg
+E='PICKVERTER_EDITOR_SIZE=1.2' t img-under-custom max:1200000 tool.compress.maxcustom noise.jpg
+t img-already-under msg tool.compress.max5m photo.jpg
+
 if [ "$HAS_RHWP" = 1 ]; then
   echo "— HWP (rhwp $RHWP_VERSION)"
   t hwpx-pdf fact:pages=1 convert.pdf report.hwpx
@@ -192,6 +228,7 @@ if [ "$HAS_FFMPEG" = 1 ]; then
   t wav-silence near:duration=3 tool.silence tone.wav
   t mp3-viz ext:mp4 tool.visualize.wave tone.mp3
   t mp3-join near:duration=8 tool.join tone.mp3 tone.mp3
+  t mp4-under-10m max:10000000 tool.compress.max10m grain.mp4
 fi
 
 echo

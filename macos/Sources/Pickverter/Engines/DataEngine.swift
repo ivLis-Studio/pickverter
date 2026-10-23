@@ -72,7 +72,8 @@ enum DataEngine {
         switch ext {
         case "csv", "tsv":
             let sep = ext == "csv" ? "," : "\t"
-            return padded.map { row in
+            // Excel on Windows reads a CSV as UTF-8 only with the byte-order mark.
+            return (ext == "csv" ? "\u{FEFF}" : "") + padded.map { row in
                 row.map { cell in
                     let needsQuotes = cell.contains(sep) || cell.contains("\"") || cell.contains("\n")
                     return needsQuotes ? "\"" + cell.replacingOccurrences(of: "\"", with: "\"\"") + "\"" : cell
@@ -220,7 +221,8 @@ enum DataEngine {
     }
 
     static func convertSubtitles(_ src: URL, to ext: String, ctx: PickContext) async throws -> URL {
-        let cues = parseSubtitles(try DocumentEngine.readText(src))
+        let text = try DocumentEngine.readText(src)
+        let cues = ["smi", "sami"].contains(FileNames.normalizedExt(src)) ? parseSAMI(text) : parseSubtitles(text)
         guard !cues.isEmpty else { throw PickError(L("err.no_cues")) }
         let output: String
         switch ext {
@@ -239,5 +241,119 @@ enum DataEngine {
         return try await ctx.produce(ctx.destination(for: src, ext: ext)) { tmp in
             try output.write(to: tmp, atomically: true, encoding: .utf8)
         }
+    }
+
+    // MARK: SAMI (.smi), the subtitle format of Korean Windows players
+
+    /// <SYNC Start=ms> blocks, one language: a Korean class (KRCC, KOCC, KR…, KO…) when there is one, otherwise the
+    /// first class. <br> breaks a line, other tags go, entities are decoded. A block with nothing (or only &nbsp;) in it
+    /// ends the cue before it; a cue otherwise runs to the next block, the last one for four seconds.
+    static func parseSAMI(_ text: String) -> [Cue] {
+        func regex(_ pattern: String) -> NSRegularExpression? {
+            try? NSRegularExpression(pattern: pattern, options: [.caseInsensitive])
+        }
+        guard let sync = regex(#"<sync\b([^>]*)>"#), let start = regex(#"\bstart\s*=\s*["']?\s*(-?\d+)"#),
+              let paragraph = regex(#"<p\b([^>]*)>"#), let klass = regex(#"\bclass\s*=\s*["']?([A-Za-z0-9_-]+)"#)
+        else { return [] }
+        let ns = text as NSString
+        func first(_ expression: NSRegularExpression, in string: String) -> String? {
+            let local = string as NSString
+            guard let match = expression.firstMatch(in: string, range: NSRange(location: 0, length: local.length)) else { return nil }
+            return local.substring(with: match.range(at: 1))
+        }
+
+        // Blocks: what follows each <SYNC> up to the next one (or </BODY>).
+        let syncs = sync.matches(in: text, range: NSRange(location: 0, length: ns.length))
+        var blocks: [(start: Double, body: String)] = []
+        for (index, match) in syncs.enumerated() {
+            guard let value = first(start, in: ns.substring(with: match.range(at: 1))), let ms = Double(value) else { continue }
+            let from = match.range.location + match.range.length
+            let to = index + 1 < syncs.count ? syncs[index + 1].range.location : ns.length
+            var body = ns.substring(with: NSRange(location: from, length: max(0, to - from)))
+            if let end = body.range(of: "</body", options: .caseInsensitive) { body = String(body[..<end.lowerBound]) }
+            blocks.append((ms / 1000, body))
+        }
+
+        // Paragraphs of one block: (class, text) in order; text before the first <P> counts only when there is no <P>.
+        func paragraphs(_ body: String) -> [(klass: String?, text: String)] {
+            let local = body as NSString
+            let matches = paragraph.matches(in: body, range: NSRange(location: 0, length: local.length))
+            guard !matches.isEmpty else { return [(nil, body)] }
+            return matches.enumerated().map { index, match in
+                let from = match.range.location + match.range.length
+                let to = index + 1 < matches.count ? matches[index + 1].range.location : local.length
+                return (first(klass, in: local.substring(with: match.range(at: 1))),
+                        local.substring(with: NSRange(location: from, length: max(0, to - from))))
+            }
+        }
+        var classes: [String] = []
+        for block in blocks {
+            for (name, _) in paragraphs(block.body) {
+                if let name, !classes.contains(where: { $0.caseInsensitiveCompare(name) == .orderedSame }) { classes.append(name) }
+            }
+        }
+        let chosen = classes.first { ["KR", "KO"].contains(String($0.uppercased().prefix(2))) } ?? classes.first
+
+        var entries: [(start: Double, text: String)] = []
+        for block in blocks {
+            let parts = paragraphs(block.body).filter { part in
+                guard let chosen, let name = part.klass else { return true }
+                return name.caseInsensitiveCompare(chosen) == .orderedSame
+            }
+            // A line in another language only: not part of this track.
+            if parts.isEmpty { continue }
+            entries.append((block.start, parts.map { samiText($0.text) }.filter { !$0.isEmpty }.joined(separator: "\n")))
+        }
+        let ordered = entries.enumerated().sorted { ($0.element.start, $0.offset) < ($1.element.start, $1.offset) }.map(\.element)
+        var cues: [Cue] = []
+        for (index, entry) in ordered.enumerated() where !entry.text.isEmpty {
+            let end = index + 1 < ordered.count ? ordered[index + 1].start : entry.start + 4
+            if end > entry.start { cues.append(Cue(start: entry.start, end: end, text: entry.text)) }
+        }
+        return cues
+    }
+
+    /// One SAMI paragraph as plain lines: source line breaks are spaces, <br> is a line break.
+    static func samiText(_ html: String) -> String {
+        var text = html.replacingOccurrences(of: "\r", with: " ").replacingOccurrences(of: "\n", with: " ")
+            .replacingOccurrences(of: "\t", with: " ")
+        text = text.replacingOccurrences(of: #"<br\s*/?>"#, with: "\n", options: [.regularExpression, .caseInsensitive])
+        text = text.replacingOccurrences(of: #"<!--.*?-->"#, with: "", options: .regularExpression)
+        text = text.replacingOccurrences(of: #"<[^>]*>"#, with: "", options: .regularExpression)
+        text = decodeEntities(text)
+        return text.components(separatedBy: "\n")
+            .map { $0.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression).trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "\n")
+    }
+
+    static func decodeEntities(_ text: String) -> String {
+        guard text.contains("&") else { return text }
+        let named: [String: String] = ["nbsp": " ", "amp": "&", "lt": "<", "gt": ">", "quot": "\"", "apos": "'", "#39": "'"]
+        var out = ""
+        var rest = Substring(text)
+        while let amp = rest.firstIndex(of: "&") {
+            out += rest[..<amp]
+            let after = rest[rest.index(after: amp)...]
+            if let semi = after.prefix(10).firstIndex(of: ";") {
+                let name = String(after[..<semi])
+                var replacement: String?
+                if let value = named[name.lowercased()] {
+                    replacement = value
+                } else if name.hasPrefix("#") {
+                    let digits = name.dropFirst()
+                    let code = digits.lowercased().hasPrefix("x") ? UInt32(digits.dropFirst(), radix: 16) : UInt32(digits)
+                    replacement = code.flatMap(Unicode.Scalar.init).map { String(Character($0)) }
+                }
+                if let replacement {
+                    out += replacement
+                    rest = after[after.index(after: semi)...]
+                    continue
+                }
+            }
+            out += "&"
+            rest = after
+        }
+        return out + rest
     }
 }

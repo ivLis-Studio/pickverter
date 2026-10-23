@@ -233,6 +233,89 @@ public static class MediaEngine
         return output;
     }
 
+    /// "Under N" for video (H.264 and AAC in MP4): the bitrate the target allows over the clip's length, with 5 % to
+    /// spare; a tenth of it for the sound (48–128 kbps); a smaller picture when the rate is low. Still too big, a second
+    /// pass at the rate that should fit. The smaller of the two is kept; one still over the target says so.
+    public static async Task<SizeTargets.Fit> CompressVideoUnder(string src, long target, PickContext ctx)
+    {
+        if (Tools.FFmpeg == null) throw new PickException(Tools.FFmpegHint);
+        if (FileNames.Size(src) <= target) return SizeTargets.Fit.AlreadyUnder;
+        var info = await ProbeAsync(src, ctx.Token);
+        if (!info.HasVideo) throw new PickException(L("err.no_video"));
+        if (info.Duration <= 0) throw new PickException(L("err.not_convertible"));
+        var total = target * 8.0 / 1000 / info.Duration * 0.95;
+        var audio = info.HasAudio ? Math.Clamp(total * 0.1, 48, 128) : 0;
+        var video = Math.Max(total - audio, 32);
+        var portrait = info.DisplaySize is { } shown && shown.Height > shown.Width;
+        string? missed = null;
+        var output = await ctx.Produce(ctx.DestinationFor(src, "mp4", L("sfx.compressed")), async tmp =>
+        {
+            var scratch = FileSystem.TempFolder("pickverter-fit");
+            try
+            {
+                var chosen = Path.Combine(scratch, "1.mp4");
+                await RunFFmpeg(src, chosen, BitrateArgs(video, audio, portrait), info.Duration, ctx.Portion(0, 0.6));
+                var bytes = new FileInfo(chosen).Length;
+                if (bytes > target)
+                {
+                    var again = Path.Combine(scratch, "2.mp4");
+                    try
+                    {
+                        await RunFFmpeg(src, again, BitrateArgs(video * ((double)target / bytes) * 0.95, audio, portrait), info.Duration, ctx.Portion(0.6, 1));
+                        var second = new FileInfo(again).Length;
+                        if (second < bytes)
+                        {
+                            chosen = again;
+                            bytes = second;
+                        }
+                    }
+                    catch (ToolFailure error)
+                    {
+                        // The first pass stands.
+                        Debug.Log("second pass: " + error.Message);
+                    }
+                }
+                File.Move(chosen, tmp);
+                if (bytes > target) missed = SizeTargets.Missed(target, bytes);
+            }
+            finally
+            {
+                FileSystem.TryDelete(scratch);
+            }
+        });
+        return new SizeTargets.Fit(output, missed);
+    }
+
+    /// Average bitrate encoding (peaks up to 1.3×, a two-second buffer). The picture's short side goes down to 480
+    /// below 300 kbps, 720 below 900 and 1080 below 2,500 — never up. Never under 32 kbps, the second pass included.
+    private static List<string> BitrateArgs(double videoKbps, double audioKbps, bool portrait)
+    {
+        videoKbps = Math.Max(videoKbps, 32);
+        int? cap = videoKbps < 300 ? 480 : videoKbps < 900 ? 720 : videoKbps < 2500 ? 1080 : null;
+        var filter = cap switch
+        {
+            { } side when portrait => $"scale='trunc(min(iw,{side})/2)*2':-2",
+            { } side => $"scale=-2:'trunc(min(ih,{side})/2)*2'",
+            _ => "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+        };
+        var args = new List<string> { "-map", "0:v:0" };
+        if (audioKbps > 0) args.AddRange(["-map", "0:a:0?"]);
+        args.AddRange(["-vf", filter]);
+        if (Tools.HasEncoder("libx264"))
+            args.AddRange(["-c:v", "libx264", "-preset", "medium", "-b:v", Kbps(videoKbps), "-maxrate", Kbps(videoKbps * 1.3), "-bufsize", Kbps(videoKbps * 2),
+                           "-pix_fmt", "yuv420p"]);
+        else if (Tools.HasEncoder("h264_mf"))
+            args.AddRange(["-c:v", "h264_mf", "-b:v", Kbps(videoKbps), "-pix_fmt", "yuv420p"]);
+        else
+            args.AddRange(["-c:v", "mpeg4", "-b:v", Kbps(videoKbps)]);
+        if (audioKbps > 0) args.AddRange(["-c:a", "aac", "-b:a", Kbps(audioKbps)]);
+        else args.Add("-an");
+        args.AddRange(["-movflags", "+faststart"]);
+        return args;
+    }
+
+    private static string Kbps(double value) => Math.Max(1, (int)Math.Round(value)).ToString(CultureInfo.InvariantCulture) + "k";
+
     public static Task<string> Downscale(string src, int height, PickContext ctx) =>
         Tool(src, "mp4", $"{height}p", ctx, info =>
         {

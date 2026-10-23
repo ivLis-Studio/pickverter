@@ -21,6 +21,7 @@ extension CLI {
                                                                                  atomically: true, encoding: .utf8)
             try "name,score\nAlice,92.5\nBob,88\n".write(to: root.appendingPathComponent("people.csv"), atomically: true, encoding: .utf8)
             try fixtureHWPX(root.appendingPathComponent("report.hwpx"))
+            try fixturesCrossPlatform(root)
         } catch {
             print("ERR \(error.localizedDescription)")
             return 1
@@ -358,5 +359,54 @@ extension CLI {
         input.markAsFinished()
         await writer.finishWriting()
         guard writer.status == .completed else { throw writer.error ?? PickError("movie") }
+    }
+
+    /// Files as they arrive from Windows (CP949 text, SAMI subtitles, a ZIP with CP949 names) and from a Mac (a ZIP
+    /// and a folder with decomposed names), plus a noisy photo big enough for the "Under …" sizes.
+    static func fixturesCrossPlatform(_ root: URL) throws {
+        let cp949 = TextCodec.cp949
+        guard let notes = "회의록\r\n- 똠방각하 일정 확인\r\n".data(using: cp949) else { throw PickError("fixture cp949") }
+        try notes.write(to: root.appendingPathComponent("notes-cp949.txt"))
+        let sami = """
+        <SAMI><HEAD><STYLE TYPE="text/css"><!--
+        .KRCC { Name:Korean; lang:ko-KR; }
+        .ENCC { Name:English; lang:en-US; }
+        --></STYLE></HEAD><BODY>
+        <SYNC Start=1000><P Class=ENCC>Hello
+        <SYNC Start=1000><P Class=KRCC>안녕하세요<br>반갑습니다
+        <SYNC Start=3000><P Class=KRCC>&nbsp;
+        <SYNC Start=4000><P Class=KRCC>두 번째 자막
+        </BODY></SAMI>
+        """
+        guard let subtitles = sami.data(using: cp949) else { throw PickError("fixture smi") }
+        try subtitles.write(to: root.appendingPathComponent("movie.smi"))
+        try #"[{"name": "Alice", "score": 92.5}, {"name": "민수", "score": 88}]"#
+            .write(to: root.appendingPathComponent("people.json"), atomically: true, encoding: .utf8)
+        writeRawZip(root.appendingPathComponent("windows.zip"), names: [
+            ("보고서/".data(using: cp949) ?? Data(), Data()),
+            ("보고서/결과.txt".data(using: cp949) ?? Data(), Data("ok".utf8)),
+        ])
+        let decomposed = { (text: String) in Data(text.decomposedStringWithCanonicalMapping.utf8) }
+        writeRawZip(root.appendingPathComponent("mac.zip"), names: [(decomposed("사진 모음/"), Data()),
+                                                                    (decomposed("사진 모음/메모.txt"), Data("ok".utf8))])
+        // A folder named on a Mac: the names inside are decomposed on disk (POSIX calls keep the bytes as they are).
+        let names = root.appendingPathComponent("names", isDirectory: true)
+        try FileManager.default.createDirectory(at: names, withIntermediateDirectories: true)
+        let folder = NameFixer.pathBytes(names)
+        for name in ["보고서.txt", "ポスト.txt"] {
+            let path = folder + [NameFixer.slash] + [UInt8](name.decomposedStringWithCanonicalMapping.utf8)
+            let descriptor = NameFixer.withCPath(path) { creat($0, 0o644) }
+            if descriptor >= 0 { close(descriptor) }
+        }
+        try Data("x".utf8).write(to: names.appendingPathComponent(".DS_Store"))
+        // Noise compresses badly: about 2–3 MB as a JPEG.
+        var generator = SystemRandomNumberGenerator()
+        let noise = bitmap(2000, 1500, alpha: false) { ctx in
+            guard let data = ctx.data else { return }
+            let pixels = data.bindMemory(to: UInt32.self, capacity: 2000 * 1500)
+            for index in 0..<(2000 * 1500) { pixels[index] = UInt32.random(in: 0...UInt32.max, using: &generator) | 0xFF00_0000 }
+        }
+        try writeImage(noise, to: root.appendingPathComponent("noise.jpg"), type: "public.jpeg",
+                       properties: [kCGImageDestinationLossyCompressionQuality: 0.9])
     }
 }

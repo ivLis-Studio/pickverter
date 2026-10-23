@@ -45,7 +45,9 @@ enum ClipboardWriter {
         }
         let ext = FileNames.normalizedExt(url)
         let item = NSPasteboardItem()
-        if textTypes.contains(ext), let text = try? String(contentsOf: url, encoding: .utf8) {
+        if textTypes.contains(ext), let data = try? Data(contentsOf: url) {
+            // Decoding drops the byte-order mark a CSV starts with: it isn't part of the text.
+            let text = TextCodec.decode(data)
             if ext == "html" { item.setString(text, forType: .html) }
             if ext == "rtf", let data = try? Data(contentsOf: url) { item.setData(data, forType: .rtf) }
             item.setString(text, forType: .string)

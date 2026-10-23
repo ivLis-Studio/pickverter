@@ -89,7 +89,7 @@ struct WheelView: View {
             }
             .id("\(model.mode.rawValue)-\(model.page)-\(model.choice == nil)")
             .transition(.opacity)
-            HubView(model: model, pointer: model.pointer)
+            HubView(model: model, pointer: model.pointer, estimator: model.estimator)
                 .frame(width: (g.innerRadius - 5) * 2, height: (g.innerRadius - 5) * 2)
         }
     }
@@ -168,11 +168,16 @@ struct SegmentLabel: View {
                     if !segment.symbol.isEmpty {
                         Image(systemName: segment.symbol).font(.system(size: compact ? 11.5 : 14, weight: .regular))
                     }
+                    // A single long word ("Redimensionner") shrinks instead of breaking in the middle. Chinese and
+                    // Japanese may break between any two characters, so they keep two lines.
+                    let oneWord = !segment.title.contains(" ") && !segment.title.unicodeScalars.contains {
+                        (0x3040...0x30FF).contains($0.value) || (0x3400...0x9FFF).contains($0.value) || (0xF900...0xFAFF).contains($0.value)
+                    }
                     Text(segment.title)
                         .font(.system(size: compact ? 10 : 11, weight: .medium))
                         .multilineTextAlignment(.center)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.72)
+                        .lineLimit(oneWord ? 1 : 2)
+                        .minimumScaleFactor(oneWord ? 0.55 : 0.72)
                 }
             }
         }
@@ -231,6 +236,7 @@ struct SubRingView: View {
 struct HubView: View {
     @ObservedObject var model: WheelController
     @ObservedObject var pointer: PointerModel
+    @ObservedObject var estimator: SizeEstimator
     @Environment(\.colorScheme) private var scheme
 
     var body: some View {
@@ -283,13 +289,22 @@ struct HubView: View {
                 }
                 let reason = option.unavailable ?? parent?.unavailable
                 let offersDownload = Tools.isDownload(reason)
-                Text(offersDownload ? Tools.downloadPrompt(reason) : (reason ?? model.previewLine(for: option, parent: parent)))
-                    .font(.system(size: 9.5))
-                    .foregroundStyle(offersDownload ? Theme.accent : (reason != nil ? Color.orange : Color.secondary))
-                    .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .truncationMode(.middle)
-                if let parent, active.implied {
+                // The size preview takes the line that only repeats the slot's name (an option of a slot), or else the
+                // small hint at the bottom.
+                let estimate = reason == nil && estimator.state != .none
+                if estimate, parent != nil {
+                    estimateLine
+                } else {
+                    Text(offersDownload ? Tools.downloadPrompt(reason) : (reason ?? model.previewLine(for: option, parent: parent)))
+                        .font(.system(size: 9.5))
+                        .foregroundStyle(offersDownload ? Theme.accent : (reason != nil ? Color.orange : Color.secondary))
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .truncationMode(.middle)
+                }
+                if estimate, parent == nil {
+                    estimateLine
+                } else if let parent, active.implied {
                     Text("↑↓ " + LP("hint.options", parent.variants.count))
                         .font(.system(size: 8.5)).foregroundStyle(.tertiary).lineLimit(1).minimumScaleFactor(0.7)
                 } else if parent == nil, !option.variants.isEmpty {
@@ -319,6 +334,21 @@ struct HubView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.75)
             }
+        }
+    }
+
+    @ViewBuilder
+    private var estimateLine: some View {
+        switch estimator.state {
+        case .working:
+            Text(L("est.calculating")).font(.system(size: 9.5)).foregroundStyle(.tertiary).lineLimit(1).minimumScaleFactor(0.8)
+        case .result(let line):
+            Text(line).font(.system(size: 10, weight: .medium)).monospacedDigit().foregroundStyle(.secondary)
+                .lineLimit(1).minimumScaleFactor(0.75)
+        case .small:
+            Text(L("est.small")).font(.system(size: 9.5)).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.8)
+        case .none:
+            EmptyView()
         }
     }
 }

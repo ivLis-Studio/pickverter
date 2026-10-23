@@ -109,11 +109,19 @@ public static partial class OfficeEngine
                         folder => Platform.Office.ExportAsync(office.App, src, folder, "png", ctx.Token));
                 }
                 if (ext == "png") return await FirstPagePng(src, ctx, tmp => Platform.Office.ExportAsync(office.App, src, tmp, "pdf", ctx.Token));
-                return await ctx.Produce(ctx.DestinationFor(src, ext), tmp => Platform.Office.ExportAsync(office.App, src, tmp, ext, ctx.Token));
+                return await ctx.Produce(ctx.DestinationFor(src, ext), async tmp =>
+                {
+                    await Platform.Office.ExportAsync(office.App, src, tmp, ext, ctx.Token);
+                    if (ext == "csv") FileSystem.EnsureCsvBom(tmp);
+                });
             case Route.Libre libre:
                 ctx.Report(null, L("note.opening_in", "LibreOffice"));
                 if (ext == "png") return await FirstPagePng(src, ctx, tmp => ViaLibreOffice(libre.Path, src, "pdf", tmp, ctx.Token));
-                return await ctx.Produce(ctx.DestinationFor(src, ext), tmp => ViaLibreOffice(libre.Path, src, ext, tmp, ctx.Token));
+                return await ctx.Produce(ctx.DestinationFor(src, ext), async tmp =>
+                {
+                    await ViaLibreOffice(libre.Path, src, ext, tmp, ctx.Token);
+                    if (ext == "csv") FileSystem.EnsureCsvBom(tmp);
+                });
             default:
                 throw new PickException(L("err.not_convertible"));
         }

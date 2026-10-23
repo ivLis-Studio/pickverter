@@ -187,6 +187,8 @@ enum Catalog {
         if kindSet.count == 1, let kind = kindSet.first {
             list = kindTools(kind, files: files)
         }
+        // Text from Korean Windows that would show up garbled: the fix comes first.
+        if let fix = encodingTool(files) { list.insert(fix, at: 0) }
         if kindSet != [.archive] {
             let many = files.count > 1
             list.append(PickOption(id: "tool.zip", title: L(many ? "tool.zip.many" : "tool.zip"),
@@ -201,6 +203,13 @@ enum Catalog {
             list.append(tool("listing", symbol: "list.bullet", files: false) { ctx in try await ArchiveEngine.copyListing(ctx.files) })
         }
         return list
+    }
+
+    /// "Fix Encoding" when the selection is text and some of it is CP949 rather than UTF-8.
+    static func encodingTool(_ files: [URL]) -> PickOption? {
+        guard files.allSatisfy({ TextCodec.fixableExts.contains($0.pathExtension.lowercased()) }),
+              files.prefix(20).contains(where: { NameFixer.isLocal($0) && TextCodec.needsUTF8($0) }) else { return nil }
+        return tool("utf8", symbol: "text.badge.checkmark", Batch.perFile { try await TextCodec.fixEncoding($0, ctx: $1) })
     }
 
     static func rotateVariants(_ turns: [Turn], unavailable: String? = nil,
@@ -307,7 +316,7 @@ enum Catalog {
                 tool("compress", symbol: "arrow.down.right.and.arrow.up.left", variants: levels.map { level in
                     variant("tool.compress", level.key, level.title,
                             Batch.perFile { try await ImageEngine.compress($0, quality: level.image, ctx: $1) })
-                }),
+                } + TargetSize.variants(video: false)),
                 tool("resize", symbol: "arrow.down.forward.and.arrow.up.backward", variants:
                     [0.5, 0.25, 0.75].map { scale in
                         variant("tool.resize", "\(Int(scale * 100))", "\(Int(scale * 100))%",
@@ -349,7 +358,7 @@ enum Catalog {
                 tool("compress", symbol: "arrow.down.right.and.arrow.up.left", unavailable: noFFmpeg, variants: levels.map { level in
                     variant("tool.compress", level.key, level.title, unavailable: noFFmpeg,
                             Batch.perFile { try await MediaEngine.compressVideo($0, crf: level.crf, ctx: $1) })
-                }),
+                } + TargetSize.variants(video: true, unavailable: noFFmpeg)),
                 cutTool(video: true),
                 tool("resolution", symbol: "rectangle.compress.vertical", unavailable: noFFmpeg, variants: [720, 1080, 480].map { height in
                     variant("tool.resolution", "\(height)", "\(height)p", unavailable: noFFmpeg,

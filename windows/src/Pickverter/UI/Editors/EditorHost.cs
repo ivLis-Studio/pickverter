@@ -54,6 +54,9 @@ internal sealed class EditorHost : IEditors
 
     public Task<string> UnlockAsync(string file, bool retry, CancellationToken token) =>
         Open("unlock", () => new PasswordDialog(file, unlock: true, retry: retry), token);
+
+    public Task<double> SizeAsync(string file, long bytes, CancellationToken token) =>
+        EditorInjection.TryGetSize(out var injected) ? Task.FromResult(injected) : Open("size", () => new SizeDialog(file, bytes), token);
 }
 
 /// An editor window that ends with an answer (Finish) or without one (closed, Esc, Cancel).
@@ -326,6 +329,61 @@ internal sealed class RangeDialog : EditorWindow<string>
             return;
         }
         Finish(text);
+    }
+}
+
+/// "Compress › Custom Size…": the size to get under, in MB. Suggests half the current size.
+internal sealed class SizeDialog : EditorWindow<double>
+{
+    private readonly string file;
+    private readonly long bytes;
+    private readonly TextBox input = new() { FontSize = 14, Padding = new Thickness(8, 6, 8, 6) };
+
+    public SizeDialog(string file, long bytes)
+    {
+        this.file = file;
+        this.bytes = bytes;
+        Width = 460;
+        SizeToContent = SizeToContent.Height;
+        ResizeMode = ResizeMode.NoResize;
+        input.Text = SizeTargets.Suggested(bytes).ToString("0.##", Loc.Culture);
+        Rebuild();
+        Loaded += (_, _) =>
+        {
+            input.Focus();
+            input.SelectAll();
+        };
+    }
+
+    protected override void Rebuild()
+    {
+        Title = L("size.custom.title");
+        System.Windows.Automation.AutomationProperties.SetName(input, L("size.custom.field"));
+        var compress = Ui.Button(L("tool.compress"), Submit, prominent: true);
+        compress.IsDefault = true;
+        var form = Ui.Column(10,
+            Ui.Text(L("size.custom.title"), 20, FontWeights.SemiBold),
+            Ui.Text(L("size.custom.info", FileNames.Name(file), SizeTargets.Label(bytes)), 13, brush: Theme.TextSecondary, wrap: true),
+            Ui.Caption(L("size.custom.field")), Ui.Detach(input));
+        form.Margin = new Thickness(24, 22, 24, 18);
+        var dock = new DockPanel();
+        var footer = Footer(null, CancelButton(this), compress);
+        DockPanel.SetDock(footer, Dock.Bottom);
+        dock.Children.Add(footer);
+        dock.Children.Add(form);
+        Content = dock;
+    }
+
+    private void Submit()
+    {
+        if (SizeTargets.ParseMegabytes(input.Text) is { } megabytes)
+        {
+            Finish(megabytes);
+            return;
+        }
+        Platform.Feedback.Beep();
+        input.Focus();
+        input.SelectAll();
     }
 }
 

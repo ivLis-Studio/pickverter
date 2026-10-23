@@ -79,6 +79,8 @@ public interface IShellService
     void OpenControlledFolderSettings();
     /// The Windows accent color as ffmpeg's 0xRRGGBB (audio visualizer).
     string AccentHex { get; }
+    /// Items inside a folder were renamed: File Explorer windows showing it refresh.
+    void NotifyFolderChanged(string folder);
 }
 
 public class DefaultShell : IShellService
@@ -117,6 +119,7 @@ public class DefaultShell : IShellService
     public virtual bool ControlledFolderAccess => false;
     public virtual void OpenControlledFolderSettings() { }
     public virtual string AccentHex => "0x0A84FF";
+    public virtual void NotifyFolderChanged(string folder) { }
 }
 
 public interface IClipboardService
@@ -251,6 +254,8 @@ public interface IEditors
     Task<string> RangeAsync(string file, int pageCount, CancellationToken token);
     /// The open password of a locked document (HWP, HWPX). retry: the last one didn't match.
     Task<string> UnlockAsync(string file, bool retry, CancellationToken token);
+    /// "Compress › Custom Size…": the size to get under, in MB (1 MB = 1,000,000 bytes). bytes: the file's size now.
+    Task<double> SizeAsync(string file, long bytes, CancellationToken token);
 }
 
 /// Editors answered through PICKVERTER_EDITOR_<NAME> (JSON, or "cancel"), so tests never open a window.
@@ -283,6 +288,17 @@ public static class EditorInjection
             throw new PickException($"{key}: {error.Message}");
         }
     }
+
+    /// PICKVERTER_EDITOR_SIZE: megabytes the way someone would type them ("1.5", "1,5", "2 MB"); "cancel", or anything
+    /// that isn't a size, cancels.
+    public static bool TryGetSize(out double megabytes)
+    {
+        megabytes = 0;
+        var raw = Environment.GetEnvironmentVariable("PICKVERTER_EDITOR_SIZE");
+        if (raw == null) return false;
+        megabytes = SizeTargets.ParseMegabytes(raw) ?? throw new OperationCanceledException();
+        return true;
+    }
 }
 
 public class InjectedEditors : IEditors
@@ -298,6 +314,8 @@ public class InjectedEditors : IEditors
     public virtual Task<string> PasswordAsync(string file, CancellationToken token) => Task.FromResult(Answer<string>("password"));
     public virtual Task<string> RangeAsync(string file, int pageCount, CancellationToken token) => Task.FromResult(Answer<string>("range"));
     public virtual Task<string> UnlockAsync(string file, bool retry, CancellationToken token) => Task.FromResult(Answer<string>("unlock"));
+    public virtual Task<double> SizeAsync(string file, long bytes, CancellationToken token) =>
+        EditorInjection.TryGetSize(out var megabytes) ? Task.FromResult(megabytes) : throw new PickException(L("err.no_editor"));
 }
 
 public interface IActionsService

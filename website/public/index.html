@@ -166,7 +166,7 @@
             <div class="group"><h3><i class="ico" data-i="file-text"></i>PDF</h3><div class="chips"><span class="chip">PNG</span><span class="chip">JPG</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">DOCX</span><span class="chip">RTF</span><span class="chip">HTML</span></div></div>
             <div class="group"><h3><i class="ico" data-i="files"></i><span data-t="g.docs">Documents</span></h3><div class="chips"><span class="chip">PDF</span><span class="chip">DOCX</span><span class="chip">RTF</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">HTML</span><span class="chip">ODT</span><span class="chip">EPUB</span></div></div>
             <div class="group"><h3><i class="ico" data-i="file-text"></i><span data-t="g.hwp">HWP &amp; HWPX</span></h3><div class="chips"><span class="chip">PDF</span><span class="chip">DOCX</span><span class="chip">HWP ↔ HWPX</span><span class="chip">PNG</span><span class="chip">JPG</span><span class="chip">TXT</span><span class="chip">MD</span><span class="chip">HTML</span></div></div>
-            <div class="group"><h3><i class="ico" data-i="table"></i><span data-t="g.office">Office, iWork &amp; data</span></h3><p data-t="g.office.d">Excel, Numbers, Pages, Keynote and PowerPoint · tables to CSV, TSV, JSON, Markdown, HTML · subtitles SRT, VTT · ZIP, TAR.GZ</p></div>
+            <div class="group"><h3><i class="ico" data-i="table"></i><span data-t="g.office">Office, iWork &amp; data</span></h3><p data-t="g.office.d">Excel, Numbers, Pages, Keynote and PowerPoint · tables to CSV, TSV, JSON, Markdown, HTML · subtitles SRT, VTT (from SMI, too) · ZIP, TAR.GZ</p></div>
           </div>
         </div>
         <div class="ring-panel" role="tabpanel" id="panel-tools" aria-labelledby="tab-tools" hidden>
@@ -175,14 +175,15 @@
               <ul class="tool-list">
                 <li><i class="ico" data-i="scissors"></i><span><b data-t="t.removebg">Remove background</b> <span data-t="t.removebg.d">— transparent, cropped to the subject, or on white</span></span></li>
                 <li><i class="ico" data-i="eye-off"></i><span><b data-t="t.hide">Hide</b> <span data-t="t.hide.d">— mosaic, blur or fill; finds faces and text for you</span></span></li>
-                <li><i class="ico" data-i="shrink"></i><span><b data-t="t.compress">Compress &amp; resize</b> <span data-t="t.compress.d">— smaller files, same look</span></span></li>
+                <li><i class="ico" data-i="shrink"></i><span><b data-t="t.compress">Compress &amp; resize</b> <span data-t="t.compress.d">— same look, smaller file, or under a size you pick</span></span></li>
+                <li><i class="ico" data-i="flip-horizontal-2"></i><span><b data-t="t.preview">Size preview &amp; compare</b> <span data-t="t.preview.d">— the wheel shows the new size before you click; the card shows before and after</span></span></li>
                 <li><i class="ico" data-i="scan-text"></i><span><b data-t="t.ocr">Extract text</b> <span data-t="t.ocr.d">— recognised and copied</span></span></li>
                 <li><i class="ico" data-i="rotate-cw"></i><span><b data-t="t.rotate">Rotate, flip, crop, collage</b></span></li>
               </ul></div>
             <div class="group"><h3><i class="ico" data-i="film"></i><span data-t="g.media">Video &amp; audio</span></h3>
               <ul class="tool-list">
                 <li><i class="ico" data-i="scissors"></i><span><b data-t="t.trim">Trim, split &amp; join</b></span></li>
-                <li><i class="ico" data-i="shrink"></i><span><b data-t="t.vcompress">Compress, resolution, speed, mute</b></span></li>
+                <li><i class="ico" data-i="shrink"></i><span><b data-t="t.vcompress">Compress (to a size, too), resolution, speed, mute</b></span></li>
                 <li><i class="ico" data-i="image"></i><span><b data-t="t.snap">Snapshot &amp; GIF</b></span></li>
                 <li><i class="ico" data-i="volume-2"></i><span><b data-t="t.audio">Loudness, silence trim, mono, visualizer video</b></span></li>
               </ul></div>
@@ -198,7 +199,8 @@
                 <li><i class="ico" data-i="info"></i><span><b data-t="t.meta">Edit or strip info</b> <span data-t="t.meta.d">— photos, PDFs, media; location only, if you like</span></span></li>
                 <li><i class="ico" data-i="book-open"></i><span><b data-t="t.epub">EPUB from documents or images</b></span></li>
                 <li><i class="ico" data-i="files"></i><span><b data-t="t.office">Pull images and media out of Office/iWork files</b></span></li>
-                <li><i class="ico" data-i="archive"></i><span><b>ZIP · TAR.GZ</b></span></li>
+                <li><i class="ico" data-i="file-text"></i><span><b data-t="t.encoding">Fix text encoding</b> <span data-t="t.encoding.d">— EUC-KR text from Korean Windows, rewritten as UTF-8</span></span></li>
+                <li><i class="ico" data-i="archive"></i><span><b>ZIP · TAR.GZ</b> <span data-t="t.zip.d">— names that read right on Windows and Mac alike</span></span></li>
               </ul></div>
           </div>
         </div>
@@ -222,6 +224,7 @@
               <ul class="tool-list">
                 <li><i class="ico" data-i="folder-input"></i><span><b data-t="a.move">Move or copy</b> <span data-t="a.move.d">— to Desktop, Downloads or recent folders</span></span></li>
                 <li><i class="ico" data-i="pin"></i><span><b data-t="a.float">Float</b> <span data-t="a.float.d">— an always-on-top preview</span></span></li>
+                <li><i class="ico" data-i="languages"></i><span><b data-t="a.nfc">Join split letters</b> <span data-t="a.nfc.d">— names made on a Mac stop showing up as ㅎㅏㄴ on Windows and the web</span></span></li>
               </ul></div>
             <div class="group"><h3><i class="ico" data-i="wand-sparkles"></i><span data-t="g.yours">Make it yours</span></h3>
               <p data-t="g.yours.d">Right-click a slot to hide it, move it, pin one of its options to the main ring or choose what a plain click runs. Slots can remember the option you used last.</p></div>

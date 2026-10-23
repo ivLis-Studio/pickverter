@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Media.TextFormatting;
 
 namespace Pickverter.UI.Wheel;
 
@@ -117,9 +118,16 @@ internal sealed class WheelCanvas : FrameworkElement
         }
         var items = new List<FormattedText>();
         if (!string.IsNullOrEmpty(segment.Symbol)) items.Add(Glyphs.Formatted(segment.Symbol, compact ? 13 : 16, brush, Dip));
-        items.Add(Fit(segment.Title, width, compact ? 10 : 11, FontWeights.Medium, brush, 0.72, lines: 2));
+        // A single long word ("Ausgewogen", "Redimensionner") shrinks on one line instead of losing its end.
+        items.Add(OneWord(segment.Title)
+            ? Fit(segment.Title, width, compact ? 10 : 11, FontWeights.Medium, brush, 0.55)
+            : Fit(segment.Title, width, compact ? 10 : 11, FontWeights.Medium, brush, 0.72, lines: 2));
         DrawStack(dc, items, center, compact ? 2 : 4);
     }
+
+    /// No space to break at. Chinese and Japanese may break between any two characters, so they don't count.
+    private static bool OneWord(string title) =>
+        !title.Contains(' ') && !title.Any(c => c is >= '\u3040' and <= '\u30FF' or >= '\u3400' and <= '\u9FFF' or >= '\uF900' and <= '\uFAFF');
 
     // Outer ring
 
@@ -176,7 +184,7 @@ internal sealed class WheelCanvas : FrameworkElement
             dc.DrawGeometry(null, pen, ProgressRing.Arc(Center, radius - 3.25, angle - turn, angle + turn));
         }
         var width = radius * 2 - 22;
-        var lines = new List<FormattedText>();
+        var lines = new List<HubLine>();
         var spacing = 3.0;
         if (model.Flash is { } flash)
         {
@@ -202,14 +210,25 @@ internal sealed class WheelCanvas : FrameworkElement
             var unavailable = option.Unavailable ?? parent?.Unavailable;
             // A missing ffmpeg or rhwp is an offer, not a dead end: a click downloads it and carries on.
             var offersDownload = Tools.IsDownload(unavailable);
-            lines.Add(Fit(offersDownload ? Tools.DownloadPrompt(unavailable) : unavailable ?? model.PreviewLine(option, parent), width, 9.5, FontWeights.Normal,
-                offersDownload ? Theme.AccentText : unavailable != null ? Theme.Caution : Theme.TextSecondary, 0.85, lines: 2,
-                middle: unavailable == null));
+            var estimate = unavailable == null ? EstimateLine(width) : null;
+            // The size preview takes a line's place: for an option of a slot, the one under its name that repeats the
+            // slot's title; otherwise the hint at the bottom.
+            if (estimate is { } replacing && parent != null)
+            {
+                lines.Add(replacing);
+            }
+            else
+            {
+                lines.Add(Fit(offersDownload ? Tools.DownloadPrompt(unavailable) : unavailable ?? model.PreviewLine(option, parent), width, 9.5,
+                    FontWeights.Normal, offersDownload ? Theme.AccentText : unavailable != null ? Theme.Caution : Theme.TextSecondary, 0.85, lines: 2,
+                    middle: unavailable == null));
+            }
             string? hint = null;
             if (parent != null && active.Implied) hint = "↑↓ " + LP("hint.options", parent.Variants.Count);
             else if (parent == null && option.Variants.Count > 0) hint = LP("hint.options", option.Variants.Count);
             else hint = model.DestinationHint(option);
-            if (hint != null) lines.Add(Fit(hint, width, 8.5, FontWeights.Normal, Theme.TextTertiary, 0.7));
+            if (estimate is { } bottom && parent == null) lines.Add(bottom);
+            else if (hint != null) lines.Add(Fit(hint, width, 8.5, FontWeights.Normal, Theme.TextTertiary, 0.7));
         }
         else if (model.HighlightedItem is WheelModel.Item.More)
         {
@@ -223,6 +242,42 @@ internal sealed class WheelCanvas : FrameworkElement
             return;
         }
         DrawStack(dc, lines, Center, spacing);
+    }
+
+    /// The size preview: "Checking the size…" quietly, then the result (tabular digits) or "Already small".
+    private HubLine? EstimateLine(double width)
+    {
+        if (model.EstimateLine is not { } text) return null;
+        const double size = 9.5;
+        if (model.EstimatePending) return Fit(text, width, size, FontWeights.Normal, Theme.TextTertiary, 0.8);
+        if (model.Estimate?.Kind != EstimateKind.Size) return Fit(text, width, size, FontWeights.Normal, Theme.TextSecondary, 0.8);
+        var face = Theme.Face(FontWeights.Normal);
+        var line = TabularText.Format(text, face, size, Theme.TextSecondary, Dip);
+        if (line.WidthIncludingTrailingWhitespace > width)
+        {
+            var scaled = Math.Max(size * 0.8, size * width / line.WidthIncludingTrailingWhitespace);
+            line.Dispose();
+            line = TabularText.Format(text, face, scaled, Theme.TextSecondary, Dip);
+        }
+        return new HubLine(null, line);
+    }
+
+    /// One line of the hub: formatted text, or a line laid out with tabular digits (the size estimate).
+    private readonly record struct HubLine(FormattedText? Text, TextLine? Tabular)
+    {
+        public static implicit operator HubLine(FormattedText text) => new(text, null);
+
+        public double Height => Text?.Height ?? Tabular?.Height ?? 0;
+
+        public double Width => Text is { } text
+            ? text.TextAlignment == TextAlignment.Center && text.MaxTextWidth > 0 ? text.MaxTextWidth : text.WidthIncludingTrailingWhitespace
+            : Tabular?.WidthIncludingTrailingWhitespace ?? 0;
+
+        public void Draw(DrawingContext dc, Point origin)
+        {
+            if (Text != null) dc.DrawText(Text, origin);
+            else Tabular?.Draw(dc, origin, InvertAxes.None);
+        }
     }
 
     private void DrawIdleHub(DrawingContext dc, double width)
@@ -355,15 +410,17 @@ internal sealed class WheelCanvas : FrameworkElement
         var result = Make(size);
         if (lines <= 1)
         {
+            // Text doesn't shrink exactly in proportion (hinting), so aim a little under and try again if needed.
+            var fontSize = size;
+            for (var attempt = 0; attempt < 3 && result.WidthIncludingTrailingWhitespace > width && fontSize > size * minScale; attempt++)
+            {
+                fontSize = Math.Max(size * minScale, fontSize * width / result.WidthIncludingTrailingWhitespace * 0.97);
+                result = Make(fontSize);
+            }
             if (result.WidthIncludingTrailingWhitespace > width)
             {
-                var scaled = Math.Max(size * minScale, size * width / result.WidthIncludingTrailingWhitespace);
-                result = Make(scaled);
-                if (result.WidthIncludingTrailingWhitespace > width)
-                {
-                    result.MaxTextWidth = width;
-                    result.MaxLineCount = 1;
-                }
+                result.MaxTextWidth = width;
+                result.MaxLineCount = 1;
             }
             return result;
         }
@@ -441,15 +498,18 @@ internal sealed class WheelCanvas : FrameworkElement
         return text;
     }
 
-    private static void DrawStack(DrawingContext dc, IReadOnlyList<FormattedText> lines, Point center, double spacing)
+    private static void DrawStack(DrawingContext dc, IReadOnlyList<FormattedText> lines, Point center, double spacing) =>
+        DrawStack(dc, lines.Select(line => (HubLine)line).ToList(), center, spacing);
+
+    private static void DrawStack(DrawingContext dc, IReadOnlyList<HubLine> lines, Point center, double spacing)
     {
         var total = lines.Sum(line => line.Height) + spacing * Math.Max(0, lines.Count - 1);
         var y = center.Y - total / 2;
         foreach (var line in lines)
         {
-            var width = line.TextAlignment == TextAlignment.Center && line.MaxTextWidth > 0 ? line.MaxTextWidth : line.WidthIncludingTrailingWhitespace;
-            dc.DrawText(line, new Point(center.X - width / 2, y));
+            line.Draw(dc, new Point(center.X - line.Width / 2, y));
             y += line.Height + spacing;
+            line.Tabular?.Dispose();
         }
     }
 

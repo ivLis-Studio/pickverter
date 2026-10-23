@@ -103,7 +103,109 @@ public sealed class WheelModel
 
     private void Notify(WheelChange change)
     {
-        if (change != WheelChange.None) Changed?.Invoke(change);
+        if (change == WheelChange.None) return;
+        if ((change & (WheelChange.Highlight | WheelChange.Items | WheelChange.Visibility)) != 0) RefreshEstimate();
+        Changed?.Invoke(change);
+    }
+
+    // Size preview
+
+    /// The size preview in the hub (one file, an option SizeEstimator can try). The wheel on screen turns it on; demo,
+    /// preview, snapshot and test wheels go without (EstimateNowAsync still works for them).
+    public bool Estimates { get; set; }
+    /// Running: the hub says "Checking the size…".
+    public bool EstimatePending { get; private set; }
+    public SizeEstimate? Estimate { get; private set; }
+    public string? EstimateLine => EstimatePending ? L("est.calculating") : Estimate?.Line;
+
+    private string? estimateKey;
+    private CancellationTokenSource? estimateRun;
+    private IDisposable? estimateTimer;
+
+    /// Follows the highlight: a known answer shows at once; otherwise, once the highlight has rested for 250 ms, the
+    /// option runs on the side. Moving on or closing cancels it.
+    private void RefreshEstimate()
+    {
+        ActiveOption? target = null;
+        if (Estimates && !IsDemo && IsVisible && Choice == null && Files.Count == 1 && Active is { } active &&
+            active.Option.Unavailable == null && active.Parent?.Unavailable == null)
+            target = active;
+        var key = target == null ? null : Files[0] + "\n" + target.Option.Id;
+        if (key == estimateKey) return;
+        StopEstimate();
+        estimateKey = key;
+        Estimate = null;
+        EstimatePending = false;
+        if (target == null || key == null) return;
+        var option = target.Option;
+        var file = Files[0];
+        if (SizeEstimator.Shared.Known(option, file) is { } known)
+        {
+            Estimate = known;
+            return;
+        }
+        if (!SizeEstimator.IsEstimable(option, target.Parent, file)) return;
+        var run = new CancellationTokenSource();
+        estimateRun = run;
+        estimateTimer = Platform.Main.After(TimeSpan.FromMilliseconds(250), () => Platform.Main.Post(() =>
+        {
+            if (run.IsCancellationRequested || estimateKey != key) return;
+            EstimatePending = true;
+            Notify(WheelChange.Hub);
+            _ = RunEstimate(option, file, key, run.Token);
+        }));
+    }
+
+    private async Task RunEstimate(PickOption option, string file, string key, CancellationToken token)
+    {
+        SizeEstimate estimate;
+        try
+        {
+            estimate = await SizeEstimator.Shared.EstimateAsync(option, file, token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+        catch (Exception error)
+        {
+            Debug.Log("estimate: " + error.Message);
+            estimate = SizeEstimate.Nothing;
+        }
+        Platform.Main.Post(() =>
+        {
+            if (token.IsCancellationRequested || estimateKey != key) return;
+            EstimatePending = false;
+            Estimate = estimate;
+            Notify(WheelChange.Hub);
+            if (estimate.Line is { } line) Announce(line);
+        });
+    }
+
+    private void StopEstimate()
+    {
+        estimateTimer?.Dispose();
+        estimateTimer = null;
+        estimateRun?.Cancel();
+        estimateRun = null;
+    }
+
+    /// Snapshots and tests: the estimate for what is highlighted now, without the wait.
+    public async Task EstimateNowAsync()
+    {
+        if (Files.Count != 1 || Active is not { } active) return;
+        var option = active.Option;
+        var file = Files[0];
+        if (SizeEstimator.Shared.Known(option, file) is not { } estimate)
+        {
+            if (!SizeEstimator.IsEstimable(option, active.Parent, file)) return;
+            estimate = await SizeEstimator.Shared.EstimateAsync(option, file, CancellationToken.None);
+        }
+        StopEstimate();
+        estimateKey = file + "\n" + option.Id;
+        EstimatePending = false;
+        Estimate = estimate;
+        Notify(WheelChange.Hub);
     }
 
     // Presenting

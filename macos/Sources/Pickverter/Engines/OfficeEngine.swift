@@ -131,11 +131,13 @@ enum OfficeEngine {
             ctx.report(nil, L("note.opening_in", app.name))
             return try await ctx.produce(ctx.destination(for: src, ext: ext)) { tmp in
                 try await viaIWork(app, src: src, target: ext, to: tmp)
+                if ext == "csv" { TextCodec.addBOM(to: tmp) }
             }
         case .libreOffice(let soffice):
             ctx.report(nil, L("note.opening_in", "LibreOffice"))
             return try await ctx.produce(ctx.destination(for: src, ext: ext)) { tmp in
                 try await viaLibreOffice(soffice, src: src, target: ext, to: tmp)
+                if ext == "csv" { TextCodec.addBOM(to: tmp) }
             }
         }
     }

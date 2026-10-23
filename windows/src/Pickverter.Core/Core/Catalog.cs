@@ -259,8 +259,23 @@ public static class Catalog
             });
             list.Add(Tool("listing", "list.bullet", ctx => ArchiveEngine.CopyListing(ctx.Files), files: false));
         }
+        // Text saved as EUC-KR (CP949): fixing that comes first while it is there.
+        if (FixEncodingOffered(files)) list.Insert(0, Tool("utf8", "globe", Batch.PerFile(DataEngine.RewriteAsUtf8)));
         return list;
     }
+
+    /// Every selected file is plain text and one of the first 20 is EUC-KR (TextEncodings.NeedsUtf8Fix).
+    public static bool FixEncodingOffered(IReadOnlyList<string> files) =>
+        files.All(TextEncodings.IsTextLike) && files.Take(20).Any(TextEncodings.NeedsUtf8Fix);
+
+    /// Compress: the quality levels, then "Under N" sizes and one of the user's own.
+    public static List<PickOption> CompressVariants(Func<Level, PickAction> level, IReadOnlyList<long> targets, SizeTargets.Fitter fit, string? unavailable) =>
+    [
+        .. Levels.Select(entry => Variant("tool.compress", entry.Key, entry.Title, level(entry), unavailable: unavailable)),
+        .. targets.Select(target => Variant("tool.compress", SizeTargets.Key(target), L("size.under", SizeTargets.Label(target)),
+                                            SizeTargets.Under(target, fit), unavailable: unavailable)),
+        Variant("tool.compress", "maxcustom", L("size.custom"), SizeTargets.Custom(fit), unavailable: unavailable, interactive: true),
+    ];
 
     public static List<PickOption> RotateVariants(IEnumerable<Turn> turns, Func<string, Turn, PickContext, Task<string>> body, string? unavailable = null) =>
         turns.Select(turn => Variant("tool.rotate", turn.Raw(), turn.Title(), Batch.PerFile((src, ctx) => body(src, turn, ctx)),
@@ -368,8 +383,8 @@ public static class Catalog
             {
                 var list = new List<PickOption>
                 {
-                    Tool("compress", "arrow.down.right.and.arrow.up.left", variants: Levels.Select(level =>
-                        Variant("tool.compress", level.Key, level.Title, Batch.PerFile((src, ctx) => ImageEngine.Compress(src, level.Image, ctx)))).ToList()),
+                    Tool("compress", "arrow.down.right.and.arrow.up.left", variants: CompressVariants(
+                        level => Batch.PerFile((src, ctx) => ImageEngine.Compress(src, level.Image, ctx)), SizeTargets.Image, ImageEngine.CompressUnder, null)),
                     Tool("resize", "arrow.down.forward.and.arrow.up.backward", variants:
                         new[] { 0.5, 0.25, 0.75 }.Select(scale => Variant("tool.resize", ((int)(scale * 100)).ToString(CultureInfo.InvariantCulture),
                                 $"{(int)(scale * 100)}%", Batch.PerFile((src, ctx) => ImageEngine.Resize(src, scale, null, ctx))))
@@ -399,8 +414,8 @@ public static class Catalog
             {
                 var list = new List<PickOption>
                 {
-                    Tool("compress", "arrow.down.right.and.arrow.up.left", unavailable: noFFmpeg, variants: Levels.Select(level =>
-                        Variant("tool.compress", level.Key, level.Title, Batch.PerFile((src, ctx) => MediaEngine.CompressVideo(src, level.Crf, ctx)), unavailable: noFFmpeg)).ToList()),
+                    Tool("compress", "arrow.down.right.and.arrow.up.left", unavailable: noFFmpeg, variants: CompressVariants(
+                        level => Batch.PerFile((src, ctx) => MediaEngine.CompressVideo(src, level.Crf, ctx)), SizeTargets.Video, MediaEngine.CompressVideoUnder, noFFmpeg)),
                     CutTool(true, basicMedia),
                     Tool("resolution", "rectangle.compress.vertical", unavailable: noFFmpeg, variants: new[] { 720, 1080, 480 }.Select(height =>
                         Variant("tool.resolution", height.ToString(CultureInfo.InvariantCulture), $"{height}p",

@@ -233,15 +233,14 @@ final class PickContext: @unchecked Sendable {
         let staged = work.appendingPathComponent(destination.lastPathComponent)
         try await body(staged)
         guard fm.fileExists(atPath: staged.path) else { throw PickError(L("err.no_result")) }
-        var final = FileNames.unique(destination)
+        // The name goes in composed (NFC), so it reads right after an upload or on Windows too.
+        let final = FileNames.unique(destination)
         do {
-            try fm.moveItem(at: staged, to: final)
+            return try NameFixer.place(staged, at: final)
         } catch {
             // Something took the name in the meantime: pick the next free one.
-            final = FileNames.unique(final)
-            try fm.moveItem(at: staged, to: final)
+            return try NameFixer.place(staged, at: FileNames.unique(final))
         }
-        return final
     }
 }
 

@@ -120,6 +120,19 @@ internal sealed class WinShell : DefaultShell
         }
     }
 
+    /// File Explorer watches local folders itself; network shares and some views only refresh when told.
+    public override void NotifyFolderChanged(string folder)
+    {
+        try
+        {
+            Native.SHChangeNotify(Native.SHCNE_UPDATEDIR, Native.SHCNF_PATHW | Native.SHCNF_FLUSHNOWAIT, folder, null);
+        }
+        catch (Exception error)
+        {
+            Debug.Log("change notify: " + error.Message);
+        }
+    }
+
     internal static int? ReadExploitGuard(string name)
     {
         foreach (var path in new[] { ExploitGuardPolicy, ExploitGuard })

@@ -326,6 +326,150 @@ public static class ImageEngine
         return output;
     }
 
+    // Under N
+
+    /// "Under N": the biggest result that fits. JPEG, HEIC, WebP and AVIF stay in their format when it can be written;
+    /// anything else becomes PNG when it really uses transparency, JPEG otherwise. Lossy formats search the quality
+    /// between 0.30 and 0.92 (about six encodes) for the biggest result under the target; when even 0.30 is too big the
+    /// picture shrinks by √(target/size)·0.95 and the search runs again (up to four times). PNG only shrinks (up to
+    /// six times). Every smaller size is made from the original. A target out of reach keeps the smallest result.
+    public static async Task<SizeTargets.Fit> CompressUnder(string src, long target, PickContext ctx)
+    {
+        if (FileNames.Size(src) <= target) return SizeTargets.Fit.AlreadyUnder;
+        using var original = await LoadAsync(src, ctx);
+        var ext = FileNames.NormalizedExt(src);
+        var format = ext is "jpg" or "heic" or "webp" or "avif" && CanEncode(ext) ? ext : UsesTransparency(original) ? "png" : "jpg";
+        string? missed = null;
+        var output = await ctx.Produce(ctx.DestinationFor(src, format, L("sfx.compressed")), async tmp =>
+        {
+            var scratch = FileSystem.TempFolder("pickverter-fit");
+            try
+            {
+                var attempts = new Attempts(scratch, target, format, ctx);
+                if (format == "png") await FitByShrinking(original, attempts, target);
+                else await FitByQuality(original, attempts, target);
+                var (path, bytes) = attempts.Result;
+                File.Move(path, tmp);
+                if (bytes > target) missed = SizeTargets.Missed(target, bytes);
+            }
+            finally
+            {
+                FileSystem.TryDelete(scratch);
+            }
+        });
+        return new SizeTargets.Fit(output, missed);
+    }
+
+    private static async Task FitByQuality(MagickImage original, Attempts attempts, long target)
+    {
+        var scale = 1.0;
+        for (var round = 0; round <= 4; round++)
+        {
+            using var scaled = round == 0 ? null : Scaled(original, scale);
+            var image = scaled ?? original;
+            var floor = await attempts.Encode(image, 0.30);
+            if (floor > target)
+            {
+                scale *= Math.Sqrt((double)target / floor) * 0.95;
+                continue;
+            }
+            if (await attempts.Encode(image, 0.92) <= target) return;
+            double low = 0.30, high = 0.92;
+            for (var step = 0; step < 4; step++)
+            {
+                var middle = (low + high) / 2;
+                if (await attempts.Encode(image, middle) <= target) low = middle;
+                else high = middle;
+            }
+            return;
+        }
+    }
+
+    private static async Task FitByShrinking(MagickImage original, Attempts attempts, long target)
+    {
+        var scale = 1.0;
+        var bytes = await attempts.Encode(original, null);
+        for (var round = 0; round < 6 && bytes > target; round++)
+        {
+            scale *= Math.Sqrt((double)target / bytes) * 0.95;
+            using var scaled = Scaled(original, scale);
+            bytes = await attempts.Encode(scaled, null);
+        }
+    }
+
+    /// The original at a fraction of its size (a fresh copy each time, never a copy of a copy).
+    private static MagickImage Scaled(MagickImage original, double scale)
+    {
+        var copy = new MagickImage(original);
+        var width = (uint)Math.Max(1, Math.Round(original.Width * scale));
+        var height = (uint)Math.Max(1, Math.Round(original.Height * scale));
+        copy.Resize(new MagickGeometry(width, height) { IgnoreAspectRatio = true });
+        return copy;
+    }
+
+    /// Some pixel isn't fully opaque (checked on a copy of at most 512 px): an alpha channel alone doesn't count.
+    public static bool UsesTransparency(MagickImage image)
+    {
+        if (!image.HasAlpha) return false;
+        using var probe = new MagickImage(image);
+        if (Math.Max(probe.Width, probe.Height) > 512) probe.Resize(new MagickGeometry(512, 512) { Greater = true });
+        return !probe.IsOpaque;
+    }
+
+    /// The encodes of one Under-N run: keeps the biggest that fits and the smallest overall, deletes the rest.
+    private sealed class Attempts(string folder, long target, string format, PickContext ctx)
+    {
+        private int count;
+        private (string Path, long Bytes)? best;
+        private (string Path, long Bytes)? smallest;
+
+        /// The biggest result under the target, or the smallest of all when none is.
+        public (string Path, long Bytes) Result => best ?? smallest ?? throw new PickException(L("err.no_result"));
+
+        public async Task<long> Encode(MagickImage image, double? quality)
+        {
+            ctx.Check();
+            var path = Path.Combine(folder, (count++).ToString(CultureInfo.InvariantCulture) + "." + format);
+            if (format == "png")
+            {
+                using var copy = new MagickImage(image);
+                StripKeepingColor(copy);
+                copy.Settings.SetDefine(MagickFormat.Png, "compression-level", "9");
+                copy.Settings.SetDefine(MagickFormat.Png, "exclude-chunks", "date,time");
+                await Task.Run(() => WriteTo(copy, path, MagickFormat.Png), ctx.Token);
+            }
+            else
+            {
+                await ImageEngine.Encode(image, path, format, quality);
+            }
+            var bytes = new FileInfo(path).Length;
+            ctx.Report(Math.Min(0.95, count / 10.0));
+            var keep = false;
+            if (bytes <= target && (best is not { } fitting || bytes > fitting.Bytes))
+            {
+                Drop(best);
+                best = (path, bytes);
+                keep = true;
+            }
+            if (smallest is not { } least || bytes < least.Bytes)
+            {
+                Drop(smallest);
+                smallest = (path, bytes);
+                keep = true;
+            }
+            if (!keep) FileSystem.TryDelete(path);
+            return bytes;
+        }
+
+        /// Deletes a superseded encode unless the other slot still holds it.
+        private void Drop((string Path, long Bytes)? attempt)
+        {
+            if (attempt is not { } old) return;
+            if (best?.Path == old.Path && smallest?.Path == old.Path) return;
+            FileSystem.TryDelete(old.Path);
+        }
+    }
+
     public static async Task<string> Resize(string src, double? scale, int? maxSide, PickContext ctx)
     {
         var size = OrientedSize(src) ?? (4096, 4096);
