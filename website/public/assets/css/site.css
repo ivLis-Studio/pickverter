@@ -278,12 +278,15 @@ h2 { font-size: clamp(32px, 4.4vw, 52px); line-height: 1.08; letter-spacing: -0.
 .dest .ico { font-size: 24px; color: var(--accent); }
 .dest b { display: block; margin-top: 14px; font-size: 17px; }
 .dest span { display: block; font-size: 14.5px; color: var(--muted); margin-top: 3px; }
-.dest-demo { margin-top: 22px; display: flex; align-items: center; gap: 16px; min-height: 92px; padding: 18px 20px; border-radius: 18px; border: 1px dashed var(--line-2); }
-.dest-demo .card { flex: 1; min-width: 0; display: flex; gap: 12px; align-items: center; overflow-wrap: anywhere; }
+/* The result card and the "just this once" shortcuts share a row while both fit. On a phone, or in a longer language,
+   the shortcuts drop below the card instead of squeezing it into a one-letter column under the shortcut text. */
+.dest-demo { margin-top: 22px; display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; min-height: 92px; padding: 18px 20px; border-radius: 18px; border: 1px dashed var(--line-2); }
+.dest-demo .card { flex: 1 1 280px; min-width: 0; display: flex; gap: 12px; align-items: center; overflow-wrap: break-word; }
+.dest-demo .card > div { min-width: 0; }
 .dest-demo i { width: 50px; height: 50px; border-radius: 9px; background-size: cover; background-position: center; flex: none; background-color: #fff; box-shadow: 0 0 0 1px var(--line); }
 .dest-demo b { display: block; }
 .dest-demo small { color: var(--muted); font-size: 14px; }
-.dest-demo .over { font-size: 14px; color: var(--muted); }
+.dest-demo .over { flex: 0 1 auto; min-width: 0; font-size: 14px; color: var(--muted); }
 .dest-demo kbd { font: inherit; font-size: 12.5px; padding: 1px 6px; border-radius: 6px; border: 1px solid var(--line-2); background: var(--surface); }
 
 /* ---------- editors gallery */

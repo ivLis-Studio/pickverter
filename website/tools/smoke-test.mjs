@@ -79,9 +79,10 @@ const film = () => page.locator("#film-video source").getAttribute("src");
 check("film: the Mac cut", (await film()) === "assets/media/film-en.mp4", await film());
 
 // The film plays muted on its own once it's on screen; Pause holds it; Sound on starts it over with sound and controls.
+// The time is compared unrounded: the first frame past 0.5 s reads 0.50 once rounded, which made the first check flaky.
 const filmState = () => page.evaluate(() => {
   const v = document.querySelector("#film-video");
-  return { muted: v.muted, paused: v.paused, controls: v.controls, t: +v.currentTime.toFixed(2), ambient: document.querySelector("#player").classList.contains("ambient") };
+  return { muted: v.muted, paused: v.paused, controls: v.controls, t: v.currentTime, ambient: document.querySelector("#player").classList.contains("ambient") };
 });
 const playing = (after) => page.waitForFunction((t) => { const v = document.querySelector("#film-video"); return !v.paused && v.currentTime > t; }, after, { timeout: 10000 }).catch(() => {});
 await page.locator("#player").scrollIntoViewIfNeeded();
@@ -158,6 +159,15 @@ for (const width of [320, 390]) {
     await p.waitForTimeout(150);
     const m = await p.evaluate(() => ({ W: document.documentElement.clientWidth, S: document.documentElement.scrollWidth }));
     check("phone " + width + "px, " + os + " " + lang + ", text " + size + "%: no sideways scroll", m.S <= m.W, "page " + m.S + "px wide on a " + m.W + "px screen");
+    // The Remove BG result card keeps its title readable, and the "just this once" shortcuts sit beside or below it,
+    // never on top of it (they used to squeeze the card into a one-letter column on phones).
+    const card = await p.evaluate(() => {
+      const d = document.querySelector(".dest-demo"), c = d.querySelector(".card"), b = c.querySelector("b"), o = d.querySelector(".over");
+      const rc = c.getBoundingClientRect(), rb = b.getBoundingClientRect(), ro = o.getBoundingClientRect(), s = getComputedStyle(b);
+      const line = parseFloat(s.lineHeight) || parseFloat(s.fontSize) * 1.4;
+      return { lines: Math.round(rb.height / line), apart: ro.top >= rc.bottom - 1 || ro.left >= rc.right - 1, width: Math.round(rc.width) };
+    });
+    check("phone " + width + "px, " + os + " " + lang + ", text " + size + "%: result card readable", card.lines <= 2 && card.apart && card.width >= 200, JSON.stringify(card));
     await p.close();
   }
   await phone.close();
