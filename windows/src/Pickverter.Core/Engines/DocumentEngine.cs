@@ -97,7 +97,7 @@ public static class DocumentEngine
     /// HTML -> PDF with Edge, or LibreOffice when Edge isn't there.
     public static async Task PrintPdf(Doc doc, string destination, CancellationToken token)
     {
-        var folder = Path.GetDirectoryName(destination) ?? Path.GetTempPath();
+        var folder = Path.GetDirectoryName(destination) ?? FileSystem.TempRoot;
         var html = Path.Combine(folder, ".pickverter-print-" + Guid.NewGuid().ToString("N")[..8] + ".html");
         try
         {

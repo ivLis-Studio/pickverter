@@ -48,7 +48,7 @@ public sealed class SizeEstimator
     private readonly SemaphoreSlim running = new(1, 1);
 
     /// Where the runs put their results (tests point it elsewhere).
-    internal static string ScratchRoot { get; set; } = Path.Combine(Path.GetTempPath(), "pickverter-estimates");
+    internal static string ScratchRoot { get; set; } = Path.Combine(FileSystem.TempRoot, "pickverter-estimates");
 
     /// Image conversions to other image formats, every image Compress (sizes included) and Resize, PDF Compress — for
     /// files small enough to try quickly. Never an option that asks something first.

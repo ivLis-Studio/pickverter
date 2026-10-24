@@ -217,11 +217,45 @@ public static class FileSystem
         }
     }
 
+    /// Where scratch files go: the system's temp folder, or the Store edition's own (Platform.Paths.Temp), whose paths
+    /// every program can open.
+    public static string TempRoot
+    {
+        get
+        {
+            if (Platform.Paths.Temp is not { Length: > 0 } custom) return Path.GetTempPath();
+            Directory.CreateDirectory(custom);
+            return custom;
+        }
+    }
+
     public static string TempFolder(string prefix)
     {
-        var folder = Path.Combine(Path.GetTempPath(), prefix + "-" + Guid.NewGuid().ToString("N")[..12]);
+        var folder = Path.Combine(TempRoot, prefix + "-" + Guid.NewGuid().ToString("N")[..12]);
         Directory.CreateDirectory(folder);
         return folder;
+    }
+
+    /// Deletes what sits in a folder untouched for longer than age (the Store edition's temp folder, which nothing
+    /// else cleans up). Returns how many entries went.
+    public static int PruneEntries(string folder, TimeSpan age)
+    {
+        var removed = 0;
+        try
+        {
+            if (!Directory.Exists(folder)) return 0;
+            var cutoff = DateTime.UtcNow - age;
+            foreach (var entry in Directory.EnumerateFileSystemEntries(folder))
+            {
+                if (File.GetLastWriteTimeUtc(entry) >= cutoff) continue;
+                TryDelete(entry);
+                if (!File.Exists(entry) && !Directory.Exists(entry)) removed++;
+            }
+        }
+        catch (Exception)
+        {
+        }
+        return removed;
     }
 
     /// Plain text, whatever its encoding (see TextEncodings.Decode).

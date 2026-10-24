@@ -1,0 +1,119 @@
+name: Windows Store package
+
+# The Microsoft Store (MSIX) edition: tests, then scripts/package-msix.ps1 for x64 and Arm64. The unsigned bundle is
+# what goes to Partner Center; the test-signed copies and their .cer are for sideloading in a VM. Everything stays a
+# workflow artifact: nothing is attached to a GitHub release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Store package version, e.g. 0.3.1 (packaged as 0.3.1.0)"
+        required: true
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+    working-directory: windows
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+  PYTHONUTF8: 1
+
+jobs:
+  msix:
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version
+        id: version
+        env:
+          INPUT_VERSION: ${{ github.event.inputs.version }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          $version = if ($env:INPUT_VERSION) { $env:INPUT_VERSION } else { $env:REF_NAME }
+          $version = $version.Trim().TrimStart("v")
+          "version=$version" >> $env:GITHUB_OUTPUT
+          # A pre-release tag (v1.2.3-beta.1) has no Store package; a version typed in by hand is always tried.
+          if ($env:INPUT_VERSION -or $version -match '^\d+\.\d+\.\d+$') {
+            "store=true" >> $env:GITHUB_OUTPUT
+          }
+          else {
+            "store=false" >> $env:GITHUB_OUTPUT
+            "::notice::$version is a pre-release: no Microsoft Store package"
+          }
+
+      - name: Test
+        if: steps.version.outputs.store == 'true'
+        run: |
+          python scripts/check-i18n.py
+          if ($LASTEXITCODE) { exit 1 }
+          dotnet build Pickverter.slnx -c Release
+          if ($LASTEXITCODE) { exit 1 }
+          dotnet test --project tests/Pickverter.Core.Tests/Pickverter.Core.Tests.csproj -c Release --no-build
+          if ($LASTEXITCODE) { exit 1 }
+
+      - name: Package (MSIX)
+        if: steps.version.outputs.store == 'true'
+        env:
+          STORE_VERSION: ${{ steps.version.outputs.version }}
+        run: scripts/package-msix.ps1 -Version $env:STORE_VERSION -Arch x64,arm64 -TestCertificate
+
+      - name: Keep the packages
+        if: steps.version.outputs.store == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pickverter-msix-${{ steps.version.outputs.version }}
+          path: |
+            windows/dist/msix/*.msixbundle
+            windows/dist/msix/*.msix
+            windows/dist/msix/test-signed/*
+          if-no-files-found: error
+
+      # Informational: installs the test-signed bundle on the runner, starts Pickverter with its package identity and
+      # looks for the Store edition's folders, then removes it again. Not a substitute for the VM check.
+      - name: Sideload check
+        if: steps.version.outputs.store == 'true'
+        continue-on-error: true
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $folder = Join-Path $PWD "dist\msix\test-signed"
+          $certificate = Get-ChildItem $folder -Filter *.cer | Select-Object -First 1
+          $bundle = Get-ChildItem $folder -Filter *.msixbundle | Select-Object -First 1
+          $store = New-Object Security.Cryptography.X509Certificates.X509Store("TrustedPeople", "LocalMachine")
+          $store.Open("ReadWrite")
+          $store.Add((New-Object Security.Cryptography.X509Certificates.X509Certificate2($certificate.FullName)))
+          $store.Close()
+          Add-AppxPackage -Path $bundle.FullName
+          $package = Get-AppxPackage -Name "ivLis-STUDIO.Pickverter"
+          if (-not $package) { throw "Pickverter isn't installed" }
+          "installed {0} ({1}) in {2}" -f $package.PackageFullName, $package.Status, $package.InstallLocation
+          try {
+            Start-Process ("shell:AppsFolder\{0}!Pickverter" -f $package.PackageFamilyName)
+            Start-Sleep -Seconds 15
+            $running = Get-Process -Name Pickverter -ErrorAction SilentlyContinue | Where-Object { $_.Path -like "$($package.InstallLocation)*" }
+            if (-not $running) { throw "Pickverter didn't keep running after starting from its package" }
+            $temp = Join-Path $env:LOCALAPPDATA ("Packages\{0}\LocalCache\Local\Temp" -f $package.PackageFamilyName)
+            if (-not (Test-Path $temp)) { throw ("missing {0}: the Store edition didn't switch to the package's folders" -f $temp) }
+            "running with package identity; scratch folder $temp"
+            # Started by path, without the identity: still the Store edition, with the same folders.
+            & (Join-Path $package.InstallLocation "Pickverter\Pickverter.exe") cli edition | Out-Host
+          }
+          finally {
+            Get-Process -Name Pickverter -ErrorAction SilentlyContinue | Stop-Process -Force
+            Remove-AppxPackage -Package $package.PackageFullName
+          }

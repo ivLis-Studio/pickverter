@@ -6,7 +6,7 @@ public static class LayoutSamples
     /// One sample per Office format the Windows app opens (OfficeEngine.Exts), in a fixed order.
     public static readonly IReadOnlyList<string> OfficeExts = ["xlsx", "xlsm", "xls", "pptx", "ppsx", "ppt", "numbers", "pages", "key", "ods", "odp"];
 
-    private static string Folder => Path.Combine(Path.GetTempPath(), "Pickverter Layout Preview");
+    private static string Folder => Path.Combine(FileSystem.TempRoot, "Pickverter Layout Preview");
 
     public static string Title(FileKind kind) => kind switch
     {

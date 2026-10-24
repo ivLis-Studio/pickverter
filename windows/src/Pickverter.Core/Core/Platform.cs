@@ -22,7 +22,9 @@ public static class Platform
     public static AppPaths Paths { get; set; } = AppPaths.Default();
 }
 
-public sealed record AppPaths(string Settings, string Cache)
+/// Settings: settings.json and the wheel layout. Cache: logs, the clipboard cache and the downloads (ffmpeg, rhwp, the
+/// background-removal model). Temp: scratch files; null means the system's temp folder.
+public sealed record AppPaths(string Settings, string Cache, string? Temp = null)
 {
     public static AppPaths Default()
     {
@@ -32,6 +34,15 @@ public sealed record AppPaths(string Settings, string Cache)
         if (string.IsNullOrEmpty(local)) local = Path.GetTempPath();
         return new AppPaths(Path.Combine(roaming, "Pickverter"), Path.Combine(local, "Pickverter"));
     }
+
+    /// The Store edition's folders, inside its package's LocalCache (%LOCALAPPDATA%\Packages\<family name>\LocalCache),
+    /// exactly where Windows would redirect %APPDATA%\Pickverter, %LOCALAPPDATA%\Pickverter and %TEMP% for a packaged app.
+    /// Spelled out, the paths are real for every program: File Explorer pastes clipboard results, Edge, Office and the
+    /// downloaded tools open the scratch files, whether or not they run inside the package.
+    public static AppPaths InPackage(string localCache) => new(
+        Path.Combine(localCache, "Roaming", "Pickverter"),
+        Path.Combine(localCache, "Local", "Pickverter"),
+        Path.Combine(localCache, "Local", "Temp"));
 }
 
 public interface IMainThread
@@ -369,6 +380,19 @@ public sealed class NoCodecs : IImageCodecs
 public interface IStartup
 {
     bool LaunchAtLogin { get; set; }
+
+    /// The whole story; the Run key only knows on and off.
+    StartupState State => LaunchAtLogin ? StartupState.Enabled : StartupState.Disabled;
+
+    /// Raised on the main thread when State changed by itself (Windows answered an earlier request).
+    event Action? Changed
+    {
+        add { }
+        remove { }
+    }
+
+    /// Asks Windows again (the user may have changed it in Task Manager meanwhile).
+    Task RefreshAsync() => Task.CompletedTask;
 }
 
 public sealed class NoStartup : IStartup

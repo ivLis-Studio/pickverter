@@ -250,7 +250,7 @@ public static class PdfEngine
                 }
                 if (text.Trim().Length == 0 && Platform.Pdf.Available && Platform.Vision.OcrAvailable)
                 {
-                    var png = Path.Combine(Path.GetTempPath(), "pickverter-ocr-" + Guid.NewGuid().ToString("N")[..10] + ".png");
+                    var png = Path.Combine(FileSystem.TempRoot, "pickverter-ocr-" + Guid.NewGuid().ToString("N")[..10] + ".png");
                     try
                     {
                         await Platform.Pdf.RenderPageAsync(path, number - 1, 200, png, ctx.Token);
@@ -510,7 +510,7 @@ public static class PdfEngine
         catch (Exception)
         {
         }
-        var png = Path.Combine(Path.GetTempPath(), "pickverter-blank-" + Guid.NewGuid().ToString("N")[..10] + ".png");
+        var png = Path.Combine(FileSystem.TempRoot, "pickverter-blank-" + Guid.NewGuid().ToString("N")[..10] + ".png");
         try
         {
             await Platform.Pdf.RenderPageAsync(path, index, 30, png, token);

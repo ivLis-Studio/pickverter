@@ -215,6 +215,7 @@ window.SITE_I18N = {
   "foot.releases": "릴리스",
   "foot.changelog": "변경 내역",
   "foot.issues": "문제 신고",
+  "foot.privacy": "개인정보 처리방침",
   "foot.credits": "아이콘: Lucide (ISC). 한글 문서 배치: rhwp (MIT). 데모 사진은 이 영상과 사이트를 위해 생성했어요. macOS와 Finder는 Apple Inc.의, Windows는 Microsoft의 상표예요."
  }
 };

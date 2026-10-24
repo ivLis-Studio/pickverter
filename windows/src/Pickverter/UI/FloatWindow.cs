@@ -106,7 +106,7 @@ internal sealed class FloatWindow : Window
             case FileKind.Image:
                 return await Previews.Image(file, 2400);
             case FileKind.Pdf:
-                var png = Path.Combine(Path.GetTempPath(), "pickverter-float-" + Guid.NewGuid().ToString("N")[..8] + ".png");
+                var png = Path.Combine(FileSystem.TempRoot, "pickverter-float-" + Guid.NewGuid().ToString("N")[..8] + ".png");
                 try
                 {
                     await Platform.Pdf.RenderPageAsync(file, 0, 144, png, CancellationToken.None);

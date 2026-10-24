@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Draws the Windows app icon, the tray icons and the installer images (same mark as the Mac app:
-// macos/Sources/Pickverter/UI/BrandArt.swift, with a Windows arrow and a Windows-style plate).
+// Draws the Windows app icon, the tray icons, the installer images and the Microsoft Store (MSIX) assets (same mark as
+// the Mac app: macos/Sources/Pickverter/UI/BrandArt.swift, with a Windows arrow and a Windows-style plate).
 //
 //   node scripts/make-icons.mjs        (uses sharp from ../promo/node_modules and ImageMagick for BMPs)
 import { createRequire } from "node:module";
@@ -158,6 +158,43 @@ for (const [w, h, name] of [[164, 314, "wizard-large.bmp"], [328, 628, "wizard-l
   const file = join(scratch, name.replace(".bmp", ".png"));
   writeFileSync(file, panel);
   execFileSync("magick", [file, "BMP3:" + join(installer, name)]);
+}
+
+// Microsoft Store (MSIX) assets in packaging/Assets, named the way makepri reads qualifiers (scripts/package-msix.ps1
+// builds resources.pri from them; packaging/AppxManifest.xml refers to Assets\Square44x44Logo.png and so on). Flat: the
+// mark without the shadows the larger .ico sizes have, on transparent tiles (BackgroundColor="transparent"), with the
+// same detail per pixel size as the .ico. The unplated and light-unplated taskbar forms are the same image: the dark plate
+// reads on light and dark taskbars alike.
+const assets = join(root, "packaging/Assets");
+mkdirSync(assets, { recursive: true });
+const detailAt = (px) => (px <= 24 ? 0 : px <= 48 ? 1 : 2);
+const flatMark = (px) => png(iconSvg(px, detailAt(px), false), px);
+const scaled = (size, scale) => Math.round((size * scale) / 100);
+
+/// The mark centered on a transparent tile, fraction of the tile's shorter side.
+async function tile(width, height, fraction) {
+  const side = Math.round(Math.min(width, height) * fraction);
+  return sharp({ create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+    .composite([{ input: await flatMark(side), gravity: "center" }])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+}
+
+for (const scale of [100, 125, 150, 200, 400]) {
+  // App list, Start and taskbar icon; Store logo (50 x 50 at 100%).
+  writeFileSync(join(assets, `Square44x44Logo.scale-${scale}.png`), await flatMark(scaled(44, scale)));
+  writeFileSync(join(assets, `StoreLogo.scale-${scale}.png`), await flatMark(scaled(50, scale)));
+  // Windows 10 Start tiles: small (no name under it), medium, wide and large (the name sits at the bottom).
+  writeFileSync(join(assets, `SmallTile.scale-${scale}.png`), await tile(scaled(71, scale), scaled(71, scale), 0.66));
+  writeFileSync(join(assets, `Square150x150Logo.scale-${scale}.png`), await tile(scaled(150, scale), scaled(150, scale), 0.5));
+  writeFileSync(join(assets, `Wide310x150Logo.scale-${scale}.png`), await tile(scaled(310, scale), scaled(150, scale), 0.5));
+  writeFileSync(join(assets, `LargeTile.scale-${scale}.png`), await tile(scaled(310, scale), scaled(310, scale), 0.4));
+}
+for (const size of [16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 256]) {
+  const image = await flatMark(size);
+  for (const form of ["", "_altform-unplated", "_altform-lightunplated"]) {
+    writeFileSync(join(assets, `Square44x44Logo.targetsize-${size}${form}.png`), image);
+  }
 }
 console.log("icons written");
 

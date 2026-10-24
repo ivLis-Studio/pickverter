@@ -508,7 +508,7 @@ public static class MediaEngine
     /// An upright frame (PNG file) for the editors.
     public static async Task<string> PreviewFrame(string path, int maxSide, double position, CancellationToken token)
     {
-        var png = Path.Combine(Path.GetTempPath(), "pickverter-frame-" + Guid.NewGuid().ToString("N")[..10] + ".png");
+        var png = Path.Combine(FileSystem.TempRoot, "pickverter-frame-" + Guid.NewGuid().ToString("N")[..10] + ".png");
         var duration = await Duration(path);
         var time = Math.Max(0, duration * position);
         if (Tools.FFmpeg is { } ffmpeg)

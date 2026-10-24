@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Pickverter for the Microsoft Store (MSIX). scripts/package-msix.ps1 fills in {{Version}} (x.y.z.0) and {{Architecture}}
+  (x64, arm64) for each package. Identity, publisher and display names are the Partner Center product's (Store ID
+  9P05JBV4QDGC): change them only together with Partner Center. Assets\*.png come from scripts/make-icons.mjs; resources.pri
+  (made by the script) maps the names below to their scale-, targetsize- and altform- files.
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:desktop="http://schemas.microsoft.com/appx/manifest/desktop/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap desktop rescap">
+
+  <Identity
+    Name="ivLis-STUDIO.Pickverter"
+    Publisher="CN=0C33D71C-3E83-4FF3-A9B9-CA2EA49A5C77"
+    Version="{{Version}}"
+    ProcessorArchitecture="{{Architecture}}" />
+
+  <Properties>
+    <DisplayName>Pickverter</DisplayName>
+    <PublisherDisplayName>ivLis-STUDIO</PublisherDisplayName>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.19041.0" MaxVersionTested="10.0.26100.0" />
+  </Dependencies>
+
+  <!-- The app's ten languages; Pickverter picks its strings itself (i18n.json), these tell the Store and Windows. -->
+  <Resources>
+    <Resource Language="en-US" />
+    <Resource Language="ko-KR" />
+    <Resource Language="ja-JP" />
+    <Resource Language="zh-CN" />
+    <Resource Language="zh-TW" />
+    <Resource Language="es-ES" />
+    <Resource Language="fr-FR" />
+    <Resource Language="de-DE" />
+    <Resource Language="ru-RU" />
+    <Resource Language="pt-BR" />
+  </Resources>
+
+  <Applications>
+    <Application Id="Pickverter" Executable="Pickverter\Pickverter.exe" EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        DisplayName="Pickverter"
+        Description="Pick files in File Explorer, tap one key, and convert, edit or share them from a wheel at your cursor."
+        BackgroundColor="transparent"
+        Square150x150Logo="Assets\Square150x150Logo.png"
+        Square44x44Logo="Assets\Square44x44Logo.png">
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Wide310x150Logo.png"
+          Square71x71Logo="Assets\SmallTile.png"
+          Square310x310Logo="Assets\LargeTile.png"
+          ShortName="Pickverter" />
+      </uap:VisualElements>
+      <Extensions>
+        <!-- Start with Windows (StoreStartup.TaskId): off until the user turns it on in Pickverter. -->
+        <desktop:Extension Category="windows.startupTask" Executable="Pickverter\Pickverter.exe" EntryPoint="Windows.FullTrustApplication">
+          <desktop:StartupTask TaskId="PickverterStartup" Enabled="false" DisplayName="Pickverter" />
+        </desktop:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+
+  <Capabilities>
+    <Capability Name="internetClient" />
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+</Package>

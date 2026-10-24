@@ -865,6 +865,18 @@
       "Безопасность Windows…",
       "Segurança do Windows…"
     ],
+    "perm.cfa.store": [
+      "Controlled folder access blocks unknown apps from saving to Documents, Pictures and Desktop. In Windows Security, choose Allow an app through Controlled folder access, then add Pickverter from Recently blocked apps. You may need to do this again after an update.",
+      "‘제어된 폴더 액세스’가 문서·사진·바탕 화면에 알 수 없는 앱이 저장하는 걸 막고 있어요. Windows 보안에서 ‘제어된 폴더 액세스를 통해 앱 허용’을 누른 뒤 ‘최근에 차단된 앱’에서 Pickverter를 추가해 주세요. 업데이트 후에 다시 해야 할 수 있어요.",
+      "「コントロールされたフォルダー アクセス」が不明なアプリによるドキュメント・ピクチャ・デスクトップへの保存をブロックしています。Windows セキュリティで「コントロールされたフォルダー アクセスによるアプリの許可」を選び、「最近ブロックされたアプリ」からPickverterを追加してください。アップデート後にもう一度必要になることがあります。",
+      "“受控文件夹访问”会阻止未知应用保存到文档、图片和桌面。请在 Windows 安全中心选择“允许应用通过受控制文件夹访问”，然后从“最近阻止的应用”中添加 Pickverter。更新后可能需要再做一次。",
+      "「受控資料夾存取」會阻擋不明的應用程式儲存到文件、圖片與桌面。請在 Windows 安全性中選擇「允許應用程式通過受控資料夾存取」，再從「最近封鎖的應用程式」加入 Pickverter。更新後可能需要再做一次。",
+      "El acceso controlado a carpetas impide que apps desconocidas guarden en Documentos, Imágenes y Escritorio. En Seguridad de Windows, elige Permitir una aplicación a través del acceso controlado a carpetas y agrega Pickverter desde Aplicaciones bloqueadas recientemente. Tras una actualización puede que tengas que repetirlo.",
+      "L'accès contrôlé aux dossiers empêche les apps inconnues d'enregistrer dans Documents, Images et Bureau. Dans Sécurité Windows, choisissez Autoriser une application via l'accès contrôlé aux dossiers, puis ajoutez Pickverter depuis Applications récemment bloquées. Après une mise à jour, il faudra peut-être recommencer.",
+      "Der überwachte Ordnerzugriff hindert unbekannte Apps daran, in Dokumente, Bilder und Desktop zu speichern. Wähle in der Windows-Sicherheit „App durch überwachten Ordnerzugriff zulassen“ und füge Pickverter unter „Zuletzt blockierte Apps“ hinzu. Nach einem Update musst du das eventuell wiederholen.",
+      "Контролируемый доступ к папкам не даёт неизвестным приложениям сохранять файлы в «Документы», «Изображения» и на рабочий стол. В «Безопасности Windows» выберите «Разрешить работу приложения через контролируемый доступ к папкам» и добавьте Pickverter из недавно заблокированных приложений. После обновления это может понадобиться снова.",
+      "O acesso controlado a pastas impede que apps desconhecidos salvem em Documentos, Imagens e Área de Trabalho. Na Segurança do Windows, escolha Permitir um aplicativo pelo acesso controlado a pastas e adicione o Pickverter em Aplicativos bloqueados recentemente. Depois de uma atualização, talvez seja preciso repetir."
+    ],
     "perm.cfa.title": [
       "Folder protection",
       "폴더 보호",
@@ -1069,6 +1081,30 @@
       "Клавиша, которую нажимаете в Проводнике",
       "A tecla que você toca no Explorador"
     ],
+    "startup.off_by_user": [
+      "Turned off in Task Manager › Startup apps. Turn it back on there or in Settings › Apps › Startup.",
+      "작업 관리자 › 시작 앱에서 꺼져 있어요. 그곳이나 설정 › 앱 › 시작 프로그램에서 다시 켜 주세요.",
+      "タスク マネージャー › スタートアップ アプリでオフになっています。そこか、設定 › アプリ › スタートアップでオンに戻してください。",
+      "已在任务管理器 › 启动应用中关闭。请在那里或在设置 › 应用 › 启动中重新打开。",
+      "已在工作管理員 › 啟動應用程式中關閉。請在那裡或在設定 › 應用程式 › 啟動中重新開啟。",
+      "Desactivado en Administrador de tareas › Aplicaciones de arranque. Vuelve a activarlo allí o en Configuración › Aplicaciones › Inicio.",
+      "Désactivé dans le Gestionnaire des tâches › Applications de démarrage. Réactivez-le là ou dans Paramètres › Applications › Démarrage.",
+      "Im Task-Manager unter Autostart-Apps ausgeschaltet. Schalte es dort oder unter Einstellungen › Apps › Autostart wieder ein.",
+      "Отключено в диспетчере задач › «Автозагрузка приложений». Включите снова там или в «Параметры» › «Приложения» › «Автозагрузка».",
+      "Desativado no Gerenciador de Tarefas › Aplicativos de inicialização. Ative de novo lá ou em Configurações › Aplicativos › Inicialização."
+    ],
+    "startup.policy": [
+      "Your organization manages this setting.",
+      "조직에서 이 설정을 관리해요.",
+      "この設定は組織によって管理されています。",
+      "此设置由你的组织管理。",
+      "此設定由您的組織管理。",
+      "Tu organización administra esta opción.",
+      "Ce paramètre est géré par votre organisation.",
+      "Diese Einstellung wird von deiner Organisation verwaltet.",
+      "Этим параметром управляет ваша организация.",
+      "Sua organização gerencia esta configuração."
+    ],
     "term.cmd": [
       "Command Prompt",
       "명령 프롬프트",
@@ -1152,6 +1188,18 @@
       "Pickverter ist für alle Benutzer installiert und kann sich nicht selbst aktualisieren. Lade das neue Installationsprogramm von GitHub.",
       "Pickverter установлен для всех пользователей и не может обновиться сам. Скачайте новый установщик с GitHub.",
       "O Pickverter está instalado para todos os usuários e não pode se atualizar sozinho. Baixe o novo instalador no GitHub."
+    ],
+    "update.store": [
+      "Updates come from the Microsoft Store.",
+      "업데이트는 Microsoft Store에서 받아요.",
+      "アップデートは Microsoft Store から届きます。",
+      "更新由 Microsoft Store 提供。",
+      "更新由 Microsoft Store 提供。",
+      "Las actualizaciones llegan desde Microsoft Store.",
+      "Les mises à jour arrivent par le Microsoft Store.",
+      "Updates kommen über den Microsoft Store.",
+      "Обновления приходят из Microsoft Store.",
+      "As atualizações chegam pela Microsoft Store."
     ],
     "wheel.hint.click": [
       "Click or Enter · Esc closes",

@@ -12,12 +12,15 @@ namespace Pickverter;
 internal sealed class PickverterApp : Application
 {
     private readonly string[] args;
+    private readonly bool background;
     private readonly EventWaitHandle showSignal;
     private readonly EventWaitHandle quitSignal;
 
-    public PickverterApp(string[] args, EventWaitHandle showSignal, EventWaitHandle quitSignal)
+    /// background: started at sign-in (the Run key's --background, the Store edition's startup task): no window.
+    public PickverterApp(string[] args, bool background, EventWaitHandle showSignal, EventWaitHandle quitSignal)
     {
         this.args = args;
+        this.background = background;
         this.showSignal = showSignal;
         this.quitSignal = quitSignal;
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -43,8 +46,15 @@ internal sealed class PickverterApp : Application
         InputMonitor.Shared.Start();
         WindowsPlatform.WarmUp();
         Updater.Shared.Start();
-        WinStartup.Refresh();
-        if (args.Contains("--updated")) Installer.CleanUpAfterUpdate();
+        if (Distribution.IsStore)
+        {
+            StoreEdition.Started();
+        }
+        else
+        {
+            WinStartup.Refresh();
+            if (args.Contains("--updated")) Installer.CleanUpAfterUpdate();
+        }
         WatchForSecondLaunch();
         WelcomeOrUpdated();
     }
@@ -64,7 +74,7 @@ internal sealed class PickverterApp : Application
                 new NoticeAction(L("update.whats_new"), "info.circle", () => Platform.Shell.OpenUrl(Updater.Shared.ReleasesPage + "/tag/v" + Updater.Shared.CurrentVersion)), 10);
             return;
         }
-        if (!args.Contains("--background")) WindowManager.ShowSettings();
+        if (!background) WindowManager.ShowSettings();
     }
 
     private void WatchForSecondLaunch()
@@ -163,9 +173,12 @@ internal static class WindowManager
         var enabled = TrayFlyout.MenuItem(L("set.enable"), null, () => prefs.Enabled = !prefs.Enabled);
         enabled.IsChecked = prefs.Enabled;
         menu.Items.Add(enabled);
-        var check = TrayFlyout.MenuItem(L("menu.check_updates"), "arrow.down.circle", () => ShowUpdates(check: true));
-        check.IsEnabled = Updater.Shared.IsEnabled;
-        menu.Items.Add(check);
+        if (!Distribution.IsStore)
+        {
+            var check = TrayFlyout.MenuItem(L("menu.check_updates"), "arrow.down.circle", () => ShowUpdates(check: true));
+            check.IsEnabled = Updater.Shared.IsEnabled;
+            menu.Items.Add(check);
+        }
         menu.Items.Add(TrayFlyout.MenuItem(L("menu.guide"), "sparkles", ShowOnboarding));
         menu.Items.Add(new Separator());
         menu.Items.Add(TrayFlyout.MenuItem(L("menu.quit"), "power", Quit));
@@ -210,6 +223,8 @@ internal static class WindowManager
 
     public static void ShowUpdates(bool check = false)
     {
+        // The Store edition has no Software Update window: the Store updates it.
+        if (Distribution.IsStore) return;
         if (check) _ = Updater.Shared.CheckAsync(true);
         if (updates == null)
         {

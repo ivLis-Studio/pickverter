@@ -17,10 +17,12 @@ internal static class WindowsPlatform
         Platform.Media = new WinMedia();
         Platform.Codecs = new WinCodecs();
         Platform.Feedback = new WinFeedback();
-        Platform.Startup = new WinStartup();
+        // The Run key for the GitHub edition; the package's startup task for the Store edition.
+        Platform.Startup = Distribution.IsStore ? StoreStartup.Create() : new WinStartup();
         Platform.Actions = new WinActions();
         Platform.Editors = new UI.Editors.EditorHost();
-        Updater.Shared.Installer = new UpdateInstaller();
+        // The Store installs the Store edition's updates: no in-place installer there.
+        Updater.Shared.Installer = Distribution.IsStore ? null : new UpdateInstaller();
     }
 
     /// Slow probes (HEIC encoder, OCR languages, Office) run once in the background so the wheel never waits.

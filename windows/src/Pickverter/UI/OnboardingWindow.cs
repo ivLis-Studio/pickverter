@@ -14,6 +14,7 @@ internal sealed class OnboardingWindow : AppWindow
     private readonly WheelModel demo = new(demo: true);
     private readonly WheelCanvas canvas;
     private readonly DispatcherTimer timer = new() { Interval = TimeSpan.FromMilliseconds(900) };
+    private readonly IStartup startup = Platform.Startup;
     private int tick;
     private bool startWithWindows = true;
     private static readonly (WheelMode Mode, int? Slot, int? Sub)[] Script =
@@ -38,11 +39,15 @@ internal sealed class OnboardingWindow : AppWindow
         {
             timer.Stop();
             FFmpegSetup.Changed -= OnFFmpeg;
+            startup.Changed -= Rebuild;
         };
         FFmpegSetup.Changed += OnFFmpeg;
+        // Windows' answer for Start with Windows (Store edition: switched off in Task Manager, a policy).
+        startup.Changed += Rebuild;
         Activated += (_, _) =>
         {
             Tools.Refresh();
+            _ = startup.RefreshAsync();
             Rebuild();
         };
         Rebuild();
@@ -63,7 +68,7 @@ internal sealed class OnboardingWindow : AppWindow
 
     private void PresentDemo()
     {
-        var sample = Path.Combine(Path.GetTempPath(), L("demo.filename"));
+        var sample = Path.Combine(FileSystem.TempRoot, L("demo.filename"));
         demo.Present([sample], WheelModel.WheelOrigin.Selection, WheelMode.Convert, ScreenPoint.Zero);
         tick = 0;
     }
@@ -119,16 +124,29 @@ internal sealed class OnboardingWindow : AppWindow
         steps.Children.Add(Step(1, L("perm.input"), input ? L("ob.input.d") : L("perm.input.failed"), input, null, null));
         var protection = FolderProtection.State;
         var blocked = protection == FolderProtectionState.Blocking;
-        steps.Children.Add(Step(2, L("perm.cfa.title"), blocked ? L("perm.cfa.blocking") : L("ob.cfa.d"), !blocked,
-            blocked ? L("perm.cfa.allow") : null, blocked ? () => _ = Allow() : null));
+        if (Distribution.IsStore)
+        {
+            // No elevation from the Store edition: Windows Security, where the user allows Pickverter themselves.
+            steps.Children.Add(Step(2, L("perm.cfa.title"), blocked ? L("perm.cfa.store") : L("ob.cfa.d"), !blocked,
+                blocked ? L("perm.cfa.open") : null, blocked ? FolderProtection.OpenSettings : null));
+        }
+        else
+        {
+            steps.Children.Add(Step(2, L("perm.cfa.title"), blocked ? L("perm.cfa.blocking") : L("ob.cfa.d"), !blocked,
+                blocked ? L("perm.cfa.allow") : null, blocked ? () => _ = Allow() : null));
+        }
         var ffmpeg = Tools.FFmpeg != null;
         var failed = FFmpegSetup.Phase == FFmpegSetup.SetupPhase.Failed;
         string? ffmpegAction = ffmpeg ? null : FFmpegSetup.IsWorking ? L("common.cancel") : failed ? L("update.retry") : L("ob.install");
         Action? ffmpegRun = ffmpeg ? null : FFmpegSetup.IsWorking ? FFmpegSetup.Cancel : FFmpegSetup.Start;
         steps.Children.Add(Step(3, L("ob.ffmpeg"), (ffmpeg ? null : FFmpegSetup.StatusLine) ?? L("ob.ffmpeg.d"), ffmpeg, ffmpegAction, ffmpegRun,
             optional: true, warning: failed && !ffmpeg));
-        var login = Ui.Toggle(startWithWindows, value => startWithWindows = value, L("set.login"));
-        steps.Children.Add(Row(Badge(4, false), L("set.login"), L("ob.startup.d"), login));
+        // Switched off in Task Manager or by policy (Store edition): shown as it is, with where to change it.
+        var startupState = startup.State;
+        var locked = startupState.IsLocked();
+        var login = Ui.Toggle(locked ? startupState.IsOn() : startWithWindows, value => startWithWindows = value, L("set.login"));
+        login.IsEnabled = !locked;
+        steps.Children.Add(Row(Badge(4, false), L("set.login"), startupState.Hint() ?? L("ob.startup.d"), login));
         stack.Children.Add(steps);
 
         stack.Children.Add(Ui.Divider());
@@ -155,7 +173,7 @@ internal sealed class OnboardingWindow : AppWindow
     private void Finish()
     {
         var prefs = Preferences.Shared;
-        prefs.LaunchAtLogin = startWithWindows;
+        if (!startup.State.IsLocked()) prefs.LaunchAtLogin = startWithWindows;
         prefs.Onboarded = true;
         Updater.Shared.AcknowledgeUpdate();
         Close();

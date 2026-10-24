@@ -336,8 +336,20 @@ internal sealed class TrayFlyout : Window
         }
         else if (Services.FolderProtection.State == Services.FolderProtectionState.Blocking)
         {
-            stack.Children.Add(Banner("lock.shield", L("perm.cfa.title"), L("perm.cfa.blocking"), L("perm.cfa.allow"),
-                () => _ = AllowFolders()));
+            if (Distribution.IsStore)
+            {
+                // No elevation from the Store edition: Windows Security, where the user allows Pickverter themselves.
+                stack.Children.Add(Banner("lock.shield", L("perm.cfa.title"), L("perm.cfa.store"), L("perm.cfa.open"), () =>
+                {
+                    Hide();
+                    Services.FolderProtection.OpenSettings();
+                }));
+            }
+            else
+            {
+                stack.Children.Add(Banner("lock.shield", L("perm.cfa.title"), L("perm.cfa.blocking"), L("perm.cfa.allow"),
+                    () => _ = AllowFolders()));
+            }
         }
 
         var how = Ui.Column(8, Section(L("menu.how")));
@@ -365,7 +377,7 @@ internal sealed class TrayFlyout : Window
             stack.Children.Add(list);
         }
 
-        if (updater.Latest is { } latest && updater.Phase is Updater.UpdatePhase.Available or Updater.UpdatePhase.Ready)
+        if (!Distribution.IsStore && updater.Latest is { } latest && updater.Phase is Updater.UpdatePhase.Available or Updater.UpdatePhase.Ready)
         {
             var ready = updater.Phase == Updater.UpdatePhase.Ready;
             stack.Children.Add(Banner("arrow.down.circle", L("menu.update", latest.Version), null,
@@ -414,13 +426,17 @@ internal sealed class TrayFlyout : Window
             Hide();
             WindowManager.ShowOnboarding();
         }));
-        var check = MenuItem(L("menu.check_updates"), "arrow.down.circle", () =>
+        // The Store edition has no update check of its own: the Store updates it.
+        if (!Distribution.IsStore)
         {
-            Hide();
-            WindowManager.ShowUpdates(check: true);
-        });
-        check.IsEnabled = Updater.Shared.IsEnabled;
-        menu.Items.Add(check);
+            var check = MenuItem(L("menu.check_updates"), "arrow.down.circle", () =>
+            {
+                Hide();
+                WindowManager.ShowUpdates(check: true);
+            });
+            check.IsEnabled = Updater.Shared.IsEnabled;
+            menu.Items.Add(check);
+        }
         menu.Items.Add(new Separator());
         menu.Items.Add(MenuItem(L("about.github"), "link", () =>
         {

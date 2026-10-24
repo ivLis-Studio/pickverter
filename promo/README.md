@@ -76,3 +76,21 @@ Requirements: macOS with Google Chrome, Node, Python 3, ffmpeg. SF Symbols and f
 local system by `tools/export-assets.swift`; the photos were generated for this video and the cut-out was made with
 Pickverter's own Remove BG.
 
+## Microsoft Store listing
+
+`store.sh` makes the Store assets for the Windows app in `out/store/` from the Windows cut (render it first:
+`PROMO_PLATFORMS=win PROMO_ASPECTS=h ./make.sh`). `./store.sh shots art trailer` runs any of the three parts.
+
+- `screenshots/<en|ko>/01-…06-….png` — 3840×2160 stills held still at six moments (WebP → JPG, Word → PDF, rotate,
+  Remove BG, the cut-out pasted into a chat, the PDF arriving on the phone), captions included.
+- `art/` — `StoreLogo-300x300.png` (the Windows app icon), 1:1 box art (1080, 2160), 2:3 poster art (720×1080,
+  1440×2160) and 16:9 super hero art (1920×1080, 3840×2160): the wheel mark alone on its graphite, no text or logo,
+  with the lower third left empty for the Store's overlays. `store.html?art=hero|box|poster` draws them at the size of
+  the page; everything but the icon is saved without alpha.
+- `trailer/Pickverter-trailer-<lang>.mp4` — the 4K master and the WAV score re-encoded to Microsoft's trailer
+  recommendations (1920×1080 H.264 High, progressive 4:2:0, two B-frames, closed 30-frame GOP, ~14 Mbps; AAC-LC
+  48 kHz stereo at 384 kbps; BT.709, no edit lists, index up front), plus a 1920×1080 PNG thumbnail of the hook.
+
+The listing text in ten languages is `docs/store/microsoft-listing.json`; `python3 docs/store/check-listing.py` checks it
+against Partner Center's limits. The privacy policy the listing points to is `website/public/privacy.html`.
+

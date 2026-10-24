@@ -39,7 +39,8 @@ internal static class SelfTest
     public static async Task<int> Run(string folder)
     {
         failures = 0;
-        Console.WriteLine($"Pickverter {Updater.Shared.CurrentVersion} · {Environment.OSVersion.VersionString} · {Updater.Architecture}");
+        Console.WriteLine($"Pickverter {Updater.Shared.CurrentVersion} · {Environment.OSVersion.VersionString} · {Updater.Architecture}" +
+                          (Distribution.IsStore ? " · Microsoft Store edition" : ""));
         var files = Fixtures.Make(folder);
         string F(string name) => files.First(file => Path.GetFileName(file) == name);
         Console.WriteLine($"fixtures: {files.Count} in {folder}");
@@ -129,16 +130,30 @@ internal static class SelfTest
             Expect(!File.Exists(scratch), "still there");
             return null;
         });
-        await Check("start with windows", () =>
+        if (Platform.Startup is StoreStartup storeStartup)
         {
-            var startup = Platform.Startup;
-            var before = startup.LaunchAtLogin;
-            startup.LaunchAtLogin = true;
-            var on = startup.LaunchAtLogin;
-            startup.LaunchAtLogin = before;
-            Expect(on, "Run key not written");
-            return Task.FromResult<string?>(null);
-        });
+            // The package's startup task: read only (switching it would change what Windows does at the next sign-in).
+            await Check("start with windows", async () =>
+            {
+                if (!StoreEdition.HasIdentity) return "SKIP Microsoft Store edition without package identity";
+                await storeStartup.RefreshAsync();
+                Expect(storeStartup.State != StartupState.Unavailable, "no startup task " + StoreStartup.TaskId);
+                return "startup task " + storeStartup.State;
+            });
+        }
+        else
+        {
+            await Check("start with windows", () =>
+            {
+                var startup = Platform.Startup;
+                var before = startup.LaunchAtLogin;
+                startup.LaunchAtLogin = true;
+                var on = startup.LaunchAtLogin;
+                startup.LaunchAtLogin = before;
+                Expect(on, "Run key not written");
+                return Task.FromResult<string?>(null);
+            });
+        }
         await Check("update signing", () =>
         {
             var (privateKey, publicKey) = UpdateSigning.GenerateKey();

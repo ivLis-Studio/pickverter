@@ -16,6 +16,7 @@ internal static class CommandLine
         Pickverter command line
 
           cli version
+          cli edition                               GitHub or Microsoft Store edition, its package and folders
           cli list <files…>                         options on every ring for these files
           cli run <option-id> <files…> [--clipboard|--both]
           cli fixtures <folder>                     sample files for every engine
@@ -34,7 +35,7 @@ internal static class CommandLine
                               [--notes file] [--notes-url U] [--build B] [--min-os 10.0.19041]
           cli update-verify <manifest> <zip-x64> [zip-arm64] [--trusted]
                               --trusted: also fail unless the app's built-in key accepts the signatures
-          cli update-check
+          cli update-check                          (GitHub edition; the Store updates the Store edition)
         """;
 
     public static int Run(string[] args)
@@ -54,6 +55,9 @@ internal static class CommandLine
             {
                 case "version":
                     Console.WriteLine(Updater.Shared.CurrentVersion);
+                    return 0;
+                case "edition":
+                    Console.WriteLine(StoreEdition.Describe());
                     return 0;
                 case "list":
                     return Headless(() => List(rest));
@@ -97,6 +101,12 @@ internal static class CommandLine
                 case "update-verify":
                     return UpdateVerify(rest);
                 case "update-check":
+                    if (Distribution.IsStore)
+                    {
+                        // Nothing to check: the Microsoft Store updates this edition.
+                        Console.WriteLine("Store: " + L("update.store"));
+                        return 0;
+                    }
                     return Headless(() =>
                     {
                         Updater.Shared.CheckAsync(true).GetAwaiter().GetResult();

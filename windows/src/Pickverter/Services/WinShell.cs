@@ -169,12 +169,19 @@ internal sealed class WinShell : DefaultShell
 public enum FolderProtectionState { Off, Allowed, Blocking, Unknown }
 
 /// Controlled folder access: whether it is on, and whether Pickverter is on its allow list.
+/// The GitHub edition adds itself to the list (Windows asks for administrator approval). The Store edition doesn't:
+/// a packaged app shouldn't ask for elevation, and its path changes with every Store update, so it sends people to
+/// Windows Security instead (perm.cfa.store says what to do there).
 public static class FolderProtection
 {
+    /// Snapshots: show a state whatever the machine says.
+    internal static FolderProtectionState? Simulated { get; set; }
+
     public static FolderProtectionState State
     {
         get
         {
+            if (Simulated is { } simulated) return simulated;
             if (!OperatingSystem.IsWindows()) return FolderProtectionState.Off;
             var mode = WinShell.ReadExploitGuard("EnableControlledFolderAccess");
             if (mode is null or 0) return FolderProtectionState.Off;
@@ -200,6 +207,7 @@ public static class FolderProtection
     /// Adds Pickverter to the allow list (Windows asks for administrator approval). Returns false when declined.
     public static async Task<bool> AllowAsync()
     {
+        if (Distribution.IsStore) return false;
         var exe = Environment.ProcessPath;
         if (string.IsNullOrEmpty(exe)) return false;
         var command = "Add-MpPreference -ControlledFolderAccessAllowedApplications '" + exe.Replace("'", "''") + "'";

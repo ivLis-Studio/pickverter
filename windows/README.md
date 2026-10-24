@@ -56,14 +56,50 @@ and gives it back otherwise.
 - **Look**: Fluent UI System Icons, Segoe UI Variable, your accent color, light and dark mode, Windows 11 window shadows and
   rounded corners. Result cards appear in the corner you choose (bottom right by default) and their buttons never wrap.
 
-Files never leave your PC. The only network requests are the update check and, if you use them, the one-time downloads
-(ffmpeg, rhwp, the background-removal model).
+Files never leave your PC. The only network requests are the update check (GitHub edition) and, if you use them, the
+one-time downloads (ffmpeg, rhwp, the background-removal model).
 
 ## Updates
 
-Pickverter checks this repository's releases about once a day. It downloads `update-windows.json`, verifies the Ed25519
-signature over the version, size and SHA-256 of the build, checks the downloaded zip, then swaps its folder (keeping the old one
-until the new version starts) and relaunches. A 404 means no Windows build in the latest release: that counts as up to date.
+The GitHub edition (installer or zip) checks this repository's releases about once a day. It downloads
+`update-windows.json`, verifies the Ed25519 signature over the version, size and SHA-256 of the build, checks the
+downloaded zip, then swaps its folder (keeping the old one until the new version starts) and relaunches. A 404 means no
+Windows build in the latest release: that counts as up to date. The Microsoft Store edition leaves updates to the Store.
+
+## Microsoft Store edition
+
+The same app, built from the same source, as an MSIX package (Store ID 9P05JBV4QDGC). Pickverter notices at startup that it
+runs from its package (`GetCurrentPackageFullName`) and then:
+
+- **The Store updates it.** Pickverter's own updater is off: no update checks, no Check for Updates…, no Software Update
+  window or update cards. Settings › Updates shows the version and says updates come from the Microsoft Store.
+- **Start with Windows** is the package's startup task instead of the Run key. Turned off in Task Manager › Startup apps
+  (or Settings › Apps › Startup), only the user can turn it back on there; Settings and the welcome window say so.
+- **Its files live in the package's own folder**, `%LOCALAPPDATA%\Packages\ivLis-STUDIO.Pickverter_<id>\LocalCache`:
+  settings in `Roaming\Pickverter`, logs, the clipboard cache and the downloads (ffmpeg, rhwp, the model) in
+  `Local\Pickverter`, scratch files in `Local\Temp`. Spelled out like that the paths are real for every program, so
+  File Explorer can paste a result Pickverter copied, and uninstalling removes it all. Settings start fresh.
+- **Controlled folder access**: a Store app doesn't ask for administrator rights, so Pickverter opens Windows Security and
+  says what to do there (Allow an app through Controlled folder access › Recently blocked apps). Every Store update
+  installs into a new folder, so Windows may ask again after one.
+- One Pickverter runs at a time, whichever edition. The Store edition has no command-line alias: `Pickverter.exe cli …`
+  is for the GitHub and source builds (`cli edition` shows which edition and folders a copy uses).
+  `PICKVERTER_CHANNEL=store` makes any build behave like the Store edition, for tests and `cli snapshot`.
+
+Building it needs Windows with the .NET 10 SDK and the Windows SDK (makeappx, makepri, signtool):
+
+```powershell
+scripts/package-msix.ps1 -Version 0.3.1                     # dist\msix\Pickverter-0.3.1.msixbundle, plus one .msix per architecture
+scripts/package-msix.ps1 -Version 0.3.1 -TestCertificate    # …and test-signed\ copies with the .cer to sideload them
+```
+
+The bundle (package version 0.3.1.0) is the Partner Center upload and stays unsigned: the Store signs it. To try a
+test-signed copy in a VM, import `test-signed\Pickverter-0.3.1-test.cer` into Local Machine › Trusted People as an
+administrator (`Import-Certificate -FilePath … -CertStoreLocation Cert:\LocalMachine\TrustedPeople`), then open
+`test-signed\Pickverter-0.3.1.msixbundle`. The **Windows Store package** workflow does the same for every `v*` tag (or by
+hand, with a version) and keeps the packages as workflow artifacts; it attaches nothing to the GitHub release. The
+manifest is [`packaging/AppxManifest.xml`](packaging/AppxManifest.xml); `scripts/make-icons.mjs` draws the tiles and
+logos in `packaging/Assets`.
 
 ## Build from source
 
@@ -79,7 +115,7 @@ scripts/test.ps1 -Snapshots out     # …plus PNG renders of every window in six
 
 On a Mac: `dotnet build Pickverter.slnx` and `dotnet test --project tests/Pickverter.Core.Tests/Pickverter.Core.Tests.csproj`.
 
-Developer commands: `Pickverter.exe cli …` — `list`, `run <option-id> <files>`, `fixtures`, `selftest`, `glyphs`,
+Developer commands: `Pickverter.exe cli …` — `list`, `run <option-id> <files>`, `fixtures`, `selftest`, `glyphs`, `edition`,
 `snapshot`, `screenshot`, `e2e` (drives File Explorer, the Alt tap and the wheel on a real desktop), `inspect` and the `update-*` tools. Editors can be answered from the environment
 (`PICKVERTER_EDITOR_CROP='{"rect":…}'`), `PICKVERTER_LANG=ja` picks a language and `PICKVERTER_DEBUG=1` writes a trace to
 `%LOCALAPPDATA%\Pickverter\Logs`.
@@ -101,7 +137,8 @@ Locally: `scripts/release.ps1 -Version x.y.z -Publish` (needs Inno Setup 6: `win
 - `src/Pickverter/` — the WPF app: `Input/` (low-level hooks, File Explorer selection), `UI/` (wheel, cards, tray,
   settings, welcome, editors), `Services/` (Windows implementations of every platform service), `Cli/`.
 - `tests/` — xUnit tests of the core.
-- `installer/` — the Inno Setup script and wizard images. `scripts/` — build, test, release, string checks, icon and glyph generators.
+- `installer/` — the Inno Setup script and wizard images. `packaging/` — the Microsoft Store manifest, makepri settings
+  and tiles. `scripts/` — build, test, release, MSIX packaging, string checks, icon and glyph generators.
 
 Icons are drawn by `scripts/make-icons.mjs` (same mark as the Mac app, with a Windows arrow); `scripts/make-glyphs.mjs`
 subsets [Fluent UI System Icons](https://github.com/microsoft/fluentui-system-icons) (MIT) for the symbols in

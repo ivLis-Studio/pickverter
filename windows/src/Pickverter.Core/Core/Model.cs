@@ -317,7 +317,7 @@ public sealed class PickContext
     private async Task<string> Stage(string destination, Func<string, Task> body)
     {
         Check();
-        var folder = Path.GetDirectoryName(destination) ?? Path.GetTempPath();
+        var folder = Path.GetDirectoryName(destination) ?? FileSystem.TempRoot;
         Directory.CreateDirectory(folder);
         // Staging inside the destination folder keeps the final step a rename on the same volume.
         var work = Path.Combine(folder, ".pickverter-" + Guid.NewGuid().ToString("N")[..8]);
@@ -328,7 +328,7 @@ public sealed class PickContext
         }
         catch (Exception) when (!Directory.Exists(work))
         {
-            work = Path.Combine(Path.GetTempPath(), "pickverter-" + Guid.NewGuid().ToString("N"));
+            work = Path.Combine(FileSystem.TempRoot, "pickverter-" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(work);
         }
         catch (Exception)

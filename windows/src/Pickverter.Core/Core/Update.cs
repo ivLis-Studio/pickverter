@@ -135,6 +135,8 @@ public interface IUpdateInstaller
 }
 
 /// GitHub Releases updater: check -> download -> verify (Ed25519, size, SHA-256, version) -> swap -> relaunch.
+/// The GitHub edition only: in the Microsoft Store edition the Store installs updates, so nothing here checks,
+/// schedules, downloads or installs anything (Distribution.IsStore).
 public sealed class Updater : INotifyPropertyChanged
 {
     public static Updater Shared { get; } = new();
@@ -189,7 +191,7 @@ public sealed class Updater : INotifyPropertyChanged
         }
     }
 
-    public bool IsEnabled => IsReleaseBuild && Repository.Contains('/') && PublicKey.Length == 32;
+    public bool IsEnabled => !Distribution.IsStore && IsReleaseBuild && Repository.Contains('/') && PublicKey.Length == 32;
 
     public static string Architecture => RuntimeInformation.ProcessArchitecture == System.Runtime.InteropServices.Architecture.Arm64 ? "arm64" : "x64";
 
@@ -208,6 +210,7 @@ public sealed class Updater : INotifyPropertyChanged
 
     public void Start()
     {
+        if (Distribution.IsStore) return;
         var from = Preferences.Shared.UpdatedFrom;
         if (from != null)
         {
@@ -244,7 +247,7 @@ public sealed class Updater : INotifyPropertyChanged
     {
         if (!IsEnabled)
         {
-            if (userInitiated)
+            if (userInitiated && !Distribution.IsStore)
             {
                 Failure = L("update.disabled");
                 Phase = UpdatePhase.Failed;
@@ -305,7 +308,7 @@ public sealed class Updater : INotifyPropertyChanged
 
     public void Download()
     {
-        if (Latest is not { } manifest || Phase == UpdatePhase.Ready || Phase == UpdatePhase.Downloading) return;
+        if (Distribution.IsStore || Latest is not { } manifest || Phase == UpdatePhase.Ready || Phase == UpdatePhase.Downloading) return;
         download = new CancellationTokenSource();
         var token = download.Token;
         _ = Task.Run(async () =>
@@ -335,6 +338,7 @@ public sealed class Updater : INotifyPropertyChanged
     /// Downloads, verifies and unpacks a release. Returns the ready-to-install executable.
     public async Task<string> Stage(UpdateManifest manifest, CancellationToken token)
     {
+        if (Distribution.IsStore) throw new PickException(L("update.store"));
         if (!manifest.Assets.TryGetValue(Architecture, out var asset) || !Uri.TryCreate(asset.Url, UriKind.Absolute, out var url) || url.Scheme != "https")
             throw new PickException(L("update.err.bundle"));
         if (!UpdateSigning.Verify(manifest, asset, PublicKey)) throw new PickException(L("update.err.signature"));
@@ -376,6 +380,8 @@ public sealed class Updater : INotifyPropertyChanged
 
     public void InstallAndRelaunch()
     {
+        // The Store edition never starts the installer or the applier: Windows swaps its package.
+        if (Distribution.IsStore) return;
         if (stagedExecutable == null)
         {
             Download();
@@ -406,14 +412,14 @@ public sealed class Updater : INotifyPropertyChanged
 
     private void AnnounceAvailable(UpdateManifest manifest)
     {
-        if (!announced.Add("available-" + manifest.Version)) return;
+        if (Distribution.IsStore || !announced.Add("available-" + manifest.Version)) return;
         JobCenter.Shared.Notice(L("update.card.available", manifest.Version), L("update.card.available.d"), "arrow.down.circle", JobTone.Info,
             new NoticeAction(L("update.card.details"), "info.circle", () => ShowUpdates?.Invoke()), 12);
     }
 
     private void AnnounceReady(UpdateManifest manifest)
     {
-        if (!announced.Add("ready-" + manifest.Version)) return;
+        if (Distribution.IsStore || !announced.Add("ready-" + manifest.Version)) return;
         JobCenter.Shared.Notice(L("update.card.ready", manifest.Version), L("update.card.ready.d"), "arrow.down.circle", JobTone.Info,
             new NoticeAction(L("update.restart"), "arrow.clockwise", InstallAndRelaunch), 20);
     }
@@ -433,6 +439,7 @@ public sealed class Updater : INotifyPropertyChanged
     {
         get
         {
+            if (Distribution.IsStore) return L("update.store");
             switch (Phase)
             {
                 case UpdatePhase.Idle:

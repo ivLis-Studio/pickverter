@@ -80,7 +80,7 @@ internal sealed class ZipWriter(Stream output, bool forceZip64 = false)
             // Deflate first, then decide: data that doesn't get smaller is stored as it is.
             await using var scratch = length <= InMemory
                 ? (Stream)new MemoryStream()
-                : new FileStream(Path.Combine(Path.GetTempPath(), "pickverter-zip-" + Guid.NewGuid().ToString("N")[..10]), FileMode.CreateNew,
+                : new FileStream(Path.Combine(FileSystem.TempRoot, "pickverter-zip-" + Guid.NewGuid().ToString("N")[..10]), FileMode.CreateNew,
                     FileAccess.ReadWrite, FileShare.None, 1 << 16, FileOptions.DeleteOnClose | FileOptions.Asynchronous);
             uint crc = 0;
             long size = 0;

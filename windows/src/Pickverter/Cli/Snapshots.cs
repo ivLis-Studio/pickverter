@@ -6,6 +6,7 @@ using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using Pickverter.Input;
 using Pickverter.Interop;
+using Pickverter.Services;
 using Pickverter.UI;
 using Pickverter.UI.Editors;
 using Pickverter.UI.Wheel;
@@ -14,6 +15,8 @@ namespace Pickverter.Cli;
 
 /// Renders every surface to PNG (2x) so the UI can be reviewed without a Windows desktop, in any language
 /// and theme. "screenshot" shows the real windows instead and captures the screen (DWM shadows, layering).
+/// With PICKVERTER_CHANNEL=store they show the Microsoft Store edition: no update window or update notices, the Store
+/// line in Settings › Updates, and its own states for Start with Windows and folder protection.
 internal static class Snapshots
 {
     private static readonly string[] Everyone = Loc.Languages.Select(language => language.Code).ToArray();
@@ -203,7 +206,11 @@ internal static class Snapshots
         await clipboard.Complete(new PickResult { Outputs = [result] });
         JobCenter.Shared.Jobs.Insert(0, done);
         JobCenter.Shared.Jobs.Insert(0, running);
-        foreach (var (job, name) in new[] { (running, "card-running"), (done, "card-done"), (failed, "card-failed"), (notice, "card-notice"), (clipboard, "card-copied") })
+        var cards = new List<(Job, string)> { (running, "card-running"), (done, "card-done"), (failed, "card-failed") };
+        // The update notice is the GitHub edition's: the Store edition never shows one.
+        if (!Distribution.IsStore) cards.Add((notice, "card-notice"));
+        cards.Add((clipboard, "card-copied"));
+        foreach (var (job, name) in cards)
         {
             var window = new CardWindow(job, presenter);
             await Task.Delay(job == done ? 500 : 30);
@@ -222,6 +229,15 @@ internal static class Snapshots
             var flyout = new TrayFlyout();
             flyout.Rebuild();
             await Take(flyout, Path.Combine(output, "flyout.png"), 336, null);
+            if (Distribution.IsStore)
+            {
+                // Folder protection blocking the Store edition: it sends people to Windows Security.
+                FolderProtection.Simulated = FolderProtectionState.Blocking;
+                var blocked = new TrayFlyout();
+                blocked.Rebuild();
+                await Take(blocked, Path.Combine(output, "flyout-cfa.png"), 336, null);
+                FolderProtection.Simulated = null;
+            }
         }
 
         if (On("settings"))
@@ -247,6 +263,21 @@ internal static class Snapshots
             settings.Select(SettingsPage.Integrations);
             await Take(settings, Path.Combine(output, "settings-rhwp-downloading.png"), 920, null, keep: true);
             HwpSetup.Simulate(HwpSetup.SetupPhase.Idle);
+            if (Distribution.IsStore && Platform.Startup is StoreStartup startup)
+            {
+                // Start with Windows switched off in Task Manager, then by policy; folder protection blocking.
+                foreach (var (state, name) in new[] { (StartupState.DisabledByUser, "settings-startup-off"), (StartupState.DisabledByPolicy, "settings-startup-policy") })
+                {
+                    startup.Simulate(state);
+                    settings.Select(SettingsPage.General);
+                    await Take(settings, Path.Combine(output, name + ".png"), 920, null, keep: true);
+                }
+                startup.Simulate(StartupState.Disabled);
+                FolderProtection.Simulated = FolderProtectionState.Blocking;
+                settings.Select(SettingsPage.Integrations);
+                await Take(settings, Path.Combine(output, "settings-cfa.png"), 920, null, keep: true);
+                FolderProtection.Simulated = null;
+            }
             settings.Close();
         }
 
@@ -255,9 +286,20 @@ internal static class Snapshots
             var onboarding = new OnboardingWindow();
             onboarding.Step(6);
             await Take(onboarding, Path.Combine(output, "onboarding.png"), 980, 720);
+            if (Distribution.IsStore && Platform.Startup is StoreStartup startup)
+            {
+                startup.Simulate(StartupState.DisabledByUser);
+                FolderProtection.Simulated = FolderProtectionState.Blocking;
+                var locked = new OnboardingWindow();
+                locked.Step(6);
+                await Take(locked, Path.Combine(output, "onboarding-store-blocked.png"), 980, 720);
+                FolderProtection.Simulated = null;
+                startup.Simulate(StartupState.Disabled);
+            }
         }
 
-        if (On("update"))
+        // The Store edition has no Software Update window.
+        if (On("update") && !Distribution.IsStore)
         {
             var notes = "- **New** — Pickverter now runs on Windows: tap Alt in File Explorer.\n- Result cards stay in the corner you choose.\n- [Release notes](https://github.com)";
             Updater.Shared.Simulate(Updater.UpdatePhase.Available, new UpdateManifest { Version = "0.3.0", Notes = notes, NotesUrl = "https://github.com" });
@@ -389,8 +431,11 @@ internal static class Snapshots
 
             var option = Catalog.Options([photo], WheelMode.Convert).First(candidate => candidate.Id == "convert.webp");
             var job = JobCenter.Shared.Run(option, WheelMode.Convert, [photo], new ScreenPoint(center.X, center.Y));
-            JobCenter.Shared.Notice(L("update.card.available", "0.3.0"), L("update.card.available.d"), "arrow.down.circle", JobTone.Info,
-                new NoticeAction(L("update.card.details"), "info.circle", () => { }), 30);
+            if (!Distribution.IsStore)
+            {
+                JobCenter.Shared.Notice(L("update.card.available", "0.3.0"), L("update.card.available.d"), "arrow.down.circle", JobTone.Info,
+                    new NoticeAction(L("update.card.details"), "info.circle", () => { }), 30);
+            }
             for (var wait = 0; wait < 60 && job.IsRunning; wait++) await Task.Delay(100);
             await Task.Delay(900);
             Capture(Path.Combine(folder, $"screen-cards-{suffix}.png"));

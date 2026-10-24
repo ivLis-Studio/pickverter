@@ -20,6 +20,7 @@ internal sealed class SettingsWindow : AppWindow
     private readonly SpacedStack body = new() { Spacing = 4, Margin = new Thickness(28, 4, 28, 28), MaxWidth = 860 };
     private readonly FocusRegistry focus = new();
     private readonly WheelLayoutEditor layoutEditor;
+    private readonly IStartup startup = Platform.Startup;
 
     public SettingsWindow()
     {
@@ -46,8 +47,11 @@ internal sealed class SettingsWindow : AppWindow
         Updater.Shared.PropertyChanged += OnUpdater;
         FFmpegSetup.Changed += OnEngine;
         HwpSetup.Changed += OnEngine;
+        startup.Changed += OnStartupState;
         Activated += (_, _) =>
         {
+            // Start with Windows may have been switched in Task Manager meanwhile (Store edition; a no-op otherwise).
+            _ = startup.RefreshAsync();
             if (page == SettingsPage.Integrations)
             {
                 Tools.Refresh();
@@ -61,6 +65,7 @@ internal sealed class SettingsWindow : AppWindow
             Updater.Shared.PropertyChanged -= OnUpdater;
             FFmpegSetup.Changed -= OnEngine;
             HwpSetup.Changed -= OnEngine;
+            startup.Changed -= OnStartupState;
         };
         Rebuild();
     }
@@ -96,6 +101,12 @@ internal sealed class SettingsWindow : AppWindow
     private void OnUpdater(object? sender, System.ComponentModel.PropertyChangedEventArgs args)
     {
         if (page == SettingsPage.Updates && !building) Rebuild();
+    }
+
+    /// Windows answered for Start with Windows (Store edition): the switch and its hint follow.
+    private void OnStartupState()
+    {
+        if (page == SettingsPage.General && !building) QueueRebuild();
     }
 
     private FFmpegSetup.SetupPhase shownPhase = FFmpegSetup.Phase;
@@ -245,7 +256,11 @@ internal sealed class SettingsWindow : AppWindow
     {
         var prefs = Preferences.Shared;
         Add(Ui.SettingRow(L("set.enable"), L("set.enable.d"), Ui.Toggle(prefs.Enabled, value => prefs.Enabled = value, L("set.enable")), "power"));
-        Add(Ui.SettingRow(L("set.login"), L("set.login.d"), Ui.Toggle(prefs.LaunchAtLogin, value => prefs.LaunchAtLogin = value, L("set.login")), "arrow.clockwise"));
+        // Locked when it was switched off in Task Manager or by policy (Store edition): the hint says where to change it.
+        var login = startup.State;
+        var loginToggle = Ui.Toggle(login.IsOn(), value => prefs.LaunchAtLogin = value, L("set.login"));
+        loginToggle.IsEnabled = !login.IsLocked();
+        Add(Ui.SettingRow(L("set.login"), login.Hint() ?? L("set.login.d"), loginToggle, "arrow.clockwise"));
         Add(Ui.SettingRow(L("set.sounds"), null, Ui.Toggle(prefs.PlaySounds, value => prefs.PlaySounds = value, L("set.sounds")), "speaker.wave.2"));
         var languages = new List<(string, string)> { ("system", L("set.language.system")) };
         languages.AddRange(Loc.Languages.Select(language => (language.Code, language.Name)));
@@ -415,15 +430,18 @@ internal sealed class SettingsWindow : AppWindow
     private Border FolderRow()
     {
         var state = FolderProtection.State;
+        var store = Distribution.IsStore;
         UIElement control = state switch
         {
+            // The Store edition doesn't elevate: Windows Security, where the user adds Pickverter themselves.
+            FolderProtectionState.Blocking when store => Ui.Button(L("perm.cfa.open"), FolderProtection.OpenSettings, prominent: true),
             FolderProtectionState.Blocking => Ui.Row(8,
                 Ui.Button(L("perm.cfa.allow"), () => _ = AllowFolders(), prominent: true),
                 Ui.Button(L("perm.cfa.open"), FolderProtection.OpenSettings)),
             FolderProtectionState.Allowed => Status(true, L("perm.cfa.allowed")),
             _ => Status(true, L("perm.cfa.off")),
         };
-        var detail = state == FolderProtectionState.Blocking ? L("perm.cfa.blocking") : L("perm.cfa.d");
+        var detail = state != FolderProtectionState.Blocking ? L("perm.cfa.d") : store ? L("perm.cfa.store") : L("perm.cfa.blocking");
         return Ui.SettingRow(L("perm.cfa.title"), detail, control, "lock.shield");
     }
 
@@ -579,6 +597,12 @@ internal sealed class SettingsWindow : AppWindow
     {
         var prefs = Preferences.Shared;
         var updater = Updater.Shared;
+        if (Distribution.IsStore)
+        {
+            // The Microsoft Store edition: the Store installs updates, Pickverter's own updater is off.
+            Add(Ui.SettingRow(L("update.current"), L("update.store"), Ui.Text(updater.CurrentVersion, 14, brush: Theme.TextSecondary), "info.circle"));
+            return;
+        }
         Add(Ui.SettingRow(L("update.current"), updater.IsReleaseBuild ? null : L("about.dev_build"),
             Ui.Text(updater.CurrentVersion, 14, brush: Theme.TextSecondary), "info.circle"));
         var buttons = Ui.Row(8);

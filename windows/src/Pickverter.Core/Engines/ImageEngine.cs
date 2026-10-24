@@ -539,7 +539,7 @@ public static class ImageEngine
     public static async Task<string> ProbeCopy(string src, int maxPixel, CancellationToken token)
     {
         using var image = await Task.Run(() => Load(src, maxPixel), token);
-        var path = Path.Combine(Path.GetTempPath(), "pickverter-probe-" + Guid.NewGuid().ToString("N")[..10] + ".png");
+        var path = Path.Combine(FileSystem.TempRoot, "pickverter-probe-" + Guid.NewGuid().ToString("N")[..10] + ".png");
         if (image.HasAlpha)
         {
             image.BackgroundColor = MagickColors.White;

@@ -148,11 +148,11 @@ public static partial class OfficeEngine
 
     public static async Task ViaLibreOffice(string soffice, string src, string target, string destination, CancellationToken token)
     {
-        var outDir = Path.Combine(Path.GetDirectoryName(destination) ?? Path.GetTempPath(), "lo-" + Guid.NewGuid().ToString("N")[..8]);
+        var outDir = Path.Combine(Path.GetDirectoryName(destination) ?? FileSystem.TempRoot, "lo-" + Guid.NewGuid().ToString("N")[..8]);
         Directory.CreateDirectory(outDir);
         try
         {
-            var profile = Path.Combine(Path.GetTempPath(), "pickverter-libreoffice");
+            var profile = Path.Combine(FileSystem.TempRoot, "pickverter-libreoffice");
             var filter = target switch
             {
                 "txt" => "txt:Text (encoded):UTF8",

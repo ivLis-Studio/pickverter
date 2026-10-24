@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>Pickverter — Microsoft Store art</title>
+<!-- Microsoft Store art for the Windows listing, drawn at the size of the page (render.mjs --shot, see store.sh):
+       ?art=hero    16:9 super hero art: the wheel mark alone on its graphite, upper two thirds only (no text, no logos)
+       ?art=box     1:1 box art: the Windows icon, "Pickverter" and "by ivLis STUDIO" on the promo's background
+       ?art=poster  2:3 poster art: the same, stacked for a tall frame
+     The mark uses the numbers of windows/scripts/make-icons.mjs (and src/win/icon.js). -->
+<link rel="stylesheet" href="src/win/style.css">
+<style>
+  html, body, #stage { width: 100vw; height: 100vh; }
+  .art { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  .art .mark { display: block; flex: none; }
+  .art .title { font-family: var(--display); font-weight: 700; letter-spacing: -0.02em; line-height: 1; color: var(--ink); white-space: nowrap; }
+  .art .by { color: #5C5C5C; letter-spacing: 0.02em; white-space: nowrap; line-height: 1.2; }
+  .art .by b { font-family: var(--display); font-weight: 700; color: var(--ink); letter-spacing: 0.08em; }
+</style>
+</head><body>
+<div id="stage"></div>
+<script src="src/lib.js"></script>
+<script src="src/win/icon.js"></script>
+<script>
+(function () {
+  const { el, polar, ringCore } = PV;
+  const art = new URLSearchParams(location.search).get("art") || "hero";
+  const W = innerWidth, H = innerHeight;
+  const stage = document.getElementById("stage");
+  const PLATE = "#16171A", SLOT = "#2C2E34", PICK = "#0A84FF", HUB = "#F4F4F6";
+  const N = 8, PICKED = 1, INNER = 150, OUTER = 312, GAP = 26, CORNER = 21, LIFT = 24;
+  const ARROW = [[0, 0], [0, 0.842], [0.21, 0.632], [0.368, 1.0], [0.474, 0.947], [0.316, 0.579], [0.579, 0.579]];
+  const arrowPath = (x, y, h) => ARROW.map(([px, py], i) => (i ? "L" : "M") + (x + px * h).toFixed(2) + " " + (y + py * h).toFixed(2)).join(" ") + " Z";
+  function docPath(cx, cy, w, h) {
+    const x = cx - w / 2, y = cy - h / 2, f = w * 0.34, r = w * 0.12;
+    return "M" + (x + r) + " " + y + " L" + (x + w - f) + " " + y + " L" + (x + w) + " " + (y + f) + " L" + (x + w) + " " + (y + h - r) +
+      " Q" + (x + w) + " " + (y + h) + " " + (x + w - r) + " " + (y + h) + " L" + (x + r) + " " + (y + h) + " Q" + x + " " + (y + h) + " " + x + " " + (y + h - r) +
+      " L" + x + " " + (y + r) + " Q" + x + " " + y + " " + (x + r) + " " + y + " Z";
+  }
+  const shadow = (defs, id, dy, sd, o, pad) => {
+    const f = el("filter", { id, x: -pad + "%", y: -pad + "%", width: 100 + 2 * pad + "%", height: 100 + 2 * pad + "%" }, defs);
+    el("feDropShadow", { dx: 0, dy, stdDeviation: sd, "flood-color": "#000", "flood-opacity": o }, f);
+  };
+
+  // The mark without its plate (the whole frame is the plate): eight slots, the picked one lifted, hub, document, arrow.
+  // Drawn on the 1024 icon grid, centred on (cx, cy) at s pixels per unit.
+  function bareMark(svg, cx, cy, s) {
+    const defs = el("defs", {}, svg);
+    shadow(defs, "ps", 10, 14, 0.4, 40);
+    shadow(defs, "cs", 8, 10, 0.35, 50);
+    const g = el("g", { transform: "translate(" + (cx - 512 * s) + " " + (cy - 512 * s) + ") scale(" + s + ")" }, svg);
+    const span = 360 / N;
+    for (let i = 0; i < N; i++) {
+      const mid = -90 + i * span, picked = i === PICKED;
+      const [dx, dy] = polar(0, 0, picked ? LIFT : 0, mid);
+      const color = picked ? PICK : SLOT;
+      el("path", { d: ringCore(512 + dx, 512 + dy, mid - span / 2, mid + span / 2, INNER, OUTER, GAP, CORNER), fill: color, stroke: color,
+        "stroke-width": CORNER * 2, "stroke-linejoin": "round", filter: picked ? "url(#ps)" : "none" }, g);
+    }
+    el("circle", { cx: 512, cy: 512, r: 102, fill: HUB }, g);
+    const w = 98, h = 126, fx = 512 + w / 2, fy = 512 - h / 2, fo = w * 0.34;
+    el("path", { d: docPath(512, 512, w, h), fill: PLATE }, g);
+    el("path", { d: "M" + (fx - fo) + " " + fy + " L" + (fx - fo) + " " + (fy + fo) + " L" + fx + " " + (fy + fo), fill: "none", stroke: HUB,
+      "stroke-width": w * 0.07, "stroke-linejoin": "round" }, g);
+    const [tx, ty] = polar(512, 512, (INNER + OUTER) / 2 + 26, -90 + span * PICKED);
+    el("path", { d: arrowPath(tx - 4, ty - 4, 190), fill: "#FFFFFF", stroke: PLATE, "stroke-width": 15, "stroke-linejoin": "round", filter: "url(#cs)" }, g);
+  }
+
+  if (art === "hero") {
+    // Store hero art: no text and no logos, the subject centred, the lower third left quiet for the Store's own overlays.
+    stage.style.background = PLATE;
+    const svg = el("svg", { class: "abs", width: W, height: H, viewBox: "0 0 " + W + " " + H }, stage);
+    el("rect", { x: 0, y: 0, width: W, height: H, fill: PLATE }, svg);
+    const s = H / 1080;               // 1 grid unit = 1 px at 1080p: the ring is 624 px across
+    bareMark(svg, W / 2, H * 0.374, s); // top of the lifted slot ≈ 7 %, bottom of the ring ≈ 66 % of the height
+  } else {
+    // Box art (1:1) and poster art (2:3): icon, name and byline, centred as one group on the promo's background.
+    const tall = art === "poster";
+    const plate = tall ? W * 0.667 : W * 0.437;      // visible plate width
+    const size = plate / (864 / 1024);                // the icon's canvas (plate + room for its shadow)
+    const pad = (size - plate) / 2;
+    const box = el("div", { class: "art" }, stage);
+    const holder = el("div", { style: { width: size + "px", height: size + "px", margin: -pad + "px " + -pad + "px " + (-pad + plate * (tall ? 0.135 : 0.15)) + "px" } }, box);
+    PV.WinIcon(holder, size, "store").update({ pop: 1, cursor: 1, press: 0, shadow: 1 });
+    el("div", { class: "title", style: { fontSize: (tall ? W * 0.142 : W * 0.111) + "px" } }, box, "Pickverter");
+    el("div", { class: "by", style: { fontSize: (tall ? W * 0.044 : W * 0.031) + "px", marginTop: (tall ? W * 0.05 : W * 0.033) + "px" } }, box, "by <b>ivLis STUDIO</b>");
+  }
+
+  window.ready = Promise.all([
+    document.fonts.load("700 100px 'PV Segoe Sans'", "Pickverter ivLis STUDIO"),
+    document.fonts.load("400 30px 'PV Segoe'", "by"),
+  ]).then(() => document.fonts.ready).then(() => true);
+})();
+</script>
+</body></html>
