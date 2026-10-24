@@ -179,14 +179,25 @@ try {
         }
         [IO.File]::WriteAllText((Join-Path $stage "AppxManifest.xml"), $text, [Text.UTF8Encoding]::new($false))
 
-        # resources.pri: Assets\Square44x44Logo.png and friends resolve to their qualified files.
+        # resources.pri: Assets\Square44x44Logo.png and friends resolve to their qualified files. makepri names resources
+        # after their path below the folder it starts indexing at, so it indexes a copy of the package root that holds only
+        # Assets\ (the names come out as Files/Assets/…, which is what the manifest asks for) and never sees the app's files.
+        $priProject = Join-Path $Work "pri-$architecture"
+        New-Item -ItemType Directory -Path $priProject -Force | Out-Null
+        Copy-Item -LiteralPath (Join-Path $stage "Assets") -Destination (Join-Path $priProject "Assets") -Recurse
         $pri = Join-Path $stage "resources.pri"
-        Invoke-Tool $Tools.MakePri @("new", "/pr", $stage, "/cf", (Join-Path $Root "packaging\priconfig.xml"), "/mn", (Join-Path $stage "AppxManifest.xml"), "/of", $pri, "/o")
+        Invoke-Tool $Tools.MakePri @("new", "/pr", $priProject, "/cf", (Join-Path $Root "packaging\priconfig.xml"), "/mn", (Join-Path $stage "AppxManifest.xml"), "/of", $pri, "/o")
         $dump = Join-Path $Work "resources-$architecture.xml"
         Invoke-Tool $Tools.MakePri @("dump", "/if", $pri, "/of", $dump, "/dt", "detailed", "/o")
         $indexed = [IO.File]::ReadAllText($dump).Replace("/", "\").ToLowerInvariant()
         $missing = @(Get-ChildItem -LiteralPath (Join-Path $stage "Assets") -Filter "*.png" -File | Where-Object { -not $indexed.Contains("assets\" + $_.Name.ToLowerInvariant()) })
         if ($missing.Count -gt 0) { throw "resources.pri lacks $($missing.Count) of the assets, e.g. $($missing[0].Name) (see $dump)" }
+        # Each image the manifest names must be a resource under that same name (ms-resource://…/Files/Assets/<name>),
+        # or Start, the taskbar and the Store show a blank placeholder instead of the logo.
+        foreach ($image in $images) {
+            $resource = "\files\" + $image.Replace("/", "\").TrimStart("\").ToLowerInvariant()
+            if (-not $indexed.Contains($resource)) { throw "resources.pri has no resource named $($resource.Replace('\', '/')) for the manifest's $image (see $dump)" }
+        }
 
         Invoke-Tool $Tools.MakeAppx @("pack", "/d", $stage, "/p", (Join-Path $Packages "Pickverter-$Version-$architecture.msix"), "/o")
     }

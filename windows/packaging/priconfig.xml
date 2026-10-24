@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-  makepri configuration for the MSIX packages (scripts/package-msix.ps1): indexes Assets\ only (the app's own files in
-  Pickverter\ aren't resources), so Windows finds Assets\Square44x44Logo.png as Square44x44Logo.targetsize-24_altform-
-  unplated.png and the like. The defaults are what "makepri createconfig /dq en-US" writes.
+  makepri configuration for the MSIX packages (scripts/package-msix.ps1), which runs it on a copy of the package root that
+  holds only Assets\ (the app's own files in Pickverter\ aren't resources). Indexing from the root keeps the folder in the
+  resource names (Files/Assets/Square44x44Logo.png, as the manifest says), so Windows finds Assets\Square44x44Logo.png as
+  Square44x44Logo.targetsize-24_altform-unplated.png and the like; starting at Assets would drop it and leave every logo
+  blank. The defaults are what "makepri createconfig /dq en-US" writes.
 -->
 <resources targetOsVersion="10.0.0" majorVersion="1">
-  <index root="\" startIndexAt="Assets">
+  <index root="\" startIndexAt="\">
     <default>
       <qualifier name="Language" value="en-US" />
       <qualifier name="Contrast" value="standard" />

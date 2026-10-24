@@ -46,12 +46,23 @@ internal sealed class OnboardingWindow : AppWindow
         startup.Changed += Rebuild;
         Activated += (_, _) =>
         {
-            Tools.Refresh();
-            _ = startup.RefreshAsync();
-            Rebuild();
+            // Back from installing ffmpeg, Windows Security or Task Manager: the steps catch up, but only once the click
+            // that brought the window forward has landed, and only if one of them changed (a rebuild scrolls to the top).
+            AfterActivationClick(() =>
+            {
+                Tools.Refresh();
+                _ = startup.RefreshAsync();
+                if (StepsState() != shownSteps) Rebuild();
+            });
         };
         Rebuild();
     }
+
+    private string shownSteps = "";
+
+    /// What the steps show, to tell whether coming back to the window changed any of them.
+    private string StepsState() => string.Join("|", InputMonitor.Shared.IsRunning, FolderProtection.State, Tools.FFmpeg != null,
+        FFmpegSetup.Phase, startup.State);
 
     private DateTime lastFFmpegRebuild = DateTime.MinValue;
     private FFmpegSetup.SetupPhase shownPhase = FFmpegSetup.Phase;
@@ -162,6 +173,7 @@ internal sealed class OnboardingWindow : AppWindow
         root.Children.Add(content);
         Content = root;
         canvas.InvalidateVisual();
+        shownSteps = StepsState();
     }
 
     private async Task Allow()

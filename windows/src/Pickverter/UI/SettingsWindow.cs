@@ -54,8 +54,13 @@ internal sealed class SettingsWindow : AppWindow
             _ = startup.RefreshAsync();
             if (page == SettingsPage.Integrations)
             {
-                Tools.Refresh();
-                Rebuild();
+                // Apps and engines installed meanwhile show up, once the click that brought the window forward has landed.
+                AfterActivationClick(() =>
+                {
+                    if (page != SettingsPage.Integrations) return;
+                    Tools.Refresh();
+                    Rebuild();
+                });
             }
         };
         Closed += (_, _) =>

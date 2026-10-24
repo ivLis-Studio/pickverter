@@ -1,6 +1,8 @@
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Pickverter.Interop;
 
 namespace Pickverter.UI;
@@ -55,6 +57,29 @@ internal abstract class AppWindow : Window
     }
 
     protected abstract void Rebuild();
+
+    private DispatcherTimer? settle;
+    private Action? afterSettle;
+
+    /// Work that rebuilds the page because the window came back to the front, run once no mouse button is held.
+    /// Coming back by a click, a rebuild right away would swap the button under the pointer between its press and
+    /// release, and the click that brought the window forward would do nothing.
+    protected void AfterActivationClick(Action work)
+    {
+        afterSettle = work;
+        if (settle != null) return;
+        settle = new DispatcherTimer(DispatcherPriority.Background, Dispatcher) { Interval = TimeSpan.FromMilliseconds(60) };
+        settle.Tick += (_, _) =>
+        {
+            if (Mouse.LeftButton == MouseButtonState.Pressed || Mouse.RightButton == MouseButtonState.Pressed) return;
+            settle?.Stop();
+            settle = null;
+            var then = afterSettle;
+            afterSettle = null;
+            if (IsVisible) then?.Invoke();
+        };
+        settle.Start();
+    }
 
     /// A 1080p laptop at 150 % leaves about 690 px of height for windows: shrink to the work area of the monitor the
     /// window opens on (CenterScreen picks the one under the pointer) and let the content scroll, so the buttons along
