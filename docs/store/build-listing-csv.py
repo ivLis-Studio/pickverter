@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fill a Partner Center listing export with docs/store/microsoft-listing.json and stage it for "Import folder".
 
-    python3 docs/store/build-listing-csv.py EXPORT.csv [--assets promo/out/store] [--out promo/out/store/import]
+    python3 docs/store/build-listing-csv.py EXPORT.csv [--assets promo/out/store] [--out promo/out/store/import] [--no-trailers]
 
 EXPORT.csv is the file Partner Center gives you from "Export listings" on the submission overview. Export it after the
 package is uploaded, so it already has one column per language the package declares. Languages the export doesn't have
@@ -10,6 +10,9 @@ yet are added as new columns.
 The result is OUT/pickverter-listing/: one CSV plus the screenshots, art and trailers it points at. Partner Center wants
 paths that start with the folder's own name, so that folder is what you pick in "Import listings › Import folder".
 Korean gets the Korean screenshots and trailer; every other language uses the English ones.
+
+--no-trailers leaves the trailer rows empty and the videos out, for a quick first import (the two ~60 MB trailers can
+then go up on their own, or through the listing page).
 """
 from __future__ import annotations
 
@@ -54,6 +57,7 @@ def main() -> int:
     ap.add_argument("--listing", type=Path, default=REPO / "docs/store/microsoft-listing.json")
     ap.add_argument("--assets", type=Path, default=REPO / "promo/out/store")
     ap.add_argument("--out", type=Path, default=REPO / "promo/out/store/import")
+    ap.add_argument("--no-trailers", action="store_true", help="leave the trailers out")
     args = ap.parse_args()
 
     listing = json.loads(args.listing.read_text(encoding="utf-8"))
@@ -96,11 +100,12 @@ def main() -> int:
             "DevStudio": item["developedBy"],
             "CopyrightTrademarkInformation": item["copyright"],
             "AdditionalLicenseTerms": item["additionalLicenseTerms"],
-            "TrailerTitle1": item["trailerTitle"],
-            "Trailer1": asset(f"trailer/Pickverter-trailer-{film}.mp4"),
-            "TrailerThumbnail1": asset(f"trailer/Pickverter-trailer-{film}-thumbnail.png"),
         }
-        v["TrailerToPlayAtTopOfListing"] = v["Trailer1"]
+        if not args.no_trailers:
+            v["TrailerTitle1"] = item["trailerTitle"]
+            v["Trailer1"] = asset(f"trailer/Pickverter-trailer-{film}.mp4")
+            v["TrailerThumbnail1"] = asset(f"trailer/Pickverter-trailer-{film}-thumbnail.png")
+            v["TrailerToPlayAtTopOfListing"] = v["Trailer1"]
         for field, name in ART.items():
             v[field] = asset(f"art/{name}")
         for i, (name, caption) in enumerate(zip(SHOTS, item["screenshotCaptions"]), 1):
