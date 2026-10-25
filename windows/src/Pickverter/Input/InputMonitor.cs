@@ -28,7 +28,7 @@ internal sealed record WheelSnapshot(bool IsVisible, WheelModel.WheelOrigin Orig
 }
 
 /// One pair of low-level hooks drives every gesture:
-///  • tap Shift, Ctrl or Alt while dragging files (Convert, Tools, Actions)
+///  • tap or hold Shift, Ctrl or Alt while dragging files (Convert, Tools, Actions)
 ///  • tap the trigger key (Alt by default) with files selected in File Explorer
 ///  • hold the trigger key and click a file in File Explorer
 /// While the wheel is open it also routes keys, clicks and the scroll wheel to it. Hooks run on their own thread
@@ -71,6 +71,16 @@ internal sealed class InputMonitor
     private readonly int dragX = Math.Max(4, Native.GetSystemMetrics(Native.SM_CXDRAG));
     private readonly int dragY = Math.Max(4, Native.GetSystemMetrics(Native.SM_CYDRAG));
 
+    // A held Shift, Ctrl or Alt opens its ring too, once the pointer rests for a moment (DragHold): the key may go down
+    // before the drag starts or during it. While the pointer keeps moving, File Explorer's own copy, move and shortcut
+    // drags (Ctrl, Shift, Alt held) carry on undisturbed. A thread timer on the hook thread watches for the rest.
+    // Only drags that start in File Explorer or on the desktop: elsewhere (games, editors) these keys are held while
+    // dragging for reasons of their own. Taps work for every drag.
+    private readonly DragHold hold = new(Math.Max(10, 3 * Math.Max(4, Native.GetSystemMetrics(Native.SM_CXDRAG))));
+    private bool holdHere;
+    private UIntPtr holdTimer;
+    private Native.TimerProc? holdTimerProc;
+
     public bool IsRunning => keyboardHook != IntPtr.Zero && mouseHook != IntPtr.Zero;
     public event Action? StateChanged;
 
@@ -101,6 +111,7 @@ internal sealed class InputMonitor
         threadId = Native.GetCurrentThreadId();
         keyboardProc = KeyboardProc;
         mouseProc = MouseProc;
+        holdTimerProc = OnHoldTimer;
         var module = Native.GetModuleHandle(null);
         keyboardHook = Native.SetWindowsHookEx(Native.WH_KEYBOARD_LL, keyboardProc, module, 0);
         mouseHook = Native.SetWindowsHookEx(Native.WH_MOUSE_LL, mouseProc, module, 0);
@@ -120,6 +131,7 @@ internal sealed class InputMonitor
     private static WheelController Controller => WheelController.Shared;
     private static void Post(Action action) => Platform.Main.Post(action);
     private static long Now => Stopwatch.GetTimestamp();
+    private static double Seconds => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
 
     // Keyboard
 
@@ -197,6 +209,7 @@ internal sealed class InputMonitor
         if (IsModifier(vk)) return HandleModifier(vk, isDown);
         if (!isDown) return swallowed.Remove(vk);
         pendingInterrupted = true;
+        EndHold();
         var snapshot = wheel;
         if (!snapshot.IsVisible || snapshot.MenuOpen) return false;
         var input = Translate(vk, data);
@@ -286,9 +299,12 @@ internal sealed class InputMonitor
             {
                 pendingKey = -1;
             }
+            if (!others && ModeFor(vk) != null) BeginHold(vk);
+            else EndHold();
             if (IsAlt(vk)) altUsed = false;
             return false;
         }
+        if (hold.Key == vk) EndHold();
         var tapped = pendingKey == vk && !pendingInterrupted && Now - pendingDown < TapLimit;
         pendingKey = -1;
         var mask = tapped && Tapped(vk);
@@ -343,6 +359,61 @@ internal sealed class InputMonitor
         var replay = IsAlt(vk) ? vk : -1;
         Post(() => Controller.OpenFromSelection(root, point, replay));
         return true;
+    }
+
+    // Held keys while dragging
+
+    private void BeginHold(int vk)
+    {
+        Native.GetCursorPos(out var point);
+        hold.Press(vk, Seconds, point.X, point.Y);
+        if (dragActive && mouseDown) EnsureHoldTimer();
+    }
+
+    private void EndHold()
+    {
+        hold.Cancel();
+        StopHoldTimer();
+    }
+
+    private void EnsureHoldTimer()
+    {
+        if (!holdHere || holdTimer != UIntPtr.Zero || holdTimerProc == null) return;
+        holdTimer = Native.SetTimer(IntPtr.Zero, UIntPtr.Zero, 50, holdTimerProc);
+    }
+
+    private void StopHoldTimer()
+    {
+        if (holdTimer == UIntPtr.Zero) return;
+        Native.KillTimer(IntPtr.Zero, holdTimer);
+        holdTimer = UIntPtr.Zero;
+    }
+
+    /// The key is still down, files are being dragged and the pointer has rested long enough: open the key's ring,
+    /// just as a tap would. Its release then counts as no tap, and a used Alt is released masked (no menu bar).
+    private void OnHoldTimer(IntPtr hwnd, uint message, UIntPtr id, uint time)
+    {
+        try
+        {
+            var prefs = Preferences.Shared;
+            if (hold.Key == null || !dragActive || !mouseDown || !prefs.Enabled || !prefs.DragTrigger)
+            {
+                StopHoldTimer();
+                return;
+            }
+            if (wheel.MenuOpen || hold.Due(Seconds) is not { } vk) return;
+            StopHoldTimer();
+            pendingKey = -1;
+            if (IsAlt(vk)) altUsed = true;
+            var mode = ModeFor(vk);
+            Native.GetCursorPos(out var point);
+            Debug.Log($"drag: held key {vk:X2} rested, opening {mode}");
+            Post(() => Controller.DragTap(mode, point));
+        }
+        catch (Exception error)
+        {
+            Debug.Log("hold timer: " + error.Message);
+        }
     }
 
     private static Native.INPUT Key(ushort vk, bool up, bool extended = false) => new()
@@ -434,6 +505,13 @@ internal sealed class InputMonitor
                 {
                     dragActive = true;
                     clickCandidate = false;
+                    holdHere = Explorer.ForegroundExplorer() != IntPtr.Zero;
+                    hold.DragStarted(Seconds, point.X, point.Y);
+                    if (hold.Key != null) EnsureHoldTimer();
+                }
+                else if (dragActive && hold.Key != null)
+                {
+                    hold.Moved(Seconds, point.X, point.Y);
                 }
                 if (snapshot.IsVisible && !snapshot.MenuOpen) PostPointer(point);
                 return false;
@@ -455,6 +533,7 @@ internal sealed class InputMonitor
                 mouseDown = true;
                 downPoint = point;
                 dragActive = false;
+                holdHere = false;
                 var prefs = Preferences.Shared;
                 clickCandidate = prefs.Enabled && prefs.ClickTrigger && OnlyTriggerHeld(prefs.TriggerKey);
                 if (clickCandidate && AltHeld) altUsed = true;
@@ -467,6 +546,7 @@ internal sealed class InputMonitor
                     return true;
                 }
                 mouseDown = false;
+                StopHoldTimer();
                 if (dragActive)
                 {
                     dragActive = false;

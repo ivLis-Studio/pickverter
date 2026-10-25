@@ -42,6 +42,8 @@ struct OnboardingView: View {
     @StateObject private var demo = OnboardingDemo()
     @ObservedObject private var updater = Updater.shared
     @State private var hasFFmpeg = Tools.ffmpeg != nil
+    @Environment(\.controlActiveState) private var activeState
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 664 pt tall, or less on a short screen (a "Larger Text" display mode): then the steps scroll and the button stays.
     static var height: CGFloat { min(664, max(420, (NSScreen.main?.visibleFrame.height ?? 900) - 24)) }
@@ -55,6 +57,8 @@ struct OnboardingView: View {
                     .environment(\.glassWithinWindow, true)
                     .scaleEffect(0.78)
                     .allowsHitTesting(false)
+                    .opacity(demoShown ? 1 : 0)
+                    .animation(reduceMotion ? nil : .easeOut(duration: demoShown ? 0.16 : 0.12), value: demoShown)
             }
             .frame(width: 400)
             .clipped()
@@ -91,12 +95,13 @@ struct OnboardingView: View {
         }
         .frame(height: Self.height)
         .onAppear {
-            demo.start()
+            if demoShown { demo.start() }
             guard Permissions.previewState == nil, !CLI.isSnapshotting else { return }
             UserDefaults.standard.set(true, forKey: "fileAccess.offered")
             permissions.refreshFolders()
         }
         .onDisappear { demo.stop() }
+        .onChange(of: demoShown) { _, shown in shown ? demo.start() : demo.stop() }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             Tools.refresh()
             hasFFmpeg = Tools.ffmpeg != nil
@@ -104,6 +109,10 @@ struct OnboardingView: View {
         .onReceive(FFmpegInstaller.shared.$phase) { _ in hasFFmpeg = Tools.ffmpeg != nil }
         .id(prefs.language)
     }
+
+    /// The demo turns only while this window is in front. Behind Finder a turning wheel looks just like the real one
+    /// opening under Finder's window, so it fades out and waits for the window to come back.
+    private var demoShown: Bool { activeState != .inactive || CLI.isSnapshotting }
 
     /// Title, the setup steps and the gestures (everything above the button row).
     private var column: some View {

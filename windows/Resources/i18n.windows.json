@@ -962,16 +962,16 @@
       "Apagar área selecionada (Del)"
     ],
     "set.drag": [
-      "Tap Shift, Ctrl or Alt while dragging files",
-      "파일을 끌다가 Shift·Ctrl·Alt 탭",
-      "ドラッグ中にShift・Ctrl・Altをタップ",
-      "拖动文件时轻按 Shift、Ctrl 或 Alt",
-      "拖曳檔案時輕按 Shift、Ctrl 或 Alt",
-      "Pulsa Mayús, Ctrl o Alt al arrastrar",
-      "Appuyez sur Maj, Ctrl ou Alt en glissant",
-      "Beim Ziehen Umschalt, Strg oder Alt tippen",
-      "Нажмите Shift, Ctrl или Alt при перетаскивании",
-      "Toque Shift, Ctrl ou Alt ao arrastar"
+      "Tap or hold Shift, Ctrl or Alt while dragging files",
+      "파일을 끌다가 Shift·Ctrl·Alt 탭 또는 길게 누르기",
+      "ドラッグ中にShift・Ctrl・Altをタップか長押し",
+      "拖动文件时轻按或按住 Shift、Ctrl 或 Alt",
+      "拖曳檔案時輕按或按住 Shift、Ctrl 或 Alt",
+      "Pulsa o mantén Mayús, Ctrl o Alt al arrastrar",
+      "Appuyez ou maintenez Maj, Ctrl ou Alt en glissant",
+      "Beim Ziehen Umschalt, Strg oder Alt tippen oder halten",
+      "Нажмите или удерживайте Shift, Ctrl или Alt при перетаскивании",
+      "Toque ou segure Shift, Ctrl ou Alt ao arrastar"
     ],
     "set.enable.d": [
       "Turn off to pause every gesture",

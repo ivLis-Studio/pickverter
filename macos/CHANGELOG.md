@@ -3,6 +3,11 @@
 All notable changes to Pickverter. Versions follow [Semantic Versioning](https://semver.org).
 The section for a version becomes the release notes shown in the in-app updater.
 
+## [0.3.2] - 2026-10-25
+
+- **Hold to open while dragging** — while you drag files, holding ⇧, ⌘ or ⌃ now opens the Convert, Tools or Actions ring too: keep the pointer still for half a second and the ring appears, whether the key went down before the drag or during it. A quick tap still opens it at once, and as long as the pointer keeps moving, Finder's own drags work as before. Pickverter for Windows works the same way.
+- **The welcome window's demo** — the turning wheel in the welcome window now pauses and fades out while the window is in the background, so it can't be mistaken for the real wheel.
+
 ## [0.3.1] - 2026-10-24
 
 - **Signed and notarized** — Pickverter is now signed with a Developer ID and notarized by Apple. A download opens like any other app, with no trip to Privacy & Security for "Open Anyway", and macOS can tell the app hasn't been tampered with.

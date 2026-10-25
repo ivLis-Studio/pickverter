@@ -30,7 +30,7 @@ Requires Windows 10 version 2004 or later, or Windows 11 (x64 or Arm64).
 | --- | --- | --- |
 | Open the wheel for the selection | tap ⌥ in Finder | **tap Alt** in File Explorer or on the desktop (Ctrl or Right Ctrl in Settings) |
 | Open it for one file | ⌥-click | **Alt+click** |
-| While dragging files | tap ⇧ / ⌘ / ⌃ | **tap Shift / Ctrl / Alt** → Convert / Tools / Actions |
+| While dragging files | tap or hold ⇧ / ⌘ / ⌃ | **tap or hold Shift / Ctrl / Alt** → Convert / Tools / Actions |
 | Switch rings while the wheel is open | Tab · ⇧ ⌘ ⌃ | **Tab · Shift Ctrl Alt** (tap the trigger again to close) |
 | Run · close | ↩︎ · esc | **Enter · Esc** |
 | One result to the clipboard / a file | ⌥-click · ⌘C / ⌘S | **Alt+click · Ctrl+C / Ctrl+S** |

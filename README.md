@@ -37,7 +37,7 @@ https://github.com/user-attachments/assets/dc4aa6e6-fdc4-4dd5-92ec-f9843eedd6e8
 
 <table>
   <tr>
-    <td width="50%" valign="top"><img src="docs/readme/step-en-1.webp" alt="A photo selected in Finder while Option is tapped"><br><b>1 · Pick a file, tap ⌥</b><br>Select files in Finder and tap Option — or ⌥-click a file, or tap ⇧ ⌘ ⌃ while dragging.</td>
+    <td width="50%" valign="top"><img src="docs/readme/step-en-1.webp" alt="A photo selected in Finder while Option is tapped"><br><b>1 · Pick a file, tap ⌥</b><br>Select files in Finder and tap Option — or ⌥-click a file, or tap or hold ⇧ ⌘ ⌃ while dragging.</td>
     <td width="50%" valign="top"><img src="docs/readme/step-en-2.webp" alt="The convert ring open at the cursor with PNG highlighted"><br><b>2 · The wheel opens at your cursor</b><br>Point at a slot. The center always shows what a click will do.</td>
   </tr>
   <tr>
@@ -99,7 +99,7 @@ then use the layout for every file type. Right-click a slot in the wheel for the
 ### On Windows
 
 The same wheel, made for Windows: **tap Alt** with files selected in File Explorer or on the desktop, **Alt+click** a file,
-or **tap Shift / Ctrl / Alt** while dragging. Enter runs, Esc closes, Ctrl+C / Ctrl+S send one result to the clipboard or a file.
+or **tap or hold Shift / Ctrl / Alt** while dragging. Enter runs, Esc closes, Ctrl+C / Ctrl+S send one result to the clipboard or a file.
 Share takes AirDrop's place, Undo uses the Recycle Bin, and everything follows your accent color and light or dark mode.
 
 <!-- The Windows cut of the film, also a GitHub attachment. Source: promo/win.html -->
@@ -119,7 +119,7 @@ https://github.com/user-attachments/assets/e47fc193-fc9c-48ff-b08b-e94a4da85e0c
 | --- | --- |
 | Select files in Finder → **tap ⌥** | wheel for the selection |
 | **⌥-click** a file | wheel for that file |
-| While dragging files, **tap ⇧ / ⌘ / ⌃** | Convert / Tools / Actions ring — drop on a slot |
+| While dragging files, **tap or hold ⇧ / ⌘ / ⌃** | Convert / Tools / Actions ring — drop on a slot |
 | ← → · 1–0 | move around the wheel · run a slot by number |
 | ↑ ↓ or move outward | a slot's options on the outer ring |
 | type `png`, `mp3`… | jump to a format |

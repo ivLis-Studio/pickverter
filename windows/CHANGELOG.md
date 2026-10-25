@@ -3,6 +3,11 @@
 Notable changes to Pickverter for Windows. Versions follow [Semantic Versioning](https://semver.org) and match the Mac app.
 The section for a version becomes the Windows part of the GitHub release and the notes in the in-app updater.
 
+## [0.3.2] - 2026-10-25
+
+- **Hold to open while dragging** — while you drag files in File Explorer or on the desktop, holding Shift, Ctrl or Alt now opens the Convert, Tools or Actions ring too: keep the pointer still for half a second and the ring appears, whether the key went down before the drag or during it. A quick tap still opens it at once, from any app, and as long as the pointer keeps moving, File Explorer's own copy, move and shortcut drags work as before.
+- **The welcome window's demo** — the turning wheel in the welcome window now pauses and fades out while the window is in the background, so it can't be mistaken for the real wheel opening behind File Explorer. The real wheel always opens in front.
+
 ## [0.3.1] - 2026-10-24
 
 - **Nothing new on Windows** — this release signs and notarizes the Mac app. Windows keeps the same version number as the Mac, so updating changes nothing here.

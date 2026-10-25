@@ -16,6 +16,7 @@ internal static class Native
     public const uint LLKHF_EXTENDED = 0x01, LLKHF_INJECTED = 0x10, LLKHF_ALTDOWN = 0x20, LLKHF_UP = 0x80;
 
     public delegate IntPtr HookProc(int code, IntPtr wParam, IntPtr lParam);
+    public delegate void TimerProc(IntPtr hwnd, uint message, UIntPtr id, uint time);
 
     [StructLayout(LayoutKind.Sequential)]
     public struct KBDLLHOOKSTRUCT
@@ -58,6 +59,13 @@ internal static class Native
 
     [DllImport("user32.dll")]
     public static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
+
+    /// A thread timer (no window): WM_TIMER lands in the calling thread's queue and DispatchMessage runs the callback.
+    [DllImport("user32.dll")]
+    public static extern UIntPtr SetTimer(IntPtr hWnd, UIntPtr nIDEvent, uint uElapse, TimerProc lpTimerFunc);
+
+    [DllImport("user32.dll")]
+    public static extern bool KillTimer(IntPtr hWnd, UIntPtr uIDEvent);
 
     [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
     public static extern IntPtr GetModuleHandle(string? name);

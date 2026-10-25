@@ -12,6 +12,60 @@ extension CLI {
         print("\(ok ? "PASS" : "FAIL") \(label): \(actual ?? "nil")\(ok ? "" : " (expected \(expected))")")
     }
 
+    /// Holding ⇧ ⌘ ⌃ while dragging files: the ring opens once the pointer rests (the same timelines as DragHoldTests.cs).
+    static func dragHoldTests() -> Int {
+        var failures = 0
+        let command: Int64 = 55
+        func due(_ hold: inout DragHold, _ now: TimeInterval) -> String { hold.due(now: now).map(String.init) ?? "-" }
+
+        var during = DragHold(slop: 6)
+        during.dragStarted(now: 0, x: 100, y: 100)
+        during.moved(now: 0.2, x: 160, y: 120)
+        during.press(command, now: 0.3, x: 160, y: 120)
+        let early = [due(&during, 0.5), due(&during, 0.79)].joined(separator: " ")
+        check("hold during a drag waits for the rest", early, "- -", &failures)
+        check("hold during a drag opens after 0.5 s", due(&during, 0.81), "55", &failures)
+        check("… only once", due(&during, 1.5), "-", &failures)
+
+        var before = DragHold(slop: 6)
+        before.press(command, now: 0, x: 100, y: 100)
+        before.dragStarted(now: 1, x: 104, y: 100)
+        check("key held before the drag counts from the drag", "\(due(&before, 1.4)) \(due(&before, 1.5))", "- 55", &failures)
+
+        var moving = DragHold(slop: 6)
+        moving.press(command, now: 0, x: 100, y: 100)
+        moving.dragStarted(now: 0.1, x: 104, y: 100)
+        var opened = false
+        for step in 1...40 {
+            let now = 0.1 + Double(step) * 0.05
+            moving.moved(now: now, x: 104 + Double(step) * 8, y: 100)
+            if moving.due(now: now) != nil { opened = true }
+        }
+        check("a moving pointer leaves Finder's drag alone", "\(opened)", "false", &failures)
+        check("… until it rests", "\(due(&moving, 2.5)) \(due(&moving, 2.61))", "- 55", &failures)
+
+        var jitter = DragHold(slop: 6)
+        jitter.dragStarted(now: 0, x: 100, y: 100)
+        jitter.press(command, now: 0, x: 100, y: 100)
+        jitter.moved(now: 0.2, x: 105, y: 97)
+        jitter.moved(now: 0.4, x: 96, y: 104)
+        check("jitter still counts as resting", due(&jitter, 0.5), "55", &failures)
+
+        var cancelled = DragHold(slop: 6)
+        cancelled.dragStarted(now: 0, x: 100, y: 100)
+        cancelled.press(command, now: 0, x: 100, y: 100)
+        cancelled.cancel()
+        check("releasing the key cancels", due(&cancelled, 2), "-", &failures)
+
+        var again = DragHold(slop: 6)
+        again.press(command, now: 0, x: 100, y: 100)
+        again.dragStarted(now: 0.1, x: 104, y: 100)
+        _ = again.due(now: 0.61)
+        again.dragStarted(now: 2, x: 300, y: 300)
+        check("every new drag can open again", "\(due(&again, 2.2)) \(due(&again, 2.5))", "- 55", &failures)
+        return failures
+    }
+
     static func pointerTests(_ files: [URL]) -> Int {
         var failures = 0
         let wheel = WheelController(demo: true)

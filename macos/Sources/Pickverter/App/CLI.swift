@@ -299,6 +299,7 @@ enum CLI {
         press(53)
         expect("esc hides", wheel.isVisible ? "visible" : "hidden", "hidden")
         failures += pointerTests(files)
+        failures += dragHoldTests()
         failures += layoutTests(files)
         failures += editorTests()
         failures += crossPlatformTests(files)

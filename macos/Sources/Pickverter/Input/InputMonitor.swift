@@ -2,7 +2,7 @@ import AppKit
 import CoreGraphics
 
 /// One session-wide event tap drives every gesture:
-///  • tap a modifier while dragging files (⇧ convert, ⌘ tools, ⌃ actions)
+///  • tap or hold a modifier while dragging files (⇧ convert, ⌘ tools, ⌃ actions)
 ///  • tap the trigger key with files selected in Finder
 ///  • hold the trigger key and click a file in Finder
 /// While the wheel is open it also routes keys, clicks and scrolls to it.
@@ -27,6 +27,9 @@ final class InputMonitor {
     private var swallowMouseUp = false
     private var swallowRightUp = false
     private var swallowedKeys = Set<Int64>()
+    /// A held ⇧, ⌘ or ⌃ opens its ring too once the pointer rests for a moment (DragHold); a timer watches for the rest.
+    private var hold = DragHold(slop: 6)
+    private var holdTimer: Timer?
 
     var isRunning: Bool { tap != nil }
 
@@ -96,6 +99,7 @@ final class InputMonitor {
 
         case .keyDown:
             pendingInterrupted = true
+            endHold()
             let code = event.getIntegerValueField(.keyboardEventKeycode)
             if wheel.isVisible, wheel.handleKey(code: code, event: event) {
                 swallowedKeys.insert(code)
@@ -133,7 +137,15 @@ final class InputMonitor {
             if clickCandidate, hypot(location.x - mouseDownPoint.x, location.y - mouseDownPoint.y) > 4 {
                 clickCandidate = false
             }
-            if !dragActive { detectFileDrag() }
+            if !dragActive {
+                detectFileDrag()
+                if dragActive {
+                    hold.dragStarted(now: now, x: location.x, y: location.y)
+                    if hold.key != nil { startHoldTimer() }
+                }
+            } else if hold.key != nil {
+                hold.moved(now: now, x: location.x, y: location.y)
+            }
             if wheel.isVisible, wheel.origin == .drag { wheel.pointerMoved(quartz: location) }
             return pass
 
@@ -143,6 +155,7 @@ final class InputMonitor {
                 return nil
             }
             mouseIsDown = false
+            stopHoldTimer()
             if dragActive {
                 dragActive = false
                 wheel.dragSessionEnded()
@@ -228,10 +241,67 @@ final class InputMonitor {
             } else {
                 pendingKey = nil
             }
+            if others.isEmpty, Self.wheelMode(for: code) != nil {
+                beginHold(code, at: event.location)
+            } else {
+                endHold()
+            }
         } else {
+            if hold.key == code { endHold() }
             defer { pendingKey = nil }
             guard pendingKey == code, !pendingInterrupted, now - pendingDown < 0.4 else { return }
             modifierTapped(code)
+        }
+    }
+
+    // Held keys while dragging
+
+    private func beginHold(_ code: Int64, at location: CGPoint) {
+        hold.press(code, now: now, x: location.x, y: location.y)
+        if dragActive, mouseIsDown { startHoldTimer() }
+    }
+
+    private func endHold() {
+        hold.cancel()
+        stopHoldTimer()
+    }
+
+    private func startHoldTimer() {
+        guard holdTimer == nil else { return }
+        let timer = Timer(timeInterval: 0.05, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.holdTick() }
+        }
+        RunLoop.main.add(timer, forMode: .common)
+        holdTimer = timer
+    }
+
+    private func stopHoldTimer() {
+        holdTimer?.invalidate()
+        holdTimer = nil
+    }
+
+    /// The key is still down, files are being dragged and the pointer has rested long enough: open the key's ring,
+    /// just as a tap would. Its release then counts as no tap.
+    private func holdTick() {
+        let prefs = Preferences.shared
+        guard hold.key != nil, dragActive, mouseIsDown, prefs.enabled, prefs.dragTrigger else {
+            stopHoldTimer()
+            return
+        }
+        guard !WheelController.shared.menuOpen, let code = hold.due(now: now) else { return }
+        stopHoldTimer()
+        pendingKey = nil
+        Debug.log("drag: held key \(code) rested")
+        openDragRing(Self.wheelMode(for: code), isTrigger: false)
+    }
+
+    /// Opens the ring under the pointer for the dragged files, or switches rings when it is already open.
+    private func openDragRing(_ mapped: WheelMode?, isTrigger: Bool) {
+        let wheel = WheelController.shared
+        if wheel.isVisible {
+            if let mapped { wheel.setMode(mapped) } else if isTrigger { wheel.cycleMode() }
+        } else if mapped != nil || isTrigger {
+            wheel.present(files: dragFiles, origin: .drag, mode: mapped, at: NSEvent.mouseLocation)
         }
     }
 
@@ -245,11 +315,7 @@ final class InputMonitor {
 
         if dragActive, mouseIsDown {
             guard prefs.dragTrigger else { return }
-            if wheel.isVisible {
-                if let mapped { wheel.setMode(mapped) } else if isTrigger { wheel.cycleMode() }
-            } else if mapped != nil || isTrigger {
-                wheel.present(files: dragFiles, origin: .drag, mode: mapped, at: NSEvent.mouseLocation)
-            }
+            openDragRing(mapped, isTrigger: isTrigger)
             return
         }
 

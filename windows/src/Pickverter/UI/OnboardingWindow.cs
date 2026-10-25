@@ -1,6 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Threading;
 using Pickverter.Input;
 using Pickverter.Services;
@@ -46,6 +47,7 @@ internal sealed class OnboardingWindow : AppWindow
         startup.Changed += Rebuild;
         Activated += (_, _) =>
         {
+            ShowDemo(true);
             // Back from installing ffmpeg, Windows Security or Task Manager: the steps catch up, but only once the click
             // that brought the window forward has landed, and only if one of them changed (a rebuild scrolls to the top).
             AfterActivationClick(() =>
@@ -55,7 +57,25 @@ internal sealed class OnboardingWindow : AppWindow
                 if (StepsState() != shownSteps) Rebuild();
             });
         };
+        Deactivated += (_, _) => ShowDemo(false);
         Rebuild();
+    }
+
+    /// The demo turns only while this window is in front. Behind File Explorer a turning wheel looks just like the real
+    /// one opening under Explorer, so it fades out and waits for the window to come back.
+    private void ShowDemo(bool show)
+    {
+        if (show) timer.Start();
+        else timer.Stop();
+        var target = show ? 1.0 : 0.0;
+        if (!SystemParameters.ClientAreaAnimation)
+        {
+            canvas.BeginAnimation(UIElement.OpacityProperty, null);
+            canvas.Opacity = target;
+            return;
+        }
+        // From wherever a running fade has got to.
+        canvas.BeginAnimation(UIElement.OpacityProperty, new DoubleAnimation(target, TimeSpan.FromMilliseconds(show ? 160 : 120)));
     }
 
     private string shownSteps = "";

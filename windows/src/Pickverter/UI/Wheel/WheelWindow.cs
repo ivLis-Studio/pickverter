@@ -82,11 +82,10 @@ internal sealed class WheelWindow : Window
 
     public void Appear()
     {
-        if (!IsVisible)
-        {
-            Show();
+        if (!IsVisible) Show();
+        // In front of File Explorer and its drag image every time, also when the window was already showing.
+        if (hwnd != IntPtr.Zero)
             Native.SetWindowPos(hwnd, Native.HWND_TOPMOST, 0, 0, 0, 0, Native.SWP_NOMOVE | Native.SWP_NOSIZE | Native.SWP_NOACTIVATE);
-        }
         Canvas.BeginAnimation(OpacityProperty, null);
         var reduced = !SystemParameters.ClientAreaAnimation;
         if (reduced)
