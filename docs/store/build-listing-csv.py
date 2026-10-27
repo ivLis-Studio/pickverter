@@ -13,6 +13,10 @@ Korean gets the Korean screenshots and trailer; every other language uses the En
 
 --no-trailers leaves the trailer rows empty and the videos out, for a quick first import (the two ~60 MB trailers can
 then go up on their own, or through the listing page).
+
+--text-only rewrites the words only (description, features, captions, search terms, trailer title) and keeps every
+screenshot, logo and trailer cell exactly as exported, so the pictures and videos already in Partner Center stay. The
+result is one CSV, OUT/pickverter-listing-text.csv, for "Import listings › Upload .csv".
 """
 from __future__ import annotations
 
@@ -58,6 +62,7 @@ def main() -> int:
     ap.add_argument("--assets", type=Path, default=REPO / "promo/out/store")
     ap.add_argument("--out", type=Path, default=REPO / "promo/out/store/import")
     ap.add_argument("--no-trailers", action="store_true", help="leave the trailers out")
+    ap.add_argument("--text-only", action="store_true", help="rewrite the words only; keep the exported media cells")
     args = ap.parse_args()
 
     listing = json.loads(args.listing.read_text(encoding="utf-8"))
@@ -75,11 +80,12 @@ def main() -> int:
     width = len(header)
     body = [r + [""] * (width - len(r)) if len(r) < width else r[:width] for r in body]
 
-    dest = args.out / ROOT
+    dest = args.out if args.text_only else args.out / ROOT
     dest.mkdir(parents=True, exist_ok=True)
-    stray = [p.name for p in dest.glob("*.csv") if p.name != f"{ROOT}.csv"]
-    if stray:
-        sys.exit(f"{dest} already has other CSV files ({', '.join(stray)}); Partner Center wants exactly one")
+    if not args.text_only:
+        stray = [p.name for p in dest.glob("*.csv") if p.name != f"{ROOT}.csv"]
+        if stray:
+            sys.exit(f"{dest} already has other CSV files ({', '.join(stray)}); Partner Center wants exactly one")
 
     used: set[str] = set()
 
@@ -90,7 +96,9 @@ def main() -> int:
         used.add(rel)
         return f"{ROOT}/{rel}"
 
-    def values(key: str) -> dict[str, str]:
+    index = {r[0]: r for r in body if r and r[0]}
+
+    def values(key: str, col: int) -> dict[str, str]:
         item = listing[key]
         shots = "ko" if key == "ko-kr" else "en"
         film = "ko" if key == "ko-kr" else "en"
@@ -101,15 +109,21 @@ def main() -> int:
             "CopyrightTrademarkInformation": item["copyright"],
             "AdditionalLicenseTerms": item["additionalLicenseTerms"],
         }
-        if not args.no_trailers:
+        if args.text_only:
+            # Media cells stay as exported (Partner Center URLs); a trailer's title only where that trailer is.
+            if index.get("Trailer1", [""] * width)[col]:
+                v["TrailerTitle1"] = item["trailerTitle"]
+        elif not args.no_trailers:
             v["TrailerTitle1"] = item["trailerTitle"]
             v["Trailer1"] = asset(f"trailer/Pickverter-trailer-{film}.mp4")
             v["TrailerThumbnail1"] = asset(f"trailer/Pickverter-trailer-{film}-thumbnail.png")
             v["TrailerToPlayAtTopOfListing"] = v["Trailer1"]
-        for field, name in ART.items():
-            v[field] = asset(f"art/{name}")
+        if not args.text_only:
+            for field, name in ART.items():
+                v[field] = asset(f"art/{name}")
         for i, (name, caption) in enumerate(zip(SHOTS, item["screenshotCaptions"]), 1):
-            v[f"DesktopScreenshot{i}"] = asset(f"screenshots/{shots}/{name}.png")
+            if not args.text_only:
+                v[f"DesktopScreenshot{i}"] = asset(f"screenshots/{shots}/{name}.png")
             v[f"DesktopScreenshotCaption{i}"] = caption
         for i, feature in enumerate(item["features"], 1):
             v[f"Feature{i}"] = feature
@@ -117,25 +131,30 @@ def main() -> int:
             v[f"SearchTerm{i}"] = term
         return v
 
-    index = {r[0]: r for r in body if r and r[0]}
     for col, code in enumerate(langs, start=4):
         key = listing_key(code, listing)
         if key is None:
             print(f"! no copy for {code}; its column is left as exported", file=sys.stderr)
             continue
-        for field, text in values(key).items():
+        for field, text in values(key, col).items():
             if field not in index:
                 sys.exit(f"field {field} is not in the export")
             index[field][col] = text
         print(f"{code:<11} <- {key}")
+
+    out = io.StringIO(newline="")
+    csv.writer(out, lineterminator="\r\n").writerows([header] + body)
+    if args.text_only:
+        target = dest / f"{ROOT}-text.csv"
+        target.write_bytes(b"\xef\xbb\xbf" + out.getvalue().encode("utf-8"))
+        print(f"\n{target} — upload it in Import listings › Upload .csv (media cells kept as exported)")
+        return 0
 
     for rel in sorted(used):
         target = dest / rel
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(args.assets / rel, target)
 
-    out = io.StringIO(newline="")
-    csv.writer(out, lineterminator="\r\n").writerows([header] + body)
     (dest / f"{ROOT}.csv").write_bytes(b"\xef\xbb\xbf" + out.getvalue().encode("utf-8"))
     size = sum((dest / rel).stat().st_size for rel in used)
     print(f"\n{dest}  ({len(used)} assets, {size / 1e6:.0f} MB) — pick this folder in Import listings › Import folder")
