@@ -49,7 +49,7 @@ and gives it back otherwise.
   Windows PowerShell / Command Prompt / Git Bash, VS Code / Cursor / Zed / Sublime / Notepad++ (or Notepad), Undo sends results to the Recycle Bin.
 - **Engines**: Windows OCR and face detection, the Windows PDF renderer, Microsoft Edge for HTML → PDF, Media Foundation for MP4, M4A,
   MP3 and WAV without ffmpeg, Microsoft Office (Word, Excel, PowerPoint) or LibreOffice for faithful Office exports,
-  HEIC export with the HEIF + HEVC extensions from the Microsoft Store. Background removal downloads its AI model (178 MB) once;
+  HEIC export with the HEIF + HEVC extensions from the Microsoft Store. Background removal downloads its AI model (170 MB) once;
   its result cards say **AI result**, with **Report** for a cut-out that looks wrong or inappropriate (a GitHub issue form).
   HWP and HWPX documents go through [rhwp](https://github.com/edwardkim/rhwp) (MIT), the open-source HWP engine, which
   Pickverter downloads (about 20 MB, pinned version and SHA-256) the first time you convert one; on Arm64 PCs it runs under
