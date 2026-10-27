@@ -111,6 +111,10 @@ public sealed class Job : INotifyPropertyChanged
         FileKinds.Of(Files[0]) == FileKind.Image && FileKinds.Of(Outputs[0]) == FileKind.Image &&
         File.Exists(Files[0]) && File.Exists(Outputs[0]);
 
+    /// The AI model made this result (Remove BG): the card says so and links to the report form (AiReport). Also after
+    /// Undo, since a result someone threw away is often the one worth reporting.
+    public bool MadeByAI => State == JobState.Succeeded && Option != null && AiReport.Covers(Option.Id);
+
     public async Task Complete(PickResult result)
     {
         message = result.Message;

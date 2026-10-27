@@ -414,6 +414,7 @@ internal sealed class SettingsWindow : AppWindow
             Platform.Codecs.CanEncodeHeic ? Status(true, L("office.installed")) : Ui.Button(L("engine.heic.get"), () => Platform.Shell.OpenUrl("ms-windows-store://pdp/?ProductId=9NMZLZ57R3T7")),
             "photo"));
         Add(ModelRow());
+        Add(AiRow());
         Footer(L("engine.footer"));
 
         Header(L("set.office"));
@@ -549,6 +550,15 @@ internal sealed class SettingsWindow : AppWindow
                 Ui.Button(L("common.cancel"), () => modelDownload?.Cancel()), "scissors");
         }
         return Ui.SettingRow(L("engine.bg"), L("engine.bg.d", BackgroundModel.SizeLabel), Ui.Button(L("bg.model.download"), () => _ = DownloadModel()), "scissors");
+    }
+
+    /// Remove BG's results come from an AI model: said plainly, with the same report form as its result cards
+    /// (Microsoft Store policy 11.16, AiReport).
+    private static Border AiRow()
+    {
+        var report = Ui.Button(L("ai.report"), () => AiReport.Open(null));
+        report.ToolTip = L("ai.report.d");
+        return Ui.SettingRow(L("ai.title"), L("ai.d"), report, "sparkles");
     }
 
     private async Task DownloadModel()

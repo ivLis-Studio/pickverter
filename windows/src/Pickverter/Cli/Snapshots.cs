@@ -204,16 +204,21 @@ internal static class Snapshots
             new NoticeAction(L("update.card.details"), "info.circle", () => { }));
         var clipboard = new Job(option, WheelMode.Convert, [photo], ResultDestination.Clipboard);
         await clipboard.Complete(new PickResult { Outputs = [result] });
+        // Remove BG's result says the AI model made it and links to the report form (the card needs no model).
+        var cutout = Catalog.AllOptions([photo]).First(candidate => AiReport.Covers(candidate.Id) && candidate.Id != "tool.removebg");
+        var ai = new Job(cutout, WheelMode.Tools, [photo], ResultDestination.File);
+        await ai.Complete(new PickResult { Outputs = [result] });
         JobCenter.Shared.Jobs.Insert(0, done);
         JobCenter.Shared.Jobs.Insert(0, running);
         var cards = new List<(Job, string)> { (running, "card-running"), (done, "card-done"), (failed, "card-failed") };
         // The update notice is the GitHub edition's: the Store edition never shows one.
         if (!Distribution.IsStore) cards.Add((notice, "card-notice"));
         cards.Add((clipboard, "card-copied"));
+        cards.Add((ai, "card-ai"));
         foreach (var (job, name) in cards)
         {
             var window = new CardWindow(job, presenter);
-            await Task.Delay(job == done ? 500 : 30);
+            await Task.Delay(job == done || job == ai ? 500 : 30);
             window.Rebuild();
             if (window.Content is not FrameworkElement content) continue;
             window.Content = null;

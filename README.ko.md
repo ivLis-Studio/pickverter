@@ -170,6 +170,9 @@ Windows 앱은 같은 릴리스의 `update-windows.json`을 읽고 같은 Ed2551
 파일은 내 컴퓨터 밖으로 나가지 않아요. 네트워크 요청은 github.com의 업데이트 확인 하나뿐이고, 끌 수 있어요
 (Windows에서 배경 제거를 처음 쓸 때 모델을 한 번 내려받는 것 말고는요).
 
+배경 제거 결과는 내 컴퓨터에서 도는 AI 모델이 만들어요(Mac은 Apple Vision, Windows는 내려받은 모델). 결과 카드에 **AI 결과**라고
+표시되고, 옆의 **신고**를 누르면 잘못되거나 부적절한 결과를 알리는 짧은 GitHub 양식이 열려요. 직접 제출하기 전에는 아무것도 보내지 않아요.
+
 ## 언어
 
 English · 한국어 · 日本語 · 简体中文 · 繁體中文 · Español · Français · Deutsch · Русский · Português (Brasil).

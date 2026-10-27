@@ -73,6 +73,18 @@
       "Рядом, Почта и др.",
       "Proximidade, Email e mais"
     ],
+    "ai.d": [
+      "Remove BG cuts out the subject with an AI model that runs on this PC, so your photos never leave it. If a result looks wrong or inappropriate, please report it.",
+      "배경 제거는 이 PC에서 도는 AI 모델로 피사체를 오려내요. 사진은 PC 밖으로 나가지 않아요. 결과가 이상하거나 부적절하면 신고해 주세요.",
+      "「背景を削除」は、このPC上で動くAIモデルで被写体を切り抜きます。写真がPCの外に出ることはありません。結果がおかしい、または不適切な場合は報告してください。",
+      "“移除背景”使用在本机运行的 AI 模型抠出主体，照片不会离开这台电脑。如果结果有误或不当，请报告给我们。",
+      "「移除背景」使用在本機執行的 AI 模型去背，照片不會離開這台電腦。如果結果有誤或不當，請回報給我們。",
+      "Quitar fondo recorta el sujeto con un modelo de IA que funciona en este PC, así que tus fotos nunca salen de él. Si un resultado se ve mal o es inapropiado, infórmanos.",
+      "Détourer isole le sujet avec un modèle d'IA qui fonctionne sur ce PC : vos photos ne le quittent jamais. Si un résultat semble faux ou inapproprié, signalez-le.",
+      "Freistellen schneidet das Motiv mit einem KI-Modell aus, das auf diesem PC läuft – deine Fotos verlassen ihn nie. Sieht ein Ergebnis falsch oder unangemessen aus, melde es bitte.",
+      "«Убрать фон» вырезает объект моделью ИИ, которая работает на этом компьютере, — фото никуда не отправляются. Если результат выглядит неверным или неуместным, сообщите нам.",
+      "Remover fundo recorta o objeto com um modelo de IA que roda neste PC, e suas fotos nunca saem dele. Se um resultado parecer errado ou inadequado, relate para nós."
+    ],
     "app.textedit": [
       "Notepad",
       "메모장",

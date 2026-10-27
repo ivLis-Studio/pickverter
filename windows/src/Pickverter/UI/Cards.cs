@@ -248,6 +248,7 @@ internal sealed class CardWindow : Window
             LineHeight = 16,
         };
         texts.Children.Add(subline);
+        if (Job.MadeByAI) texts.Children.Add(AiLine());
         if (Job.IsRunning)
         {
             progressBar = new LinearProgress { Value = Job.Progress, Margin = new Thickness(0, 6, 0, 0) };
@@ -282,6 +283,34 @@ internal sealed class CardWindow : Window
         root.Child = layout;
         AutomationProperties.SetName(root, Job.Headline);
         AutomationProperties.SetHelpText(root, Job.Subline);
+    }
+
+    /// "AI result · Report" under a Remove BG result: the model made it, and a bad one can be reported (Microsoft Store
+    /// policy 11.16, AiReport). The link wraps to its own line rather than clipping in long languages.
+    private FrameworkElement AiLine()
+    {
+        var line = new WrapPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 2, 0, 0) };
+        var icon = Glyphs.Icon("sparkles", 11, Theme.TextSecondary);
+        icon.VerticalAlignment = VerticalAlignment.Center;
+        icon.Margin = new Thickness(0, 0, 5, 0);
+        line.Children.Add(icon);
+        line.Children.Add(new TextBlock
+        {
+            Text = L("ai.result") + " ·",
+            FontSize = 12,
+            FontFamily = Theme.SmallFont,
+            Foreground = Theme.TextSecondary,
+            VerticalAlignment = VerticalAlignment.Center,
+        });
+        var optionId = Job.Option?.Id;
+        var report = Ui.Link(L("ai.report"), () => AiReport.Open(optionId));
+        report.Height = 20;
+        report.MinHeight = 20;
+        report.Margin = new Thickness(1, 0, 0, 0);
+        report.ToolTip = L("ai.report.d");
+        AutomationProperties.SetHelpText(report, L("ai.report.d"));
+        line.Children.Add(report);
+        return line;
     }
 
     private FrameworkElement Badge()

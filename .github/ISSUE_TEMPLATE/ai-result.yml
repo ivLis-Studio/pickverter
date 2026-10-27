@@ -1,0 +1,42 @@
+name: Report an AI result
+description: A Remove BG cut-out that looks wrong, harmful or inappropriate
+title: "AI result: "
+labels: ["ai-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for telling us. Remove BG cuts out the subject with an AI model that runs on your own computer, so your picture was never uploaded, and nothing is sent until you submit this form. We read every report and answer here.
+
+        **Reports on this page are public.** Describing the problem in words is enough; attach a picture only if you're happy for anyone to see it.
+
+        Write in any language. · 어떤 언어로 써도 괜찮아요. · どの言語でも構いません。
+  - type: input
+    id: app
+    attributes:
+      label: Pickverter
+      description: Version, system and edition. Pickverter fills this in when you open the form from the app.
+  - type: input
+    id: tool
+    attributes:
+      label: Tool
+      description: Which Remove BG you used. Pickverter fills this in, too.
+  - type: dropdown
+    id: problem
+    attributes:
+      label: What went wrong?
+      options:
+        - Parts of the subject are missing
+        - Some of the background is left
+        - The wrong thing was kept as the subject
+        - The result is offensive or inappropriate
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: details
+    attributes:
+      label: What happened?
+      description: What the picture showed, what you expected, and what you got.
+    validations:
+      required: true

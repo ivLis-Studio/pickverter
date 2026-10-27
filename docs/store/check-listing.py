@@ -4,10 +4,13 @@
     python3 docs/store/check-listing.py [path/to/listing.json]
 
 Exits with 1 and lists every problem if anything is off. Lengths are counted in UTF-16 code units (what the Store's
-fields count), which equals characters for this text. Limits: description 1,000-2,500 (our target; the Store allows
+fields count), which equals characters for this text. Limits: description 1,000-3,000 (our target; the Store allows
 10,000) with a two-line hook, short description 270, 8-12 features of up to 200, up to 7 search terms of up to 30
 characters and 21 words in all, 6 screenshot captions of up to 200 (one per screenshot, in order), trailer title 255,
 copyright 200, developed by 255, additional license terms 10,000 on one line.
+
+Every description also says, in the app's own words, that Remove BG's results come from an AI model and can be reported
+from their card (the "AI result" label and its "Report" link): Microsoft Store policy 11.16 asks for that disclosure.
 """
 import json
 import re
@@ -35,8 +38,8 @@ MARKUP = re.compile(r"<[A-Za-z/!]|\*\*|^#|\]\(|&[a-z]+;", re.M)
 # Every description names the gestures (with the keyboard's own key names), the optional downloads and the license.
 KEYS = {"es-es": ["Mayús", "Ctrl", "Alt"], "fr-fr": ["Maj", "Ctrl", "Alt"], "de-de": ["Umschalt", "Strg", "Alt"]}
 MENTIONS = ["Pickverter", "GitHub", "MIT", "ffmpeg", "rhwp", "Microsoft Store", "Microsoft Edge", "OCR"]
-# The app's own words for the rings and two key tools must appear in each description.
-APP_TERMS = ["mode.convert", "mode.tools", "mode.actions", "tool.removebg", "tool.ocr"]
+# The app's own words for the rings, two key tools and the AI label with its report link must appear in each description.
+APP_TERMS = ["mode.convert", "mode.tools", "mode.actions", "tool.removebg", "tool.ocr", "ai.result", "ai.report"]
 
 
 def units(text):
@@ -116,7 +119,7 @@ def main():
             if name not in FIELDS:
                 bad(code, f"unknown field {name}")
         d = entry.get("description", "")
-        text_field(code, "description", d, 1000, 2500, one_line=False)
+        text_field(code, "description", d, 1000, 3000, one_line=False)
         lines = d.split("\n") if isinstance(d, str) else []
         if len(lines) < 4 or not lines[0].strip() or not lines[1].strip() or lines[2].strip():
             bad(code, "description must open with a two-line hook followed by a blank line")

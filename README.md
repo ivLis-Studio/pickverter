@@ -175,6 +175,10 @@ then swaps its own folder and restarts — no administrator prompt.
 Files never leave your computer. The only network request is the update check to github.com, which you can turn off
 (plus, on Windows, the one-time download of the background-removal model if you use it).
 
+Remove BG's cut-outs are made by an AI model that runs on your computer (Apple's Vision on a Mac, a downloaded model on
+Windows). Their result card says **AI result**, and **Report** next to it opens a short GitHub form for a cut-out that looks
+wrong or inappropriate: nothing is sent until you submit it.
+
 ## Languages
 
 English · 한국어 · 日本語 · 简体中文 · 繁體中文 · Español · Français · Deutsch · Русский · Português (Brasil).
