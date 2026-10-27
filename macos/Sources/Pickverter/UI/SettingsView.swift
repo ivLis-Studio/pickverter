@@ -192,6 +192,7 @@ struct IntegrationSettings: View {
                 HWPRow()
                 EngineRow(name: "ImageMagick", purpose: L("engine.png"), formula: "imagemagick", path: Tools.magick)
                 EngineRow(name: "cwebp", purpose: L("engine.webp"), formula: "webp", path: Tools.cwebp)
+                AIResultsRow()
                 Button(L("engine.rescan")) {
                     Tools.refresh()
                     refresh += 1
@@ -343,6 +344,26 @@ struct HWPRow: View {
                 .buttonStyle(.borderedProminent)
         } else if ProcessInfo.processInfo.environment["PICKVERTER_RHWP"] == nil {
             Button(L("engine.remove")) { installer.remove() }
+        }
+    }
+}
+
+/// Remove BG's results come from an AI model: said plainly, with the same report form as its result cards (AIReport).
+struct AIResultsRow: View {
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles")
+                .foregroundStyle(.secondary)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(L("ai.title"))
+                Text(L("ai.d"))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Button(L("ai.report")) { AIReport.open(optionID: "tool.removebg") }
+                .help(L("ai.report.d"))
         }
     }
 }

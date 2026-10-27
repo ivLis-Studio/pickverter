@@ -120,7 +120,8 @@ jobs:
             if ($LASTEXITCODE -ne 0) { throw "the background-removal model didn't download ($LASTEXITCODE)" }
             $photo = Join-Path $env:RUNNER_TEMP "store-shiba.webp"
             Copy-Item (Join-Path $PWD "..\website\public\assets\media\shiba.webp") $photo
-            $made = @(& $exe cli run tool.removebg.transparent $photo)
+            # Piped on purpose: PowerShell neither waits for nor reads a GUI program that ends the pipeline.
+            $made = @(& $exe cli run tool.removebg.transparent $photo | ForEach-Object { "$_" })
             $made | Out-Host
             if ($LASTEXITCODE -ne 0) { throw "Remove BG failed ($LASTEXITCODE)" }
             $cut = $made | Where-Object { $_ -like "*.png" -and (Test-Path -LiteralPath $_) } | Select-Object -First 1

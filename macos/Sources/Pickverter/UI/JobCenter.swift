@@ -85,6 +85,9 @@ final class Job: ObservableObject, Identifiable {
     var isRunning: Bool { state == .running }
     var isNotice: Bool { option == nil }
     var hasFiles: Bool { !outputs.isEmpty && !undone }
+    /// The AI model made this result (Remove BG): the card says so and links to the report form (AIReport). Also after
+    /// Undo, since a result someone threw away is often the one worth reporting.
+    var madeByAI: Bool { state == .succeeded && AIReport.covers(option?.id) }
 
     func complete(with result: PickResult) {
         outputs = result.outputs
@@ -489,6 +492,9 @@ struct JobCard: View {
                         .lineLimit(3)
                         .truncationMode(.middle)
                         .fixedSize(horizontal: false, vertical: true)
+                    if job.madeByAI {
+                        AIResultLine(optionID: job.option?.id)
+                    }
                     if job.isRunning {
                         ProgressBar(value: job.progress)
                             .frame(height: 3)
@@ -552,6 +558,37 @@ struct JobCard: View {
             }
             Spacer(minLength: 0)
         }
+    }
+}
+
+/// "AI result · Report" under a Remove BG result: the model made it, and a bad one can be reported (AIReport).
+/// One line: the link always keeps its full width; only the label could ever give way, and no language comes close.
+struct AIResultLine: View {
+    let optionID: String?
+    @State private var hovering = false
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 10, weight: .medium))
+                .accessibilityHidden(true)
+            Text(L("ai.result"))
+                .lineLimit(1)
+            Text("·")
+                .accessibilityHidden(true)
+            Button { AIReport.open(optionID: optionID) } label: {
+                Text(L("ai.report"))
+                    .underline(hovering)
+                    .foregroundStyle(Theme.accent)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .fixedSize()
+            .help(L("ai.report.d"))
+            .onHover { hovering = $0 }
+        }
+        .font(.system(size: 11))
+        .foregroundStyle(.secondary)
     }
 }
 

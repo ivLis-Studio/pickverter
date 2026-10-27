@@ -358,7 +358,7 @@ extension CLI {
                   "arrow.up.arrow.down", "ellipsis.circle", "checkmark.circle", "eye.slash", "arrow.counterclockwise",
                   "arrow.clockwise", "arrow.uturn.backward", "gearshape", "list.bullet", "info.circle", "minus.circle",
                   "minus.circle.fill", "slider.horizontal.3", "plus", "circle.dashed", "pin.fill", "rectangle.split.2x1",
-                  "arrow.left.and.right", "text.badge.checkmark", "character.textbox"]
+                  "arrow.left.and.right", "text.badge.checkmark", "character.textbox", "sparkles"]
         for symbol in ui where NSImage(systemSymbolName: symbol, accessibilityDescription: nil) == nil { missing.insert(symbol) }
         for item in missing.sorted() { print("MISSING \(item)") }
         print(missing.isEmpty ? "OK all symbols exist" : "FAIL \(missing.count) missing")
@@ -713,6 +713,33 @@ extension CLI {
         check("Team ID matches codesign", team ?? "ad-hoc", expected, &failures)
         check("grants carry over only between signed copies", "\(CodeIdentity.keepsPermissions(from: app, to: app))",
               "\(team != nil)", &failures)
+        return failures
+    }
+
+    // MARK: Self-test: AI results
+
+    /// Remove BG's results say the AI model made them (Store policy 11.16, as on Windows); the report form carries the
+    /// version and the tool, nothing about the file.
+    static func aiReportTests() -> Int {
+        var failures = 0
+        let ids: [String?] = ["tool.removebg", "tool.removebg.crop", "tool.removebgx", "tool.crop.square", nil]
+        check("AI results", ids.map { "\(AIReport.covers($0))" }.joined(separator: " "), "true true false false false", &failures)
+        func fields(_ id: String?) -> [String: String] {
+            let items = URLComponents(url: AIReport.url(optionID: id), resolvingAgainstBaseURL: false)?.queryItems ?? []
+            return Dictionary(items.map { ($0.name, $0.value ?? "") }, uniquingKeysWith: { first, _ in first })
+        }
+        let url = AIReport.url(optionID: "tool.removebg.crop")
+        check("report form", "\(url.host ?? "")\(url.path)", "github.com/ivLis-Studio/pickverter/issues/new", &failures)
+        let link = url.absoluteString
+        check("encoded", link, link.allSatisfy { $0.isASCII && $0 != " " } ? link : "ASCII only, no spaces", &failures)
+        let form = fields("tool.removebg.crop")
+        check("form fields", form.keys.sorted().joined(separator: " ") + " · \(form["template"] ?? "") · \(form["labels"] ?? "")",
+              "app labels template tool · ai-result.yml · ai-report", &failures)
+        check("which Remove BG", "\(form["tool"] ?? "") | \(fields("tool.removebg")["tool"] ?? "")", "Remove BG (crop) | Remove BG", &failures)
+        let app = form["app"] ?? ""
+        let shape = #"^Pickverter [0-9][^ ]* · macOS [0-9]+\.[0-9]+\.[0-9]+ · (arm64|x86_64) · GitHub$"#
+        check("app line", app, app.range(of: shape, options: .regularExpression) != nil ? app
+              : "Pickverter <version> · macOS <x.y.z> · <arm64|x86_64> · GitHub", &failures)
         return failures
     }
 }

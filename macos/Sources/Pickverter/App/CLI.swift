@@ -217,6 +217,14 @@ enum CLI {
         let option = PickOption(id: "convert.png", title: "PNG", detail: "", symbol: "photo", isFormat: true) { _ in PickResult() }
         let done = Job(option: option, mode: .convert, files: [file], destination: .file)
         done.complete(with: PickResult(outputs: [file]))
+        // Remove BG's card says the AI model made the result and links to the report form (AIReport). The variant runs
+        // under its parent's name, as it does from the wheel.
+        let removeBG = Catalog.tool("removebg", symbol: "scissors", variants: CutoutStyle.allCases.map { style in
+            Catalog.variant("tool.removebg", style.rawValue, style.title) { _ in PickResult() }
+        })
+        let cutout = Job(option: WheelController.display(removeBG.variants[0], parent: removeBG), mode: .tools,
+                         files: [file], destination: .file)
+        cutout.complete(with: PickResult(outputs: [file]))
         let clip = Job(option: option, mode: .convert, files: [file], destination: .clipboard)
         let running = Job(option: Catalog.tool("removebg", symbol: "scissors") { _ in PickResult() }, mode: .tools, files: [file], destination: .file)
         running.progress = 0.42
@@ -229,6 +237,7 @@ enum CLI {
         let view = VStack(spacing: 12) {
             JobCard(job: running, onClose: {}, onHover: { _ in })
             JobCard(job: done, onClose: {}, onHover: { _ in })
+            JobCard(job: cutout, onClose: {}, onHover: { _ in })
             JobCard(job: clip, onClose: {}, onHover: { _ in })
             JobCard(job: failed, onClose: {}, onHover: { _ in })
             JobCard(job: blocked, onClose: {}, onHover: { _ in })
@@ -304,6 +313,7 @@ enum CLI {
         failures += editorTests()
         failures += crossPlatformTests(files)
         failures += signingTests()
+        failures += aiReportTests()
         return failures == 0 ? 0 : 1
     }
 
