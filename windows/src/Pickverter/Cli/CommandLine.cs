@@ -29,6 +29,7 @@ internal static class CommandLine
           cli ffmpeg-install                        download ffmpeg like Settings does (PICKVERTER_FFMPEG_DIR picks the folder)
           cli rhwp-install                          download rhwp, the HWP engine, like a first HWP conversion does
                                                     (PICKVERTER_RHWP_DIR picks the folder)
+          cli model-install                         download Remove BG's AI model like Settings does (checked by SHA-256)
           cli update-keygen <private-key-file>
           cli update-pubkey [private-key-file]
           cli update-manifest --version V --zip-x64 Z --url-x64 U [--zip-arm64 Z --url-arm64 U]
@@ -67,6 +68,8 @@ internal static class CommandLine
                     return Headless(() => FFmpegInstall().GetAwaiter().GetResult());
                 case "rhwp-install":
                     return Headless(() => RhwpInstall().GetAwaiter().GetResult());
+                case "model-install":
+                    return Headless(() => ModelInstall().GetAwaiter().GetResult());
                 case "fixtures":
                     if (rest.Length == 0) break;
                     Headless(() =>
@@ -283,6 +286,31 @@ internal static class CommandLine
             });
             Console.WriteLine($"OK {HwpSetup.Executable} · {HwpSetup.InstalledVersion} · {watch.Elapsed.TotalSeconds:0.0}s");
             return HwpSetup.Executable != null ? 0 : 1;
+        }
+        catch (Exception error)
+        {
+            Console.Error.WriteLine("ERR " + error.Message);
+            return 1;
+        }
+    }
+
+    /// Remove BG's model, downloaded and checked exactly like the Download Model button does it (CI runs it in the
+    /// Microsoft Store edition, where it lands in the package's own folder).
+    private static async Task<int> ModelInstall()
+    {
+        var watch = Stopwatch.StartNew();
+        var shown = -1;
+        try
+        {
+            await BackgroundModel.DownloadAsync(fraction =>
+            {
+                var percent = (int)(fraction * 100);
+                if (percent / 25 == shown / 25) return;
+                shown = percent;
+                Console.WriteLine($"  … {percent}%");
+            }, CancellationToken.None);
+            Console.WriteLine($"OK {BackgroundModel.ModelPath} · {BackgroundModel.SizeLabel} · {watch.Elapsed.TotalSeconds:0.0}s");
+            return BackgroundModel.IsInstalled ? 0 : 1;
         }
         catch (Exception error)
         {

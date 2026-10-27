@@ -111,7 +111,28 @@ jobs:
             if (-not (Test-Path $temp)) { throw ("missing {0}: the Store edition didn't switch to the package's folders" -f $temp) }
             "running with package identity; scratch folder $temp"
             # Started by path, without the identity: still the Store edition, with the same folders.
-            & (Join-Path $package.InstallLocation "Pickverter\Pickverter.exe") cli edition | Out-Host
+            $exe = Join-Path $package.InstallLocation "Pickverter\Pickverter.exe"
+            & $exe cli edition | Out-Host
+            # Remove BG, the AI feature the listing declares: its model downloads into the package's folder (checked by
+            # SHA-256), then cuts the dog out of the website's photo; the corner of the result must be transparent.
+            # The result card's "AI result - Report" line is in Windows CI's snapshots (card-ai).
+            & $exe cli model-install | Out-Host
+            if ($LASTEXITCODE -ne 0) { throw "the background-removal model didn't download ($LASTEXITCODE)" }
+            $photo = Join-Path $env:RUNNER_TEMP "store-shiba.webp"
+            Copy-Item (Join-Path $PWD "..\website\public\assets\media\shiba.webp") $photo
+            $made = @(& $exe cli run tool.removebg.transparent $photo)
+            $made | Out-Host
+            if ($LASTEXITCODE -ne 0) { throw "Remove BG failed ($LASTEXITCODE)" }
+            $cut = $made | Where-Object { $_ -like "*.png" -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+            if (-not $cut) { throw "Remove BG made no PNG" }
+            Add-Type -AssemblyName System.Drawing
+            $image = [System.Drawing.Bitmap]::FromFile($cut)
+            try {
+              $corner = $image.GetPixel(0, 0).A
+              "cut-out {0}, {1}x{2}, corner alpha {3}" -f (Split-Path $cut -Leaf), $image.Width, $image.Height, $corner
+              if ($corner -gt 10) { throw "the cut-out's corner isn't transparent (alpha $corner)" }
+            }
+            finally { $image.Dispose() }
           }
           finally {
             Get-Process -Name Pickverter -ErrorAction SilentlyContinue | Stop-Process -Force
