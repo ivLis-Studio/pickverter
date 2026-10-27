@@ -14,9 +14,11 @@ Korean gets the Korean screenshots and trailer; every other language uses the En
 --no-trailers leaves the trailer rows empty and the videos out, for a quick first import (the two ~60 MB trailers can
 then go up on their own, or through the listing page).
 
---text-only rewrites the words only (description, features, captions, search terms, trailer title) and keeps every
-screenshot, logo and trailer cell exactly as exported, so the pictures and videos already in Partner Center stay. The
-result is one CSV, OUT/pickverter-listing-text.csv, for "Import listings › Upload .csv".
+--text-only rewrites the words only (description, short description, features, search terms, trailer title) and keeps
+every screenshot, logo and trailer cell exactly as exported, so the pictures and videos already in Partner Center stay.
+Screenshot captions stay as exported too: Partner Center keeps each caption with its screenshot, and the screenshot
+order can differ from language to language, so captions written in this file's order could land under the wrong
+picture. The result is one CSV, OUT/pickverter-listing-text.csv, for "Import listings › Upload .csv".
 """
 from __future__ import annotations
 
@@ -122,8 +124,9 @@ def main() -> int:
             for field, name in ART.items():
                 v[field] = asset(f"art/{name}")
         for i, (name, caption) in enumerate(zip(SHOTS, item["screenshotCaptions"]), 1):
-            if not args.text_only:
-                v[f"DesktopScreenshot{i}"] = asset(f"screenshots/{shots}/{name}.png")
+            if args.text_only:
+                continue  # each caption stays with its exported screenshot
+            v[f"DesktopScreenshot{i}"] = asset(f"screenshots/{shots}/{name}.png")
             v[f"DesktopScreenshotCaption{i}"] = caption
         for i, feature in enumerate(item["features"], 1):
             v[f"Feature{i}"] = feature
