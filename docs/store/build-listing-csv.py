@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Fill a Partner Center listing export with docs/store/microsoft-listing.json and stage it for "Import folder".
 
-    python3 docs/store/build-listing-csv.py EXPORT.csv [--assets promo/out/store] [--out promo/out/store/import] [--no-trailers]
+    python3 docs/store/build-listing-csv.py EXPORT.csv [--assets promo/out/store] [--out promo/out/store/import]
+                                            [--no-trailers] [--keep-art] [--text-only]
 
 EXPORT.csv is the file Partner Center gives you from "Export listings" on the submission overview. Export it after the
 package is uploaded, so it already has one column per language the package declares. Languages the export doesn't have
@@ -13,6 +14,9 @@ Korean gets the Korean screenshots and trailer; every other language uses the En
 
 --no-trailers leaves the trailer rows empty and the videos out, for a quick first import (the two ~60 MB trailers can
 then go up on their own, or through the listing page).
+
+--keep-art keeps the logo and art cells as exported, so only the screenshots and trailers go up again (as after the
+10.1.1.3 report, which was about the screenshots and the trailer).
 
 --text-only rewrites the words only (description, short description, features, search terms, trailer title) and keeps
 every screenshot, logo and trailer cell exactly as exported, so the pictures and videos already in Partner Center stay.
@@ -64,6 +68,7 @@ def main() -> int:
     ap.add_argument("--assets", type=Path, default=REPO / "promo/out/store")
     ap.add_argument("--out", type=Path, default=REPO / "promo/out/store/import")
     ap.add_argument("--no-trailers", action="store_true", help="leave the trailers out")
+    ap.add_argument("--keep-art", action="store_true", help="keep the exported logo and art cells")
     ap.add_argument("--text-only", action="store_true", help="rewrite the words only; keep the exported media cells")
     args = ap.parse_args()
 
@@ -120,7 +125,7 @@ def main() -> int:
             v["Trailer1"] = asset(f"trailer/Pickverter-trailer-{film}.mp4")
             v["TrailerThumbnail1"] = asset(f"trailer/Pickverter-trailer-{film}-thumbnail.png")
             v["TrailerToPlayAtTopOfListing"] = v["Trailer1"]
-        if not args.text_only:
+        if not args.text_only and not args.keep_art:
             for field, name in ART.items():
                 v[field] = asset(f"art/{name}")
         for i, (name, caption) in enumerate(zip(SHOTS, item["screenshotCaptions"]), 1):

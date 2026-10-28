@@ -123,6 +123,19 @@ body { font-family: var(--ui); -webkit-font-smoothing: antialiased; color: var(-
 .c-btn.icon { padding: 0; width: 28px; justify-content: center; }
 .c-btn.icon .lbl { display: none; }
 
+/* Windows notification (toast), the Store cut's ending: Windows 11 light, as wide as the result cards */
+.toast { border-radius: 8px; background: #F9F9F9; padding: 12px 12px 12px 14px; box-sizing: border-box; z-index: 41;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.09), 0 16px 40px rgba(0,0,0,0.16), 0 2px 6px rgba(0,0,0,0.06); }
+.t-head { display: flex; align-items: center; gap: 8px; height: 20px; font-size: 12px; color: rgba(0,0,0,0.62); white-space: nowrap; }
+.t-app { width: 16px; height: 16px; border-radius: 4px; background: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+.t-name { flex: 1; min-width: 0; }
+.t-tools { display: flex; align-items: center; gap: 16px; margin-right: 2px; }
+.t-body { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.t-body .fileicon { flex: none; }
+.t-text { min-width: 0; }
+.t-text b { display: block; font-size: 14px; font-weight: 600; line-height: 20px; white-space: nowrap; }
+.t-text span { display: block; font-size: 13px; line-height: 18px; color: rgba(0,0,0,0.75); white-space: nowrap; margin-top: 1px; }
+
 /* share sheet (Windows 11) */
 .sheet { width: 340px; border-radius: 8px; background: #F3F3F3; z-index: 48; transform-origin: 50% 0; overflow: hidden;
   box-shadow: 0 0 0 1px rgba(0,0,0,0.1), 0 24px 56px rgba(0,0,0,0.2), 0 4px 12px rgba(0,0,0,0.08); }

@@ -7,6 +7,7 @@ promo/make.sh                         # English and Korean, 16:9 and 9:16
 promo/make.sh ko                      # one language
 PROMO_ASPECTS=v promo/make.sh ko      # only the vertical cut
 PROMO_PLATFORMS=win promo/make.sh     # the Windows cut (PROMO_PLATFORMS="mac win" for both)
+PROMO_STORE=1 PROMO_PLATFORMS=win PROMO_ASPECTS=h promo/make.sh   # the Windows cut's Microsoft Store version
 ```
 
 Outputs land in `promo/out/`, all 60 fps:
@@ -78,11 +79,14 @@ Pickverter's own Remove BG.
 
 ## Microsoft Store listing
 
-`store.sh` makes the Store assets for the Windows app in `out/store/` from the Windows cut (render it first:
-`PROMO_PLATFORMS=win PROMO_ASPECTS=h ./make.sh`). `./store.sh shots art trailer` runs any of the three parts.
+`store.sh` makes the Store assets for the Windows app in `out/store/` from the Store version of the Windows cut (render it
+first: `PROMO_STORE=1 PROMO_PLATFORMS=win PROMO_ASPECTS=h ./make.sh`). `./store.sh shots art trailer` runs any of the three
+parts. The Store version (`render.mjs --store`, `win.html?store`) is the same film, except that the share ends in Phone
+Link's Windows notification instead of on an Android phone: Store policy 10.1.1.3 wants listing images to show Windows UI
+and devices only, and the 0.3.3 submission was turned down for the phone. The website and the README keep the full cut.
 
 - `screenshots/<en|ko>/01-…06-….png` — 3840×2160 stills held still at six moments (WebP → JPG, Word → PDF, rotate,
-  Remove BG, the cut-out pasted into a chat, the PDF arriving on the phone), captions included.
+  Remove BG, the cut-out pasted into a chat, the share sheet with the pointer on Phone Link), captions included.
 - `art/` — `StoreLogo-300x300.png` (the Windows app icon), 1:1 box art (1080, 2160), 2:3 poster art (720×1080,
   1440×2160) and 16:9 super hero art (1920×1080, 3840×2160): the wheel mark alone on its graphite, no text or logo,
   with the lower third left empty for the Store's overlays. `store.html?art=hero|box|poster` draws them at the size of

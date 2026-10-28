@@ -3,10 +3,13 @@
 // result cards in the bottom-right corner, and the share sheet sending a PDF to an Android phone through Phone Link.
 //   bar 0 hook · 1–3 WebP → JPG · 3–5 Word → PDF · 5–7 rotate · 7–9¾ cut-out → chat · 9¾–12¼ share to the phone
 //   12½–15 montage (six kinds of files, two beats each) · 16–17 icon, name · 18 last hit
+// window.STORE (render.mjs --store, or ?store) is the Microsoft Store cut for the listing's screenshots and trailer: the
+// share ends in Phone Link's Windows notification instead of on the phone (Store policy 10.1.1.3: Windows only).
 (function () {
   const { el, set, attr, lerp, clamp, prog, E, spring, kf, polar } = PV;
   const params = new URLSearchParams(location.search);
   const LANG = window.LANG || params.get("lang") || "en";
+  const STORE = !!window.STORE || params.has("store");
   const V = (window.ASPECT || params.get("aspect")) === "v";
   const W = V ? 1080 : 1920, H = V ? 1920 : 1080;
   const docEl = document.documentElement;
@@ -40,6 +43,7 @@
       share: { file: "Travel Plan.pdf", size: "PDF Document · 182 KB", nearby: "Nearby sharing", device: "Mina's laptop", using: "Share using",
         phoneLink: "Phone Link", mail: "Mail", more: "Find more apps" },
       phone: { clock: "10:24", date: "Thu, Oct 22", app: "Link to Windows", now: "now", file: "Travel Plan.pdf", received: "Received from your PC", open: "Open", share: "Share" },
+      toast: { app: "Phone Link", title: "Travel Plan.pdf", text: "Sent to your phone" },
       docTitle: "Lisbon Trip", docSub: "Oct 24 – 27", docRows: [["Day 1", "Alfama walk"], ["Day 2", "Belém & pastéis"], ["Day 3", "Cascais beach"]],
       foot: "Free for Windows  ·  github.com/ivLis-Studio/pickverter",
     },
@@ -62,6 +66,7 @@
       share: { file: "Travel Plan.pdf", size: "PDF 문서 · 182KB", nearby: "근거리 공유", device: "민아의 노트북", using: "다음을 사용하여 공유",
         phoneLink: "휴대폰과 연결", mail: "메일", more: "더 많은 앱 찾기" },
       phone: { clock: "10:24", date: "10월 22일 목요일", app: "Windows와 연결", now: "지금", file: "Travel Plan.pdf", received: "PC에서 받은 파일", open: "열기", share: "공유" },
+      toast: { app: "휴대폰과 연결", title: "Travel Plan.pdf", text: "휴대폰으로 보냈습니다" },
       docTitle: "리스본 여행", docSub: "10월 24일 – 27일", docRows: [["1일차", "알파마 골목 산책"], ["2일차", "벨렝 탑 · 에그타르트"], ["3일차", "카스카이스 해변"]],
       foot: "Windows용 무료 앱  ·  github.com/ivLis-Studio/pickverter",
     },
@@ -224,8 +229,14 @@
   shot(b(39.75), frame(CP, AP, ZP), E.inOutExpo);
   shot(b(43.0), frame(CP, AP, ZP * 1.04), E.linear);
   shot(b(45.25), frame(CP, V ? [540, 1100] : [880, 660], ZP * 1.06), E.inOutCubic);
-  shot(b(46.25), frame(CP, V ? [400, 1000] : [720, 640], V ? 1.1 : 0.96), E.inOutCubic);
-  shot(b(50.0), frame(CP, V ? [390, 990] : [700, 640], V ? 1.15 : 1.0), E.linear);
+  if (STORE && !V) {
+    // No phone to make room for: File Explorer stays put while the notification slides into the corner.
+    shot(b(46.25), frame(CP, [860, 640], 1.0), E.inOutCubic);
+    shot(b(50.0), frame(CP, [850, 630], 1.04), E.linear);
+  } else {
+    shot(b(46.25), frame(CP, V ? [400, 1000] : [720, 640], V ? 1.1 : 0.96), E.inOutCubic);
+    shot(b(50.0), frame(CP, V ? [390, 990] : [700, 640], V ? 1.15 : 1.0), E.linear);
+  }
   punch(b(4.0), 0.05); punch(b(17.0), 0.035); punch(b(27.25), 0.04); punch(b(34.75), 0.035); punch(b(43.0), 0.03); punch(b(45.25), 0.035);
   blur(b(2.5), b(3.4), 10); blur(b(3.95), b(4.45), 8); blur(b(12.45), b(13.35), 12); blur(b(16.95), b(18.1), 6);
   blur(b(21.2), b(22.05), 12); blur(b(27.2), b(27.75), 6); blur(b(34.65), b(35.55), 6); blur(b(38.95), b(39.8), 12); blur(b(45.2), b(46.3), 6);
@@ -398,14 +409,21 @@
   sfx("slide", b(35.75)); sfx("message", b(36.1)); sfx("paste", b(36.75)); sfx("land", b(37.25)); sfx("sent", b(37.5)); sfx("slide_out", b(38.75));
   blur(b(36.7), b(37.35), 8);
 
-  // Android phone + the PDF page that flies to it out of the share sheet.
-  const phone = UI.Phone(over, Object.assign({ thumb: "assets/lisbon.jpg" }, C.phone));
-  const page = el("div", { class: "docpage" }, over,
-    '<div class="dp-photo" style="background-image:url(assets/lisbon.jpg)"></div><div class="dp-title">' + C.docTitle + '</div><div class="dp-sub">' + C.docSub + "</div>" +
-    C.docRows.map(([d, s]) => '<div class="dp-row"><b>' + d + "</b>" + s + "</div>").join(""));
-  const PHONE_IN = PL_CLICK, FLY = [b(45.5), b(46.25)], NOTE = b(46.5);
-  sfx("phone_in", PHONE_IN); sfx("fly", FLY[0]); sfx("receive", NOTE);
-  blur(FLY[0] - 0.05, FLY[1] + 0.1, 8);
+  // Android phone + the PDF page that flies to it out of the share sheet. The Store cut shows no phone: there the share
+  // ends in Phone Link's Windows notification, sliding into the corner where the result cards sit.
+  const PHONE_IN = PL_CLICK, FLY = [b(45.5), b(46.25)], NOTE = b(46.5), TOAST_IN = b(46.0);
+  let phone = null, page = null, toast = null;
+  if (STORE) {
+    toast = UI.Toast(over, Object.assign({}, cardBase, { in: TOAST_IN, out: b(50.2) }, C.toast));
+    sfx("slide", TOAST_IN); sfx("receive", NOTE);
+  } else {
+    phone = UI.Phone(over, Object.assign({ thumb: "assets/lisbon.jpg" }, C.phone));
+    page = el("div", { class: "docpage" }, over,
+      '<div class="dp-photo" style="background-image:url(assets/lisbon.jpg)"></div><div class="dp-title">' + C.docTitle + '</div><div class="dp-sub">' + C.docSub + "</div>" +
+      C.docRows.map(([d, s]) => '<div class="dp-row"><b>' + d + "</b>" + s + "</div>").join(""));
+    sfx("phone_in", PHONE_IN); sfx("fly", FLY[0]); sfx("receive", NOTE);
+    blur(FLY[0] - 0.05, FLY[1] + 0.1, 8);
+  }
 
   // Captions: words rise out of their own masks.
   function Caption(h, s) {
@@ -432,10 +450,12 @@
 
   // ------------------------------------------------------------------ montage
   const PH = LY.phone;
+  // The blue wipe grows out of the phone (in the Store cut, out of the notification).
+  const WIPE = toast ? toast.center(H) : PH;
   const FEATURES = ["trim", "audiotrim", "merge", "docs", "faces", "shrink"];
   const M0T = b(50), MSTEP = b(2), MN = FEATURES.length;
   const montage = PV.Montage(montL, {
-    W, H, t0: M0T, step: MSTEP, wipe: { t0: b(49.0), t1: b(50.0), x: PH[0], y: PH[1] }, end: b(62.3), implode: b(62.5),
+    W, H, t0: M0T, step: MSTEP, wipe: { t0: b(49.0), t1: b(50.0), x: WIPE[0], y: WIPE[1] }, end: b(62.3), implode: b(62.5),
     features: FEATURES, words: C.words, chips: C.chips, more: C.more, copied: C.copied,
     ring: V ? { cx: 540, cy: 1096, R: 358, tile: 158 } : { cx: 1320, cy: 560, R: 330, tile: 148 },
     disc: V ? { cx: 540, cy: 1096, r: 214 } : { cx: 1320, cy: 560, r: 204 },
@@ -544,8 +564,9 @@
         incoming: spring(t - b(36.1), 0.35, 0.62), sticker: t >= b(37.25), sent: E.outCubic(prog(t, b(37.5), b(37.75))) });
     }
 
-    // phone + the flying PDF page
-    {
+    // phone + the flying PDF page (the Store cut: Phone Link's notification)
+    if (toast) toast.update(t);
+    else {
       const s = t >= PHONE_IN ? spring(t - PHONE_IN, 0.5, 0.8) : 0;
       const [fx, fy] = LY.phoneFrom;
       const pxy = [PH[0] + fx * (1 - s), PH[1] + fy * (1 - s)];

@@ -4,6 +4,8 @@
 //   node render.mjs --events out/events-en.json [--lang en]
 // --aspect v renders the 9:16 cut (1080×1920 CSS pixels × dpr) for Reels, Shorts and TikTok.
 // --platform win renders the Windows cut (win.html): File Explorer, the Windows wheel and an Android phone.
+// --store (with --platform win) renders its Microsoft Store cut: the same film without the phone, for the listing's
+// screenshots and trailer (Store policy 10.1.1.3 wants them to show Windows only). Stills are named win-store-….
 import { chromium } from "playwright-core";
 import sharp from "sharp";
 import { spawn } from "node:child_process";
@@ -117,6 +119,7 @@ async function openPage(browser, url = PAGE, size = { width: W, height: H }) {
   await page.addInitScript("window.LANG = " + JSON.stringify(lang) + ";");
   await page.addInitScript("window.ASPECT = " + JSON.stringify(aspect) + ";");
   if (opt.clean) await page.addInitScript("window.CLEAN = true;");
+  if (opt.store) await page.addInitScript("window.STORE = true;");
   await page.goto(origin + url);
   await page.evaluate(() => window.ready);
   const cdp = await page.context().newCDPSession(page);
@@ -177,7 +180,7 @@ if (opt.stills) {
   blurWindows = await p.page.evaluate(() => window.MOTION_BLUR || []);
   fs.mkdirSync(path.join(here, "out/stills"), { recursive: true });
   for (const t of String(opt.stills).split(",").map(Number)) {
-    const out = path.join(here, "out/stills", (WIN ? "win-" : "") + lang + (aspect === "v" ? "-v" : "") + "-" + t.toFixed(2) + ".png");
+    const out = path.join(here, "out/stills", (WIN ? "win-" : "") + (opt.store ? "store-" : "") + lang + (aspect === "v" ? "-v" : "") + "-" + t.toFixed(2) + ".png");
     fs.writeFileSync(out, await (opt.blur ? blurredFrame(p, t) : frame(p, t)));
     console.log(out);
   }
@@ -214,7 +217,8 @@ if (opt.video) {
   const queue = [];
   for (let first = 0, i = 0; first < total; first += size, i++) queue.push({ first, last: Math.min(total, first + size), file: path.join(tmp, "c" + String(i).padStart(3, "0") + ".mp4") });
   const files = queue.map((q) => q.file);
-  const pass = ["--lang", lang, "--aspect", aspect, "--platform", platform, "--dpr", String(dpr), "--fps", String(fps), "--samples", String(baseSamples), "--crf", crf, "--from", String(from)];
+  const pass = ["--lang", lang, "--aspect", aspect, "--platform", platform, "--dpr", String(dpr), "--fps", String(fps), "--samples", String(baseSamples), "--crf", crf, "--from", String(from),
+    ...(opt.store ? ["--store"] : [])];
   async function worker() {
     while (queue.length) {
       const q = queue.shift();

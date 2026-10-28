@@ -1,6 +1,7 @@
 // Windows UI for the promo stage (the Windows cut). The wheel and result cards follow the Windows app
 // (windows/src/Pickverter/UI: WheelCanvas.cs, Cards.cs, Theme.cs, RingGeometry.cs); around them sits Windows 11 itself:
-// File Explorer, the share sheet, a messenger window and an Android phone. Built in UI points and scaled by K.
+// File Explorer, the share sheet, a messenger window, an Android phone and, for the Store cut, a Windows notification.
+// Built in UI points and scaled by K.
 (function () {
   const { el, set, attr, lerp, clamp, prog, E, spring, lit, polar, ringCore, arcPath, mix } = PV;
   const K = 1.3;
@@ -652,6 +653,37 @@
     return { update, pageRect, root };
   }
 
-  PV.UI = { K, ACCENT, BRAND, INK, G, gl, glyphNode, fileIcon, Cursor, Keycap, Explorer, Wheel, Card, ShareSheet, Chat, Phone, XWIN, PHONE, SHEET };
+  // ---------------------------------------------------------------- Windows notification (toast), the Store cut's ending
+  // Phone Link's "sent" notification. A fixed size (UI points), as wide as the result cards, which sit in the same corner;
+  // spec takes the cards' anchor: { x, bottom | top, origin, in, out, app, title, text }.
+  const TOAST = { w: 368, h: 104 };
+  function Toast(parent, spec) {
+    const fromTop = spec.top != null;
+    const root = el("div", { class: "abs toast" }, parent);
+    set(root, { width: TOAST.w + "px", height: TOAST.h + "px", top: fromTop ? spec.top + "px" : "auto", transformOrigin: spec.origin || "100% 100%" });
+    el("div", { class: "t-head" }, root,
+      '<span class="t-app">' + gl("fill.phonelink", 11, "#fff") + '</span><span class="t-name">' + spec.app + "</span>" +
+      '<span class="t-tools">' + gl("f.more", 16, "rgba(0,0,0,0.62)") + gl("f.close", 12, "rgba(0,0,0,0.62)") + "</span>");
+    el("div", { class: "t-body" }, root, fileIcon("pdf", 44) + '<div class="t-text"><b>' + spec.title + "</b><span>" + spec.text + "</span></div>");
+    function update(t) {
+      const visible = t >= spec.in && t <= spec.out + 0.5;
+      set(root, { display: visible ? "block" : "none" });
+      if (!visible) return;
+      const a = spring(t - spec.in, 0.42, 0.82);
+      const o = E.inCubic(prog(t, spec.out, spec.out + 0.32));
+      // Windows slides a notification in from the screen's edge (from above when it sits at the top, as in 9:16).
+      const dx = fromTop ? 0 : (1 - a) * 150 + o * 60, dy = fromTop ? -((1 - a) * 46 + o * 40) : 0;
+      set(root, { left: spec.x + "px", transform: "translate(" + dx + "px," + dy + "px) scale(" + K + ")", opacity: clamp(a * 2) * (1 - o) });
+      if (!fromTop) set(root, { bottom: spec.bottom + "px" });
+    }
+    // Its centre on a stage H tall, once in place (scaled by K about its transform origin).
+    function center(H) {
+      if (fromTop) return [spec.x + TOAST.w / 2, spec.top + (TOAST.h * K) / 2];
+      return [spec.x + TOAST.w - (TOAST.w * K) / 2, H - spec.bottom - (TOAST.h * K) / 2];
+    }
+    return { update, center, root };
+  }
+
+  PV.UI = { K, ACCENT, BRAND, INK, G, gl, glyphNode, fileIcon, Cursor, Keycap, Explorer, Wheel, Card, ShareSheet, Chat, Phone, Toast, XWIN, PHONE, SHEET, TOAST };
 })();
 
