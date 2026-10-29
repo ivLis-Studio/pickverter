@@ -5,6 +5,7 @@
   const LANGS = ["en", "ko"];
   const OSES = ["mac", "win"];
   const RELEASES = "https://github.com/ivLis-Studio/pickverter/releases/latest";
+  const STORE = "https://apps.microsoft.com/detail/9P05JBV4QDGC";
   const stored = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
   const keep = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
 
@@ -199,17 +200,19 @@
   video.addEventListener("pause", setPauseButton);
   enterAmbient();
 
-  // ---- latest release from GitHub: the DMG on the Mac page, the installer on the Windows page (falls back to the releases page)
+  // ---- Windows installs through the Store; GitHub supplies the Mac app and optional direct Windows downloads.
   let release = null;
   function renderRelease() {
     const r = release;
     const main = r && (os === "win" ? (arm && r.winArm) || r.winX64 : r.mac);
     const sums = r && (os === "win" ? r.winSums : r.macSums);
-    $$(".dl-link").forEach((a) => (a.href = main ? main.browser_download_url : RELEASES));
+    $$(".dl-link").forEach((a) => (a.href = os === "win" ? STORE : main ? main.browser_download_url : RELEASES));
+    $$(".dl-win-setup").forEach((a) => (a.href = r && ((arm && r.winArm) || r.winX64) ? ((arm && r.winArm) || r.winX64).browser_download_url : RELEASES));
     $$(".dl-sums").forEach((a) => (a.href = sums ? sums.browser_download_url : RELEASES));
     $$(".dl-win-arm").forEach((a) => (a.href = r && r.winArm ? r.winArm.browser_download_url : RELEASES));
     $$(".dl-win-zip").forEach((a) => (a.href = r && r.winZip ? r.winZip.browser_download_url : RELEASES));
-    if (!main) return;
+    // GitHub and the Store can release at different times; don't label the Store with a GitHub version or file size.
+    if (!main || os === "win") return;
     $$(".dl-version").forEach((n) => (n.textContent = X("dl.version", r.version)));
     $$(".dl-version-long").forEach((n) => (n.textContent = X("dl.size", "v" + r.version, (main.size / 1048576).toFixed(1))));
   }

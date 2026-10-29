@@ -116,10 +116,10 @@ const untranslated = await page.$$eval("[data-t]", (ns) => ns.filter((n) => /[A-
 const allowed = new Set(["film.title"]);
 check("Korean copy complete", untranslated.filter((k) => !allowed.has(k) && !/^(g\.|t\.|a\.)/.test(k)).length === 0, untranslated.join(", "));
 
-// The Windows page: ?os=win shows the installer, Windows keys and Windows install steps; the switch goes back.
+// The Windows page links to the Store, even after release info arrives; direct installers remain available.
 await page.goto(base + "?lang=en&os=win", { waitUntil: "networkidle" });
 check("Windows: platform", (await page.evaluate(() => document.documentElement.dataset.os)) === "win");
-check("Windows: download button", (await page.locator(".hero .dl-link").innerText()).includes("Windows"));
+check("Windows: Store download button", (await page.locator(".hero .dl-link").innerText()).includes("Microsoft Store") && (await page.locator(".hero .dl-link").getAttribute("href")) === "https://apps.microsoft.com/detail/9P05JBV4QDGC");
 check("Windows: title key", (await page.locator(".hero h1").innerText()).includes("Alt"));
 check("Windows: wheel keys", (await page.locator(".wtab").first().innerText()).includes("Shift"));
 check("Windows: install steps", (await page.locator("ol.only-win").isVisible()) && !(await page.locator("ol.only-mac").isVisible()));
@@ -137,7 +137,7 @@ check("Windows: Ctrl switches to Tools", (await page.locator(".wtab.on").innerTe
 const winMissing = await page.evaluate(() => Object.keys(window.SITE_WIN.en).filter((k) => !(k in window.SITE_WIN.ko)));
 check("Windows: Korean wording complete", winMissing.length === 0, winMissing.join(", "));
 await page.locator("#lang-select").selectOption("ko");
-check("Windows: Korean download button", (await page.locator(".hero .dl-link").innerText()).includes("Windows용"));
+check("Windows: Korean Store download button", (await page.locator(".hero .dl-link").innerText()).includes("Store에서 받기"));
 check("Windows: Korean film", (await film()) === "assets/media/film-win-ko.mp4", await film());
 const winUntranslated = await page.$$eval("[data-t]", (ns) => ns.filter((n) => n.offsetParent && /[A-Za-z]{4,}/.test(n.textContent) && !/[가-힣]/.test(n.textContent)).map((n) => n.dataset.t));
 check("Windows: Korean copy complete", winUntranslated.filter((k) => !allowed.has(k) && !/^(g\.|t\.|a\.|ring\.k\.)/.test(k)).length === 0, winUntranslated.join(", "));
